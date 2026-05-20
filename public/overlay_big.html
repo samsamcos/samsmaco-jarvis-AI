@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS Overlay</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:transparent;
+  overflow:hidden;
+  font-family:'JetBrains Mono',monospace,system-ui;
+  font-size:13px;
+}
+
+/* Centered card stack */
+#cards{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(560px, 92vw);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  z-index:999999;
+}
+
+/* Card */
+.ncard{
+  background:rgba(16,18,28,0.94);
+  backdrop-filter:blur(16px) saturate(160%);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:14px;
+  overflow:hidden;
+  animation:slideDown .3s ease;
+  cursor:pointer;
+  transition:border-color .2s;
+}
+.ncard:hover{ border-color:rgba(255,255,255,0.14); }
+.ncard.expanded{ cursor:default; }
+@keyframes slideDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+
+/* Left accent bar */
+.ncard-bar{
+  height:3px;
+  background:var(--accent,#5b9cf6);
+  opacity:.85;
+}
+
+/* Collapsed header */
+.ncard-hd{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:12px 14px 10px;
+}
+.ncard-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--accent,#5b9cf6);
+  flex-shrink:0;
+}
+.ncard-cat{
+  font-size:9px;font-weight:800;letter-spacing:1.2px;
+  color:var(--accent,#5b9cf6);text-transform:uppercase;
+}
+.ncard-title{
+  flex:1;font-size:12px;font-weight:700;color:#e8ecf4;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  margin-left:4px;
+}
+.ncard-close{
+  background:none;border:none;color:rgba(255,255,255,0.2);
+  font-size:13px;cursor:pointer;line-height:1;padding:2px 4px;
+  transition:color .15s;flex-shrink:0;
+}
+.ncard-close:hover{color:rgba(255,255,255,.7);}
+
+/* Preview (collapsed) */
+.ncard-preview{
+  font-size:11px;color:rgba(200,210,230,0.55);
+  padding:0 14px 8px;
+  line-height:1.5;
+  max-height:48px;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+
+/* Action buttons (collapsed) */
+.ncard-btns{
+  display:flex;gap:6px;padding:8px 14px 12px;flex-wrap:wrap;
+}
+.nbtn{
+  font-size:10px;font-weight:700;font-family:inherit;
+  padding:5px 12px;border-radius:7px;cursor:pointer;border:none;
+  transition:opacity .15s;
+}
+.nbtn:hover{opacity:.8;}
+.nbtn-run{background:#5b9cf6;color:#fff;}
+.nbtn-approve{background:#3fdc8a;color:#0a1a10;}
+.nbtn-reject{background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3);}
+.nbtn-dismiss{background:rgba(255,255,255,.08);color:rgba(200,210,230,.55);border:1px solid rgba(255,255,255,.07);}
+
+/* Expanded thread view */
+.ncard-thread{
+  display:none;
+  flex-direction:column;
+  border-top:1px solid rgba(255,255,255,0.06);
+  max-height:380px;
+}
+.ncard.expanded .ncard-preview{ display:none; }
+.ncard.expanded .ncard-thread{ display:flex; }
+
+.thread-msgs{
+  flex:1;overflow-y:auto;
+  padding:10px 14px;
+  display:flex;flex-direction:column;gap:8px;
+  max-height:280px;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;
+}
+.thread-msgs::-webkit-scrollbar{width:4px}
+.thread-msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+
+/* message bubbles */
+.msg-bubble{
+  max-width:85%;
+  padding:8px 12px;
+  border-radius:10px;
+  font-size:11px;line-height:1.55;
+}
+.msg-inbound{
+  align-self:flex-start;
+  background:rgba(40,46,70,0.8);
+  color:#d0d8ee;
+  border-bottom-left-radius:3px;
+}
+.msg-inbound .msg-who{
+  font-size:9px;font-weight:700;letter-spacing:.8px;
+  color:var(--accent,#5b9cf6);text-transform:uppercase;
+  margin-bottom:4px;
+}
+.msg-outbound{
+  align-self:flex-end;
+  background:rgba(91,156,246,0.18);
+  color:#c5d4f0;
+  border-bottom-right-radius:3px;
+}
+
+/* Thread reply input */
+.thread-input{
+  display:flex;gap:6px;padding:8px 10px;
+  border-top:1px solid rgba(255,255,255,0.05);
+  flex-shrink:0;
+}
+.thread-inp{
+  flex:1;background:rgba(30,36,56,0.8);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:9px;padding:7px 11px;
+  color:#e0e6f6;font-family:inherit;font-size:11px;
+  outline:none;resize:none;min-height:34px;max-height:80px;line-height:1.4;
+  transition:border-color .15s;
+}
+.thread-inp:focus{border-color:rgba(91,156,246,.5);}
+.thread-send{
+  width:34px;height:34px;border-radius:9px;
+  background:#5b9cf6;border:none;color:#fff;font-size:14px;
+  cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:opacity .15s;align-self:flex-end;
+}
+.thread-send:hover{opacity:.8;}
+
+/* Time stamp */
+.ncard-time{
+  font-size:9px;color:rgba(130,140,165,0.4);
+  padding:0 14px 4px;
+}
+
+/* accent colours */
+.acc-alert  {--accent:#5b9cf6}
+.acc-search {--accent:#f87171}
+.acc-readme {--accent:#b57aff}
+.acc-ok     {--accent:#3fdc8a}
+.acc-warn   {--accent:#facc15}
+.acc-n8n    {--accent:#ff9a4a}
+.acc-jarvis {--accent:#5b9cf6}
+.acc-user   {--accent:#3fdc8a}
+</style>
+</head>
+<body>
+<div id="cards"></div>
+
+<script>
+let _sse = null;
+// track which cards exist: id -> {el, replyUrl, threadId, msgsEl}
+const _cards = {};
+
+const CAT_MAP = {
+  alert:'acc-alert', search:'acc-search', readme:'acc-readme',
+  ok:'acc-ok', warn:'acc-warn', n8n:'acc-n8n', jarvis:'acc-jarvis',
+  webhook:'acc-alert', rc:'acc-jarvis', user:'acc-user',
+};
+
+function accentClass(ev){
+  const src = (ev.source||ev.category||'').toLowerCase();
+  return CAT_MAP[src] || 'acc-jarvis';
+}
+function catLabel(ev){ return (ev.source||ev.category||'JARVIS').toUpperCase(); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function now(){ return new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+
+function removeCard(id, e){
+  if(e){ e.stopPropagation(); }
+  const el = document.getElementById('nc-'+id);
+  if(!el) return;
+  el.style.transition='all .3s';
+  el.style.opacity='0';
+  el.style.transform='translateY(-12px)';
+  setTimeout(()=>{ el.remove(); delete _cards[id]; }, 300);
+}
+
+function toggleExpand(id){
+  const info = _cards[id];
+  if(!info) return;
+  const el = info.el;
+  el.classList.toggle('expanded');
+  if(el.classList.contains('expanded')){
+    // scroll thread to bottom
+    const m = info.msgsEl;
+    m.scrollTop = m.scrollHeight;
+    info.inp && info.inp.focus();
+  }
+}
+
+function appendMsg(id, who, text, isOutbound){
+  const info = _cards[id];
+  if(!info) return;
+  const bubble = document.createElement('div');
+  bubble.className = isOutbound ? 'msg-bubble msg-outbound' : 'msg-bubble msg-inbound';
+  if(!isOutbound){
+    bubble.innerHTML = `<div class="msg-who">${esc(who)}</div>${esc(text)}`;
+  } else {
+    bubble.textContent = text;
+  }
+  info.msgsEl.appendChild(bubble);
+  info.msgsEl.scrollTop = info.msgsEl.scrollHeight;
+}
+
+const AUTO_DISMISS_MS = 2 * 60 * 1000; // 2 minutes
+const _dismissTimers = {};
+
+async function autoSendTelegram(id){
+  const info = _cards[id];
+  if(!info) return;
+  const title = info.el.querySelector('.ncard-title')?.textContent || 'JARVIS';
+  const msg = info.el.querySelector('.ncard-preview')?.textContent || '';
+  try{
+    await fetch('/overlay/rc/action',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({job_id:id, action:'auto-log', message:`${title}: ${msg}`, thread_id:id})
+    });
+    // Also send to Telegram via JARVIS log endpoint
+    await fetch('/telegram/send',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:`📋 Auto-log:\n<b>${title}</b>\n${msg.slice(0,400)}`})
+    }).catch(()=>{});
+  }catch{}
+}
+
+function scheduleAutoDismiss(id, isApproval){
+  if(isApproval) return; // never auto-dismiss approvals
+  if(_dismissTimers[id]) clearTimeout(_dismissTimers[id]);
+  _dismissTimers[id] = setTimeout(async ()=>{
+    await autoSendTelegram(id);
+    removeCard(id, null);
+    delete _dismissTimers[id];
+  }, AUTO_DISMISS_MS);
+}
+
+function addCard(ev){
+  // Don't duplicate
+  if(_cards[ev.id]) return;
+
+  const id = ev.id;
+  const acc = accentClass(ev);
+  const cat = catLabel(ev);
+
+  // Build action buttons HTML
+  const btns = (ev.buttons||['✕ Dismiss']).map(b=>{
+    const bl = b.toLowerCase();
+    let cls = 'nbtn-dismiss';
+    if(bl.includes('run')||bl.includes('go')) cls='nbtn-run';
+    else if(bl.includes('approve')||bl.includes('yes')) cls='nbtn-approve';
+    else if(bl.includes('reject')||bl.includes('no')||bl.includes('stop')) cls='nbtn-reject';
+    return `<button class="nbtn ${cls}"
+      onclick="event.stopPropagation();doAction('${id}','${b}','${ev.reply_url||''}','${(ev.message||'').replace(/'/g,"\\'")}')">
+      ${esc(b)}</button>`;
+  }).join('');
+
+  const div = document.createElement('div');
+  div.className = `ncard ${acc}`;
+  div.id = 'nc-'+id;
+  div.onclick = ()=>toggleExpand(id);
+
+  div.innerHTML = `
+    <div class="ncard-bar"></div>
+    <div class="ncard-hd">
+      <div class="ncard-dot"></div>
+      <div class="ncard-cat">${esc(cat)}</div>
+      <div class="ncard-title">${esc(ev.title||'Notification')}</div>
+      <button class="ncard-close" onclick="removeCard('${id}',event)">✕</button>
+    </div>
+    ${ev.message ? `<div class="ncard-preview">${esc(ev.message)}</div>` : ''}
+    <div class="ncard-time">${now()}</div>
+    ${btns ? `<div class="ncard-btns">${btns}</div>` : ''}
+    <div class="ncard-thread">
+      <div class="thread-msgs" id="msgs-${id}"></div>
+      <div class="thread-input">
+        <textarea class="thread-inp" id="inp-${id}" rows="1"
+          placeholder="Reply…"
+          onclick="event.stopPropagation()"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendReply('${id}')}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+        <button class="thread-send" onclick="event.stopPropagation();sendReply('${id}')">▶</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('cards').insertBefore(div, document.getElementById('cards').firstChild);
+
+  const msgsEl = document.getElementById('msgs-'+id);
+  const inpEl  = document.getElementById('inp-'+id);
+
+  _cards[id] = { el:div, replyUrl: ev.reply_url||'', threadId: id, msgsEl, inp: inpEl };
+
+  // Seed first message into thread
+  if(ev.message){
+    appendMsg(id, cat, ev.message, false);
+  }
+
+  // Auto-dismiss after 2 minutes (not for approvals)
+  const isApproval = ev.type === 'approval' || (ev.buttons||[]).some(b=>b.toLowerCase().includes('approve'));
+  scheduleAutoDismiss(id, isApproval);
+}
+
+function updateThread(ev){
+  // Find card by thread_id
+  const target = ev.thread_id;
+  if(!target || !_cards[target]) return;
+
+  // Auto-expand on update
+  _cards[target].el.classList.add('expanded');
+  appendMsg(target, ev.source||'n8n', ev.message||ev.title||'', false);
+}
+
+async function doAction(id, action, replyUrl, message){
+  const info = _cards[id];
+  try{
+    const r = await fetch('/overlay/rc/action',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({job_id:id, action, reply_url:replyUrl, message,
+                            thread_id:id})
+    });
+    const d = await r.json();
+    if(d.task_id) console.log('task',d.task_id);
+  }catch(e){ console.warn(e); }
+}
+
+async function sendReply(id){
+  const info = _cards[id];
+  if(!info) return;
+  const inp = info.inp;
+  const msg = inp.value.trim();
+  if(!msg) return;
+  inp.value='';inp.style.height='auto';
+
+  // Show outbound bubble immediately
+  appendMsg(id, 'you', msg, true);
+
+  try{
+    await fetch('/overlay/rc/action',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        job_id: id,
+        action: 'reply',
+        reply_url: info.replyUrl,
+        message: msg,
+        thread_id: id,
+      })
+    });
+  }catch(e){ console.warn(e); }
+}
+
+function connectSSE(){
+  if(_sse) _sse.close();
+  _sse = new EventSource('/overlay/rc/stream');
+  _sse.onmessage = (e)=>{
+    try{
+      const ev = JSON.parse(e.data);
+      if(ev.type==='ping') return;
+      if(ev.type==='update'){ updateThread(ev); return; }
+      addCard(ev);
+    }catch{}
+  };
+  _sse.onerror = ()=>{ setTimeout(connectSSE, 3000); };
+}
+
+connectSSE();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

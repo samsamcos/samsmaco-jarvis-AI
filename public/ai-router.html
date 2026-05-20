@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Router — JARVIS</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'JetBrains Mono',monospace,system-ui;font-size:13px;min-height:100vh}
+a{color:#6b8cff;text-decoration:none}
+.top{background:#0d0f17;border-bottom:1px solid #1e2030;padding:10px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo{font-size:15px;font-weight:700;color:#fff}.logo span{color:#6b8cff}
+.nav{margin-left:auto;display:flex;gap:12px;font-size:11px}
+.nav a{color:#7880a0}.nav a:hover{color:#fff}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 16px}
+.tabs{display:flex;gap:2px;margin-bottom:16px;border-bottom:1px solid #1e2030}
+.tab{padding:7px 14px;cursor:pointer;font-size:11px;color:#7880a0;border-bottom:2px solid transparent;transition:.15s}
+.tab.active{color:#6b8cff;border-bottom-color:#6b8cff}
+.pane{display:none}.pane.active{display:block}
+h3{font-size:11px;font-weight:700;color:#7880a0;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.card{background:#0d0f17;border:1px solid #1e2030;border-radius:10px;padding:14px;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:700px){.grid2,.grid3{grid-template-columns:1fr}}
+.stat-box{background:#0d0f17;border:1px solid #1e2030;border-radius:8px;padding:12px 16px;text-align:center}
+.stat-val{font-size:26px;font-weight:700;color:#6b8cff}
+.stat-lbl{font-size:10px;color:#7880a0;margin-top:2px}
+.btn{background:#1e2030;border:1px solid #2a2e45;border-radius:6px;padding:5px 12px;color:#dde1f5;cursor:pointer;font-size:11px;font-family:inherit;transition:.15s}
+.btn:hover{background:#2a2e45}.btn.pri{background:#1a2a5c;border-color:#6b8cff44;color:#6b8cff}
+.btn.pri:hover{background:#223380}.btn.danger{background:#3a1818;border-color:#f8717144;color:#f87171}
+.btn.sm{padding:3px 8px;font-size:10px}
+.btn.green{background:#0d2a1a;border-color:#3fdc8a44;color:#3fdc8a}
+input,select{background:#07080d;border:1px solid #2a2e45;border-radius:6px;padding:5px 9px;color:#dde1f5;font-family:inherit;font-size:12px;width:100%}
+input:focus,select:focus{outline:none;border-color:#6b8cff}
+label{font-size:11px;color:#7880a0;display:block;margin-bottom:4px}
+.row-form{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.row-form>div{flex:1;min-width:100px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{color:#7880a0;font-weight:600;text-align:left;padding:6px 8px;border-bottom:1px solid #1e2030;white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid #13151f;vertical-align:middle}
+tr:hover td{background:#0d0f1c}
+.badge{display:inline-block;padding:1px 7px;border-radius:8px;font-size:9px;font-weight:700;text-transform:uppercase}
+.badge-gem{background:#1a2a5c;color:#6b8cff}
+.badge-pol{background:#1a3a24;color:#3fdc8a}
+.badge-img{background:#2a1a3a;color:#c084fc}
+.badge-ok{background:#0d2a1a;color:#3fdc8a}
+.badge-err{background:#3a1818;color:#f87171}
+.badge-rl{background:#2a1a00;color:#facc15}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot.on{background:#3fdc8a;box-shadow:0 0 5px #3fdc8a88}
+.dot.off{background:#3a3e55}
+.dot.warn{background:#facc15}
+.fleet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:16px}
+.fleet-card{background:#0d0f17;border:1px solid #1e2030;border-radius:8px;padding:12px}
+.fleet-ip{font-size:12px;font-weight:700;color:#fff;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.fleet-row{display:flex;justify-content:space-between;font-size:10px;color:#7880a0;padding:2px 0}
+.fleet-val{color:#dde1f5}
+.chat-box{background:#07080d;border:1px solid #1e2030;border-radius:8px;padding:12px;min-height:200px;max-height:400px;overflow-y:auto;font-size:12px;line-height:1.6;margin-bottom:8px}
+.msg-user{color:#6b8cff;margin-bottom:6px}
+.msg-ai{color:#dde1f5;margin-bottom:10px}
+.msg-meta{font-size:9px;color:#4a5568;margin-top:2px}
+.model-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+.model-card{background:#0d0f17;border:1px solid #1e2030;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:5px}
+.model-card.disabled{opacity:.4}
+.model-card-top{display:flex;align-items:center;gap:8px}
+.model-info{flex:1}
+.model-name{font-size:11px;font-weight:600;color:#fff}
+.model-id{font-size:9px;color:#4a5568;font-family:monospace}
+.model-desc{font-size:10px;color:#7880a0;line-height:1.4}
+.tag{display:inline-block;background:#1e2030;color:#7880a0;font-size:9px;padding:1px 5px;border-radius:4px;margin:1px}
+.tier-fast{color:#3fdc8a}.tier-standard{color:#6b8cff}.tier-large{color:#c084fc}.tier-reasoning{color:#facc15}
+.sync-info{font-size:10px;color:#7880a0;margin-top:6px}
+#toast{position:fixed;bottom:20px;right:20px;background:#1e2030;border:1px solid #2a2e45;border-radius:8px;padding:8px 14px;font-size:12px;color:#dde1f5;display:none;z-index:999}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">JARVIS <span>AI Router</span></div>
+  <span style="font-size:10px;color:#4a5568">Central AI dispatch brain</span>
+  <nav class="nav">
+    <a href="/">Home</a>
+    <a href="/gemini-fleet">Gemini Fleet</a>
+    <a href="/pollinations">Pollinations</a>
+    <a href="/links">Links</a>
+  </nav>
+</div>
+
+<div class="wrap">
+  <!-- Stats row -->
+  <div class="grid3" style="margin-bottom:16px" id="statsRow">
+    <div class="stat-box"><div class="stat-val" id="statGemKeys">—</div><div class="stat-lbl">Gemini Keys Active</div></div>
+    <div class="stat-box"><div class="stat-val" id="statPolKeys">—</div><div class="stat-lbl">Pollinations Keys</div></div>
+    <div class="stat-box"><div class="stat-val" id="statJobs">—</div><div class="stat-lbl">Jobs (last 50)</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('fleet')">Fleet Overview</div>
+    <div class="tab" onclick="showTab('keys')">API Keys</div>
+    <div class="tab" onclick="showTab('models')">Models</div>
+    <div class="tab" onclick="showTab('rules')">Routing Rules</div>
+    <div class="tab" onclick="showTab('jobs')">Job Ledger</div>
+    <div class="tab" onclick="showTab('chat')">Test Chat</div>
+    <div class="tab" onclick="showTab('connect')">Connect PC</div>
+    <div class="tab" onclick="showTab('sitekeys')">API Key Groups</div>
+    <div class="tab" onclick="showTab('diagram')">Route Map</div>
+  </div>
+
+  <!-- Fleet Overview -->
+  <div class="pane active" id="pane-fleet">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3>Key Pool — API Keys Shared Across All PCs</h3>
+      <div style="display:flex;gap:6px">
+        <button class="btn sm" onclick="loadKeyStats()">Refresh</button>
+        <button class="btn sm pri" onclick="showTab('keys')">+ Add Keys</button>
+      </div>
+    </div>
+
+    <!-- How it works banner -->
+    <div style="background:#0a1628;border:1px solid #6b8cff22;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:#94a3b8;display:flex;gap:24px;flex-wrap:wrap">
+      <div><span style="color:#6b8cff;font-weight:700">Key Pool</span> — all Gemini + Pollinations keys live here on 192.168.0.3</div>
+      <div><span style="color:#3fdc8a;font-weight:700">Round-Robin</span> — each request uses the next key in sequence</div>
+      <div><span style="color:#facc15;font-weight:700">Any PC</span> → calls <code>192.168.0.3:4050</code> → gets a key automatically</div>
+    </div>
+
+    <!-- Key pool by provider -->
+    <div id="keyPoolGemini" style="margin-bottom:12px"></div>
+    <div id="keyPoolPollinations" style="margin-bottom:12px"></div>
+
+    <!-- Recent usage log -->
+    <div class="card" style="margin-top:4px">
+      <h3 style="margin-bottom:8px">Recent Requests — Which Key Was Used</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Time</th><th>Key #</th><th>Provider</th><th>Model</th><th>PC (caller)</th><th>Status</th><th>ms</th>
+          </tr></thead>
+          <tbody id="usageLog"><tr><td colspan="7" style="color:#4a5568;text-align:center">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Keys -->
+  <div class="pane" id="pane-keys">
+    <!-- Bulk PC setup -->
+    <div class="card" style="margin-bottom:10px;border-color:#6b8cff22">
+      <h3 style="margin-bottom:8px">Quick Setup — 5 Gemini + 1 Pollinations per PC</h3>
+      <div style="font-size:10px;color:#7880a0;margin-bottom:8px">Paste 5 Gemini keys (one per line) + 1 Pollinations token, select a PC, and register all 6 at once.</div>
+      <div class="row-form" style="margin-bottom:8px">
+        <div>
+          <label>PC IP</label>
+          <select id="bulkIp">
+            <option>192.168.0.3</option><option>192.168.0.8</option>
+            <option>192.168.0.9</option><option>192.168.0.10</option>
+            <option>192.168.0.11</option><option>192.168.0.12</option>
+          </select>
+        </div>
+        <div style="flex:2">
+          <label>5 Gemini API Keys (one per line)</label>
+          <textarea id="bulkGemini" rows="3" style="width:100%;background:#07080d;border:1px solid #2a2e45;border-radius:6px;padding:5px 9px;color:#dde1f5;font-family:monospace;font-size:11px;resize:vertical" placeholder="AIzaSy...&#10;AIzaSy...&#10;AIzaSy...&#10;AIzaSy...&#10;AIzaSy..."></textarea>
+        </div>
+        <div style="flex:1">
+          <label>Pollinations Token (1 key)</label>
+          <input id="bulkPollen" placeholder="sk-pol-... or leave blank for free">
+          <div style="font-size:9px;color:#4a5568;margin-top:3px">Leave blank = anonymous (rate-limited)</div>
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn green" onclick="bulkAddPC()">Add All 6</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <h3 style="margin-bottom:10px">Add Single Key</h3>
+      <div class="row-form">
+        <div>
+          <label>Provider</label>
+          <select id="kProvider" onchange="updateKeyDefaults()">
+            <option value="pollinations">Pollinations</option>
+            <option value="gemini">Gemini (LiteLLM)</option>
+          </select>
+        </div>
+        <div>
+          <label>PC IP</label>
+          <select id="kIp">
+            <option>192.168.0.3</option>
+            <option>192.168.0.8</option>
+            <option>192.168.0.9</option>
+            <option>192.168.0.10</option>
+            <option>192.168.0.11</option>
+            <option>192.168.0.12</option>
+          </select>
+        </div>
+        <div style="min-width:60px;max-width:80px">
+          <label>Port</label>
+          <input id="kPort" value="4050" type="number">
+        </div>
+        <div style="flex:2">
+          <label>API Key</label>
+          <input id="kKey" placeholder="sk-... or AIzaSy...">
+        </div>
+        <div>
+          <label>Label</label>
+          <input id="kLabel" placeholder="account@email.com">
+        </div>
+        <div style="min-width:80px;max-width:90px">
+          <label>Daily Limit</label>
+          <input id="kLimit" value="1500" type="number">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn pri" onclick="addKey()">Add</button>
+        </div>
+      </div>
+    </div>
+    </div> <!-- end single-key card -->
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3>Registered Keys</h3>
+      <div style="display:flex;gap:8px">
+        <select id="filterProvider" onchange="loadKeys()" style="width:auto;padding:3px 8px;font-size:11px">
+          <option value="">All providers</option>
+          <option value="pollinations">Pollinations</option>
+          <option value="gemini">Gemini</option>
+        </select>
+        <button class="btn sm green" onclick="syncBalances()">Sync Pollen</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Provider</th><th>PC</th><th>Port</th>
+          <th>Label</th><th>Key (masked)</th><th>Balance/Pollen</th>
+          <th>Used Today</th><th>Limit</th><th>Enabled</th><th></th>
+        </tr></thead>
+        <tbody id="keysBody">
+          <tr><td colspan="11" style="color:#4a5568;text-align:center;padding:20px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Models -->
+  <div class="pane" id="pane-models">
+    <!-- Best-for quick picker -->
+    <div class="card" style="margin-bottom:12px;border-color:#3fdc8a22">
+      <h3 style="color:#3fdc8a;margin-bottom:8px">Best Model For… (workflow use)</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn sm" onclick="filterTag('fast')">Fast / Quick</button>
+        <button class="btn sm" onclick="filterTag('coding')">Coding</button>
+        <button class="btn sm" onclick="filterTag('search')">Web Search</button>
+        <button class="btn sm" onclick="filterTag('reasoning')">Reasoning</button>
+        <button class="btn sm" onclick="filterTag('vision')">Vision / Images</button>
+        <button class="btn sm" onclick="filterTag('safety')">Safety Filter</button>
+        <button class="btn sm" onclick="filterTag('audio')">Audio / TTS</button>
+        <button class="btn sm" onclick="filterTag('long-context')">Long Docs</button>
+        <button class="btn sm" onclick="filterTag('multilingual')">Multilingual</button>
+        <button class="btn sm" onclick="filterTag('creative')">Creative</button>
+        <button class="btn sm" onclick="filterTag('best')">Best / Flagship</button>
+        <button class="btn sm" style="margin-left:auto" onclick="filterTag('')">Show All</button>
+      </div>
+      <div style="font-size:10px;color:#4a5568">
+        In workflows: <code style="color:#6b8cff">POST /api/ai-router/pick-model</code> with <code>{"tags":["coding"]}</code> or <code>{"tier":"fast"}</code>
+        — returns the best available model ID to use.
+      </div>
+    </div>
+
+    <!-- Key override tester -->
+    <div class="card" style="margin-bottom:12px;border-color:#facc1522">
+      <h3 style="color:#facc15;margin-bottom:8px">Test — PC2 uses PC1's API key for a job</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:2;min-width:140px">
+          <label>Model ID</label>
+          <input id="testModel" value="gemini-2.5-flash">
+        </div>
+        <div style="flex:1;min-width:100px">
+          <label>Preferred PC IP (optional)</label>
+          <input id="testPc" placeholder="e.g. 192.168.0.3">
+        </div>
+        <div style="flex:0.5;min-width:60px">
+          <label>Key ID (optional)</label>
+          <input id="testKeyId" placeholder="e.g. 2" type="number">
+        </div>
+        <div style="flex:3;min-width:180px">
+          <label>Prompt</label>
+          <input id="testPrompt" value="Say which Gemini key and PC you are using, in one sentence.">
+        </div>
+        <button class="btn pri" onclick="testKeyOverride()">Send</button>
+      </div>
+      <pre id="testResult" style="background:#020305;border:1px solid #1e2030;border-radius:6px;padding:8px;font-size:10px;color:#94a3b8;margin-top:8px;min-height:40px;white-space:pre-wrap">Result will appear here…</pre>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3>All Models <span id="modelCount" style="color:#4a5568;font-weight:400"></span></h3>
+      <select id="filterModel" onchange="loadModels()" style="width:auto;padding:3px 8px;font-size:11px">
+        <option value="">All Providers</option>
+        <option value="pollinations">Pollinations</option>
+        <option value="gemini">Gemini API</option>
+      </select>
+    </div>
+    <div class="model-grid" id="modelGrid">Loading…</div>
+  </div>
+
+  <!-- Routing Rules -->
+  <div class="pane" id="pane-rules">
+    <div class="card" style="margin-bottom:12px;border-color:#6b8cff22">
+      <h3 style="margin-bottom:10px">How Rules Work</h3>
+      <div style="font-size:10px;color:#7880a0;line-height:1.8">
+        Rules are checked <b style="color:#dde1f5">in priority order</b> (highest first) for every AI request from any page on this site.<br>
+        If a rule matches, it overrides the default model selection.<br>
+        <b style="color:#6b8cff">job_type</b> — set by the calling page/workflow (e.g. "coding", "recipe", "search", "chat")<br>
+        <b style="color:#6b8cff">keyword</b> — matches if the user's text contains the keyword<br>
+        <b style="color:#6b8cff">tags</b> — matches if the job has any of these capability tags<br>
+        <b style="color:#6b8cff">always</b> — applies to every request (use as a global default)
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <h3 style="margin-bottom:10px">Add Rule</h3>
+      <div class="row-form" style="margin-bottom:8px">
+        <div style="flex:2">
+          <label>Rule Name</label>
+          <input id="rName" placeholder="e.g. Coding jobs → Qwen3 Coder">
+        </div>
+        <div style="min-width:70px;max-width:80px">
+          <label>Priority</label>
+          <input id="rPriority" type="number" value="10">
+        </div>
+      </div>
+      <div class="row-form" style="margin-bottom:8px">
+        <div>
+          <label>Condition Type</label>
+          <select id="rCondType">
+            <option value="job_type">job_type — exact job type</option>
+            <option value="keyword">keyword — text contains word</option>
+            <option value="tags">tags — job has capability tag</option>
+            <option value="always">always — every request</option>
+          </select>
+        </div>
+        <div style="flex:1.5">
+          <label>Condition Value</label>
+          <input id="rCondVal" placeholder="e.g. coding  OR  recipe  OR  python,debug">
+        </div>
+      </div>
+      <div style="font-size:10px;color:#4a5568;margin-bottom:8px">
+        Action — fill ONE of these (model ID takes priority over tags):
+      </div>
+      <div class="row-form">
+        <div style="flex:1.5">
+          <label>Force Model ID (exact)</label>
+          <input id="rModel" placeholder="e.g. qwen-coder  or  gemini-search">
+        </div>
+        <div style="flex:1.5">
+          <label>OR — Pick best model with tags</label>
+          <input id="rTags" placeholder="e.g. coding,fast  or  search,realtime">
+        </div>
+        <div>
+          <label>Prefer Tier</label>
+          <select id="rTier">
+            <option value="">Any tier</option>
+            <option value="fast">fast</option>
+            <option value="standard">standard</option>
+            <option value="large">large</option>
+            <option value="reasoning">reasoning</option>
+          </select>
+        </div>
+        <div>
+          <label>Force Provider</label>
+          <select id="rProvider">
+            <option value="">Any provider</option>
+            <option value="pollinations">Pollinations</option>
+            <option value="gemini">Gemini</option>
+          </select>
+        </div>
+        <div style="flex:1.5">
+          <label>Notes</label>
+          <input id="rNotes" placeholder="why this rule exists">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn pri" onclick="addRule()">Add Rule</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3>Active Rules</h3>
+      <div style="font-size:10px;color:#4a5568">Evaluated highest priority first</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Pri</th><th>Name</th><th>Condition</th><th>Value</th>
+          <th>Action Model</th><th>Action Tags</th><th>Tier</th><th>Provider</th>
+          <th>Notes</th><th>On</th><th></th>
+        </tr></thead>
+        <tbody id="rulesBody">
+          <tr><td colspan="11" style="color:#4a5568;text-align:center;padding:20px">No rules yet — add one above</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Quick-add presets -->
+    <div class="card" style="margin-top:12px">
+      <h3 style="margin-bottom:8px">Quick Presets</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button class="btn sm green" onclick="addPreset('coding')">Coding → Qwen3 Coder</button>
+        <button class="btn sm green" onclick="addPreset('search')">Search → Gemini Search</button>
+        <button class="btn sm green" onclick="addPreset('recipe')">Recipe → Mistral</button>
+        <button class="btn sm green" onclick="addPreset('image')">Image jobs → Flux Pro</button>
+        <button class="btn sm green" onclick="addPreset('safety')">Safety check → Qwen3Guard</button>
+        <button class="btn sm green" onclick="addPreset('fast-default')">Default → Fast model</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jobs -->
+  <div class="pane" id="pane-jobs">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3>Job Ledger</h3>
+      <button class="btn sm" onclick="loadJobs()">Refresh</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Time</th><th>Provider</th><th>Model</th><th>PC</th>
+          <th>Tokens In</th><th>Tokens Out</th><th>Pollen</th>
+          <th>Status</th><th>Latency</th>
+        </tr></thead>
+        <tbody id="jobsBody">
+          <tr><td colspan="9" style="color:#4a5568;text-align:center;padding:20px">No jobs yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Connect PC -->
+  <div class="pane" id="pane-connect">
+
+    <!-- Top info strip -->
+    <div style="background:#0a1a0a;border:1px solid #3fdc8a22;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11px;display:flex;gap:32px;flex-wrap:wrap;color:#94a3b8">
+      <div><span style="color:#3fdc8a;font-weight:700">This tab</span> — add any PC that needs to USE Gemini / Pollinations</div>
+      <div>That PC gets <strong style="color:#fff">zero keys of its own</strong> — it just calls <code style="color:#6b8cff">192.168.0.3:4050</code></div>
+      <div>The router round-robins across ALL keys in the pool automatically</div>
+    </div>
+
+    <div class="grid2" style="gap:14px">
+
+      <!-- Left: manual ref -->
+      <div>
+        <div class="card" style="border-color:#6b8cff22">
+          <h3 style="color:#6b8cff;margin-bottom:10px">Settings for the Client PC</h3>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:6px">Add to <code>settings.json</code> or environment:</div>
+          <pre style="background:#020305;border:1px solid #1e2030;border-radius:6px;padding:10px;font-size:11px;color:#facc15;overflow-x:auto">{
+  "LITELLM_URL":   "http://192.168.0.3:4050",
+  "LITELLM_KEY":   "sk-local",
+  "LITELLM_MODEL": "gemini-2.0-flash"
+}</pre>
+          <div style="font-size:11px;color:#94a3b8;margin:10px 0 4px">Quick test from the client PC:</div>
+          <pre style="background:#020305;border:1px solid #1e2030;border-radius:6px;padding:10px;font-size:10px;color:#3fdc8a;overflow-x:auto">curl -X POST http://192.168.0.3:4050/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gemini-2.0-flash",
+       "messages":[{"role":"user","content":"hello"}]}'</pre>
+          <div style="font-size:11px;color:#94a3b8;margin:10px 0 4px">Pollinations (free tier, no key):</div>
+          <pre style="background:#020305;border:1px solid #1e2030;border-radius:6px;padding:10px;font-size:10px;color:#c084fc;overflow-x:auto">curl -X POST http://192.168.0.3:4050/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"pollinations",
+       "messages":[{"role":"user","content":"hello"}]}'</pre>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3 style="margin-bottom:8px">What Auto-Setup Does</h3>
+          <div style="font-size:11px;line-height:2.2;color:#94a3b8">
+            <div><span style="color:#3fdc8a">①</span> SSH into the remote PC</div>
+            <div><span style="color:#3fdc8a">②</span> Copies <code>ai_router.py</code> → <code>/root/</code></div>
+            <div><span style="color:#3fdc8a">③</span> Installs Flask + requests if missing</div>
+            <div><span style="color:#3fdc8a">④</span> Creates systemd service (starts on boot)</div>
+            <div><span style="color:#3fdc8a">⑤</span> Patches <code>settings.json</code> — sets LITELLM_URL to 192.168.0.3:4050</div>
+            <div><span style="color:#3fdc8a">⑥</span> Tests the PC can reach the key pool</div>
+            <div><span style="color:#3fdc8a">⑦</span> Tests the key pool responds correctly</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: SSH auto-setup -->
+      <div>
+        <div class="card" style="border-color:#facc1522">
+          <h3 style="color:#facc15;margin-bottom:12px">Auto Setup via SSH</h3>
+          <div style="margin-bottom:8px">
+            <label>Client PC IP Address</label>
+            <input id="cpIp" placeholder="e.g. 192.168.0.20">
+          </div>
+          <div style="margin-bottom:8px">
+            <label>Root Password</label>
+            <input id="cpPass" type="password" placeholder="SSH root password">
+          </div>
+          <div style="margin-bottom:12px">
+            <label>Local port on that PC for the proxy (default 4050)</label>
+            <input id="cpPort" value="4050">
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <button class="btn pri" id="cpBtn" onclick="connectPc()">Setup PC →</button>
+            <button class="btn" onclick="testPc()">Test Only</button>
+          </div>
+          <div style="font-size:10px;color:#4a5568;margin-bottom:6px">Log:</div>
+          <pre id="cpLog" style="background:#020305;border:1px solid #1e2030;border-radius:6px;padding:10px;font-size:10px;color:#94a3b8;min-height:160px;max-height:360px;overflow-y:auto;white-space:pre-wrap">Enter IP + password then click Setup PC.</pre>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3 style="margin-bottom:8px">Client PCs Using This Router</h3>
+          <div style="font-size:10px;color:#4a5568;margin-bottom:8px">PCs that have called this router (from job log)</div>
+          <div id="connectedPcs" style="font-size:11px;color:#4a5568">Loading…</div>
+          <button class="btn sm" style="margin-top:8px" onclick="loadConnectedPcs()">Refresh</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Chat -->
+  <div class="pane" id="pane-chat">
+    <div class="grid2" style="margin-bottom:12px">
+      <!-- Routing info panel -->
+      <div class="card" style="border-color:#6b8cff22">
+        <h3 style="margin-bottom:10px">Last Routing Decision</h3>
+        <div id="routingPanel" style="font-size:11px;line-height:2">
+          <div style="color:#4a5568">Send a message to see routing info…</div>
+        </div>
+      </div>
+      <!-- Config -->
+      <div class="card">
+        <h3 style="margin-bottom:10px">Request Settings</h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div>
+            <label>Force Model (blank = let router decide)</label>
+            <input id="chatModel" placeholder="e.g. qwen-coder  or leave blank">
+          </div>
+          <div>
+            <label>Job Type (for rules matching)</label>
+            <select id="chatJobType">
+              <option value="chat">chat (default)</option>
+              <option value="coding">coding</option>
+              <option value="search">search</option>
+              <option value="recipe">recipe</option>
+              <option value="image">image</option>
+              <option value="safety">safety</option>
+              <option value="general">general</option>
+            </select>
+          </div>
+          <div>
+            <label>Tags (comma-separated, for model picking)</label>
+            <input id="chatTags" placeholder="e.g. fast,chat  or  coding,debug">
+          </div>
+          <div class="row-form">
+            <div>
+              <label>System Prompt</label>
+              <input id="chatSystem" value="You are JARVIS, a helpful AI assistant.">
+            </div>
+            <div style="min-width:80px;max-width:90px">
+              <label>Max Tokens</label>
+              <input id="chatTokens" type="number" value="400">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="chat-box" id="chatBox">
+        <div style="color:#4a5568;font-size:11px">Ask anything — the router picks the best PC and model. Routing info appears above after each reply.</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="chatInput" placeholder="Type a message…" style="flex:1"
+               onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="btn pri" onclick="sendChat()">Send</button>
+        <button class="btn sm" onclick="clearChat()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Key Groups -->
+  <div class="pane" id="pane-sitekeys">
+    <div class="card" style="margin-bottom:12px;border-color:#3fdc8a22">
+      <div style="font-size:11px;color:#94a3b8;line-height:1.9">
+        <strong style="color:#3fdc8a">Site API Keys</strong> — generate a key for a PC, app, or n8n workflow.
+        Each key can be limited to specific models, tags, or tiers.
+        The PC uses this key to call <code style="color:#6b8cff">http://192.168.0.3:4050/v1/chat/completions</code> — the router enforces which models it can access.
+      </div>
+    </div>
+
+    <!-- Generate -->
+    <div class="card" style="margin-bottom:12px;border-color:#6b8cff22">
+      <h3 style="color:#6b8cff;margin-bottom:10px">Generate New Key</h3>
+      <div class="row-form" style="margin-bottom:8px">
+        <div style="flex:2">
+          <label>Label (e.g. "PC2 text jobs", "n8n workflow")</label>
+          <input id="skLabel" placeholder="PC2 — text + coding jobs">
+        </div>
+        <div style="flex:0.8">
+          <label>Daily Limit (0=unlimited)</label>
+          <input id="skLimit" type="number" value="0">
+        </div>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="margin-bottom:6px;display:block">Allowed Tiers (leave blank = all tiers)</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="tierPicker">
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#3fdc8a;cursor:pointer"><input type="checkbox" value="fast"> Fast</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#6b8cff;cursor:pointer"><input type="checkbox" value="standard"> Standard</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#c084fc;cursor:pointer"><input type="checkbox" value="large"> Large/Pro</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#facc15;cursor:pointer"><input type="checkbox" value="reasoning"> Reasoning</label>
+        </div>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="margin-bottom:6px;display:block">Allowed Tags (leave blank = all tags)</label>
+        <div style="display:flex;gap:5px;flex-wrap:wrap" id="tagPicker">
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="chat"> chat</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="coding"> coding</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="search"> search</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="reasoning"> reasoning</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="vision"> vision</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="fast"> fast</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="safety"> safety</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="audio"> audio</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="multilingual"> multilingual</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="creative"> creative</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#94a3b8;cursor:pointer"><input type="checkbox" value="best"> best/flagship</label>
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <label>Or pin to specific Model IDs (comma-separated, overrides tags/tier)</label>
+        <input id="skModels" placeholder="e.g. gemini-2.5-flash, qwen-coder, claude">
+      </div>
+      <button class="btn green" onclick="generateSiteKey()">Generate Key</button>
+      <div id="skNewKey" style="margin-top:10px;font-size:12px;color:#3fdc8a;font-family:monospace;word-break:break-all"></div>
+    </div>
+
+    <!-- Key list -->
+    <h3 style="margin-bottom:8px">Active Keys</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Key</th><th>Label</th><th>Allowed Models/Tags/Tier</th>
+          <th>Calls Today</th><th>Total</th><th>Limit</th><th>Last Used</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="siteKeysBody"><tr><td colspan="8" style="color:#4a5568;text-align:center">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Route Map -->
+  <div class="pane" id="pane-diagram">
+    <h3 style="margin-bottom:14px">AI Router — Route Map</h3>
+    <div id="routeDiagram" style="font-family:monospace;font-size:11px;line-height:1.7">Loading…</div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+const BASE = '/api/ai-router';
+let chatHistory = [];
+
+function showTab(name) {
+  const panes = ['fleet','keys','models','rules','jobs','chat','connect','sitekeys','diagram'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', panes[i] === name));
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('pane-'+name).classList.add('active');
+  if (name==='fleet')    loadKeyStats();
+  if (name==='keys')     loadKeys();
+  if (name==='models')   loadModels();
+  if (name==='rules')    loadRules();
+  if (name==='jobs')     loadJobs();
+  if (name==='connect')  loadConnectedPcs();
+  if (name==='sitekeys') loadSiteKeys();
+  if (name==='diagram')  loadDiagram();
+}
+
+function toast(msg, err=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  t.style.borderColor = err ? '#f8717144' : '#6b8cff44';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.style.display='none', 3000);
+}
+
+// ── Status ──────────────────────────────────────────────────────────────────
+async function loadStatus() {
+  try {
+    const d = await fetch(BASE+'/status').then(r=>r.json());
+    document.getElementById('statGemKeys').textContent = d.keys?.gemini ?? '—';
+    document.getElementById('statPolKeys').textContent = d.keys?.pollinations ?? '—';
+    const jobs = d.jobs_recent || {};
+    document.getElementById('statJobs').textContent = (jobs.ok||0) + '✓ ' + (jobs.fail||0) + '✗';
+  } catch(e) { console.warn(e); }
+}
+
+// ── Fleet ────────────────────────────────────────────────────────────────────
+async function loadFleet() { loadKeyStats(); }
+
+async function loadKeyStats() {
+  try {
+    const d = await fetch(BASE+'/key-stats').then(r=>r.json());
+    if (!d.ok) return;
+
+    // Gemini key pool
+    const gemKeys = d.by_provider['gemini'] || [];
+    const rrGem   = d.rr_index['gemini'] || 0;
+    const gEl = document.getElementById('keyPoolGemini');
+    if (gEl) {
+      gEl.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h3 style="color:#6b8cff">Gemini Key Pool (${gemKeys.length} keys) — Round-Robin</h3>
+          <span style="font-size:10px;color:#4a5568">Next key index: #${rrGem % Math.max(gemKeys.filter(k=>k.enabled).length,1)}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+          ${gemKeys.map((k,i)=>{
+            const eligible = gemKeys.filter(x=>x.enabled);
+            const isNext = eligible.indexOf(k) === (rrGem % Math.max(eligible.length,1));
+            return `<div style="background:#0d0f17;border:1px solid ${isNext?'#6b8cff':'#1e2030'};border-radius:8px;padding:10px;${!k.enabled?'opacity:.4':''}">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+                <span style="font-weight:700;color:#fff">Key #${k.id}</span>
+                ${isNext?'<span style="background:#1a2a5c;color:#6b8cff;font-size:9px;padding:1px 6px;border-radius:8px">NEXT</span>':''}
+                <span style="font-size:9px;color:#4a5568">${k.label||'unnamed'}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:#7880a0">
+                <span>Today</span><span style="color:${k.daily_used>k.daily_limit*0.8?'#f87171':'#3fdc8a'}">${k.daily_used}/${k.daily_limit}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;color:#7880a0;margin-top:2px">
+                <span>Recent calls</span><span style="color:#dde1f5">${k.calls_recent}</span>
+              </div>
+              ${k.last_used?`<div style="font-size:9px;color:#4a5568;margin-top:3px">Last: ${new Date(k.last_used).toLocaleTimeString()}</div>`:''}
+              <div style="background:#1e2030;border-radius:4px;height:4px;margin-top:6px;overflow:hidden">
+                <div style="height:100%;background:${k.daily_used>k.daily_limit*0.8?'#f87171':'#6b8cff'};width:${Math.min(100,Math.round(k.daily_used/Math.max(k.daily_limit,1)*100))}%"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }
+
+    // Pollinations key pool
+    const polKeys = d.by_provider['pollinations'] || [];
+    const pEl = document.getElementById('keyPoolPollinations');
+    if (pEl) {
+      pEl.innerHTML = `
+        <div style="margin-bottom:8px"><h3 style="color:#3fdc8a">Pollinations Key Pool (${polKeys.length} keys) — Highest Balance First</h3></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+          ${polKeys.map(k=>`<div style="background:#0d0f17;border:1px solid #1e2030;border-radius:8px;padding:10px;${!k.enabled?'opacity:.4':''}">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+              <span style="font-weight:700;color:#fff">Key #${k.id}</span>
+              <span style="font-size:9px;color:#4a5568">${k.label||'unnamed'}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#7880a0">
+              <span>Balance</span><span style="color:${k.balance>10?'#3fdc8a':k.balance>0?'#facc15':'#f87171'}">${k.balance.toFixed(1)} 🌻</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#7880a0;margin-top:2px">
+              <span>Recent calls</span><span style="color:#dde1f5">${k.calls_recent}</span>
+            </div>
+          </div>`).join('')}
+        </div>`;
+    }
+
+    // Usage log
+    const logEl = document.getElementById('usageLog');
+    if (logEl) {
+      const jobs = d.recent_jobs || [];
+      logEl.innerHTML = jobs.length ? jobs.map(j=>`<tr>
+        <td style="color:#4a5568;font-size:10px">${new Date(j.created_at).toLocaleTimeString()}</td>
+        <td><span style="color:#6b8cff;font-weight:700">#${j.key_id||'?'}</span></td>
+        <td><span class="badge badge-${j.provider==='gemini'?'gem':'pol'}">${j.provider}</span></td>
+        <td style="font-size:10px;color:#dde1f5">${j.model_id||'—'}</td>
+        <td style="font-size:10px;color:#7880a0">${j.pc_ip||'—'}</td>
+        <td><span class="badge badge-${j.status==='ok'?'ok':'err'}">${j.status}</span></td>
+        <td style="color:#94a3b8;font-size:10px">${j.latency_ms||'—'}</td>
+      </tr>`).join('') : '<tr><td colspan="7" style="color:#4a5568;text-align:center;padding:16px">No requests yet</td></tr>';
+    }
+  } catch(e) {
+    const g = document.getElementById('keyPoolGemini');
+    if (g) g.innerHTML = `<div style="color:#f87171">Error loading key stats: ${e.message}</div>`;
+  }
+}
+
+// ── Keys ─────────────────────────────────────────────────────────────────────
+function updateKeyDefaults() {
+  const p = document.getElementById('kProvider').value;
+  document.getElementById('kPort').value = p === 'gemini' ? 4000 : 4050;
+  document.getElementById('kLimit').value = p === 'gemini' ? 1500 : 99999;
+}
+
+async function loadKeys() {
+  const prov = document.getElementById('filterProvider').value;
+  const body = document.getElementById('keysBody');
+  try {
+    const keys = await fetch(BASE+'/keys'+(prov?'?provider='+prov:'')).then(r=>r.json());
+    if (!keys.length) {
+      body.innerHTML = '<tr><td colspan="11" style="color:#4a5568;text-align:center;padding:20px">No keys registered yet</td></tr>';
+      return;
+    }
+    body.innerHTML = keys.map(k => `
+      <tr>
+        <td>${k.id}</td>
+        <td><span class="badge ${k.provider==='gemini'?'badge-gem':'badge-pol'}">${k.provider}</span></td>
+        <td style="font-family:monospace">${k.pc_ip}</td>
+        <td>${k.port}</td>
+        <td style="color:#7880a0">${k.label||'—'}</td>
+        <td style="font-family:monospace;font-size:10px">${maskKey(k.api_key)}</td>
+        <td>${k.provider==='pollinations' ? (k.balance||0).toFixed(2)+' 🌻' : '—'}</td>
+        <td>${k.daily_used}</td>
+        <td>${k.daily_limit}</td>
+        <td><span class="dot ${k.enabled?'on':'off'}"></span></td>
+        <td style="display:flex;gap:4px">
+          <button class="btn sm" onclick="toggleKey(${k.id},${k.enabled?0:1})">${k.enabled?'Disable':'Enable'}</button>
+          <button class="btn sm danger" onclick="removeKey(${k.id})">Del</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) { body.innerHTML = `<tr><td colspan="11" style="color:#f87171">${e.message}</td></tr>`; }
+}
+
+function maskKey(k) {
+  if (!k || k==='free') return 'free';
+  return k.slice(0,8)+'…'+k.slice(-4);
+}
+
+async function bulkAddPC() {
+  const ip       = document.getElementById('bulkIp').value;
+  const gemKeys  = document.getElementById('bulkGemini').value.trim().split('\n').map(s=>s.trim()).filter(Boolean);
+  const polToken = document.getElementById('bulkPollen').value.trim();
+  if (!gemKeys.length && !polToken) { toast('Enter at least one key', true); return; }
+
+  let added = 0, errors = 0;
+  for (let i=0; i<gemKeys.length; i++) {
+    const k = gemKeys[i];
+    if (!k) continue;
+    const r = await fetch(BASE+'/keys',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({provider:'gemini',pc_ip:ip,port:4000,api_key:k,
+        label:`key-${i+1}@${ip}`,daily_limit:1500})}).then(r=>r.json());
+    r.ok ? added++ : errors++;
+  }
+  if (polToken) {
+    const r = await fetch(BASE+'/keys',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({provider:'pollinations',pc_ip:ip,port:4050,
+        api_key:polToken,label:`pol@${ip}`,daily_limit:99999})}).then(r=>r.json());
+    r.ok ? added++ : errors++;
+  } else {
+    // Register anonymous free slot so this PC appears in fleet
+    const r = await fetch(BASE+'/keys',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({provider:'pollinations',pc_ip:ip,port:4050,
+        api_key:'free',label:`pol-free@${ip}`,daily_limit:99999})}).then(r=>r.json());
+    r.ok ? added++ : errors++;
+  }
+
+  toast(`PC ${ip}: added ${added} key(s)${errors?' ('+errors+' failed)':''}`);
+  document.getElementById('bulkGemini').value='';
+  document.getElementById('bulkPollen').value='';
+  loadKeys(); loadFleet(); loadStatus();
+}
+
+async function addKey() {
+  const body = {
+    provider: document.getElementById('kProvider').value,
+    pc_ip:    document.getElementById('kIp').value,
+    port:     document.getElementById('kPort').value,
+    api_key:  document.getElementById('kKey').value.trim(),
+    label:    document.getElementById('kLabel').value.trim(),
+    daily_limit: document.getElementById('kLimit').value,
+  };
+  if (!body.api_key) { toast('API key required', true); return; }
+  const r = await fetch(BASE+'/keys',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+  if (r.ok) { toast('Key added'); document.getElementById('kKey').value=''; loadKeys(); loadStatus(); }
+  else toast(r.error||'Error', true);
+}
+
+async function removeKey(id) {
+  if (!confirm('Delete key '+id+'?')) return;
+  await fetch(BASE+'/keys/'+id,{method:'DELETE'});
+  toast('Key removed'); loadKeys(); loadStatus();
+}
+
+async function toggleKey(id, enabled) {
+  await fetch(BASE+'/keys/'+id+'/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
+  loadKeys();
+}
+
+async function syncBalances() {
+  toast('Syncing pollen balances…');
+  const r = await fetch(BASE+'/sync',{method:'POST'}).then(r=>r.json());
+  toast(`Synced ${r.updated} key(s)`);
+  loadKeys();
+}
+
+// ── Models ───────────────────────────────────────────────────────────────────
+let _allModels = [];
+let _activeTag = '';
+
+function filterTag(tag) {
+  _activeTag = tag;
+  renderModels();
+}
+
+async function loadModels() {
+  const prov = document.getElementById('filterModel').value;
+  const g = document.getElementById('modelGrid');
+  try {
+    _allModels = await fetch(BASE+'/models'+(prov?'?provider='+prov:'')).then(r=>r.json());
+    renderModels();
+  } catch(e) { g.innerHTML = `<div style="color:#f87171">${e.message}</div>`; }
+}
+
+function renderModels() {
+  const g = document.getElementById('modelGrid');
+  let models = _allModels;
+  if (_activeTag) {
+    models = models.filter(m => (m.tags||'').includes(_activeTag));
+  }
+  const cnt = document.getElementById('modelCount');
+  if (cnt) cnt.textContent = `(${models.length})`;
+
+  const tierColor = {fast:'#3fdc8a', standard:'#6b8cff', large:'#c084fc', reasoning:'#facc15'};
+  const tierLabel = {fast:'Fast', standard:'Standard', large:'Large/Pro', reasoning:'Reasoning'};
+
+  g.innerHTML = models.map(m => {
+    const tc   = tierColor[m.tier] || '#7880a0';
+    const tags = (m.tags||'').split(',').filter(Boolean);
+    const tagBadges = tags.slice(0,6).map(t=>`<span class="tag" style="cursor:pointer" onclick="filterTag('${t.trim()}')">${t.trim()}</span>`).join('');
+    const provBadge = m.provider==='gemini'
+      ? `<span class="badge badge-gem">Gemini API</span>`
+      : `<span class="badge badge-pol">Pollinations</span>`;
+    return `
+    <div class="model-card ${m.enabled?'':'disabled'}" style="border-color:${m.enabled?tc+'33':'#1e2030'}">
+      <div class="model-card-top">
+        <div class="model-info">
+          <div class="model-name">${escHtml(m.display||m.model_id)}</div>
+          <div class="model-id" style="color:#4a5568">${m.model_id}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;flex-shrink:0">
+          ${provBadge}
+          <span style="font-size:9px;font-weight:700;color:${tc}">${tierLabel[m.tier]||m.tier}</span>
+        </div>
+      </div>
+      ${m.description ? `<div class="model-desc" style="color:#94a3b8;font-size:10px;line-height:1.5">${escHtml(m.description)}</div>` : ''}
+      <div style="display:flex;flex-wrap:wrap;gap:2px;align-items:center;margin-top:2px">
+        ${tagBadges}
+        <div style="margin-left:auto;display:flex;gap:3px">
+          <button class="btn sm" title="Use this model" onclick="document.getElementById('testModel').value='${m.model_id}';showTab('models')">Use</button>
+          <button class="btn sm" onclick="toggleModel(${m.id},${m.enabled?0:1})">${m.enabled?'Off':'On'}</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:#4a5568;padding:20px;text-align:center">No models match this filter</div>';
+}
+
+async function testKeyOverride() {
+  const res = document.getElementById('testResult');
+  res.textContent = 'Sending…';
+  const model   = document.getElementById('testModel').value.trim() || 'gemini-2.5-flash';
+  const pc      = document.getElementById('testPc').value.trim();
+  const keyId   = parseInt(document.getElementById('testKeyId').value) || 0;
+  const prompt  = document.getElementById('testPrompt').value.trim();
+  try {
+    const r = await fetch(BASE+'/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model, preferred_pc: pc, key_id: keyId,
+        messages: [{role:'user', content: prompt}],
+        max_tokens: 200
+      })
+    });
+    const d = await r.json();
+    res.textContent = d.ok
+      ? `✓ key_id=#${d.key_id} pc=${d.pc} provider=${d.provider}\n\n${d.text}`
+      : `✗ ${d.error}`;
+  } catch(e) { res.textContent = 'Error: '+e.message; }
+}
+
+async function toggleModel(id, enabled) {
+  await fetch(BASE+'/models/'+id+'/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
+  loadModels();
+}
+
+// ── Jobs ─────────────────────────────────────────────────────────────────────
+async function loadJobs() {
+  const body = document.getElementById('jobsBody');
+  try {
+    const jobs = await fetch(BASE+'/jobs?limit=100').then(r=>r.json());
+    if (!jobs.length) {
+      body.innerHTML = '<tr><td colspan="9" style="color:#4a5568;text-align:center;padding:20px">No jobs yet</td></tr>';
+      return;
+    }
+    body.innerHTML = jobs.map(j => {
+      const stat = j.status==='ok'?'badge-ok':j.status==='rate_limit'?'badge-rl':'badge-err';
+      return `<tr>
+        <td style="font-size:10px;color:#7880a0">${j.ts.slice(11,19)}</td>
+        <td><span class="badge ${j.provider==='gemini'?'badge-gem':'badge-pol'}">${j.provider}</span></td>
+        <td style="font-size:10px;font-family:monospace">${j.model_id}</td>
+        <td style="font-family:monospace">${j.pc_ip}</td>
+        <td>${j.tokens_in}</td><td>${j.tokens_out}</td>
+        <td>${j.pollen_used||'—'}</td>
+        <td><span class="badge ${stat}">${j.status}</span></td>
+        <td>${j.latency_ms}ms</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { body.innerHTML = `<tr><td colspan="9" style="color:#f87171">${e.message}</td></tr>`; }
+}
+
+// ── Chat ─────────────────────────────────────────────────────────────────────
+function clearChat() {
+  chatHistory=[];
+  document.getElementById('chatBox').innerHTML='<div style="color:#4a5568;font-size:11px">Ask anything — routing info appears above after each reply.</div>';
+  document.getElementById('routingPanel').innerHTML='<div style="color:#4a5568">Send a message to see routing info…</div>';
+}
+
+function showRoutingPanel(r) {
+  const tier_color = {fast:'#3fdc8a',standard:'#6b8cff',large:'#c084fc',reasoning:'#facc15'};
+  document.getElementById('routingPanel').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:11px">
+      <div>
+        <div style="color:#4a5568;font-size:9px;text-transform:uppercase;letter-spacing:.06em">Provider</div>
+        <div style="color:${r.provider==='pollinations'?'#3fdc8a':'#6b8cff'};font-weight:700">${r.provider||'—'}</div>
+      </div>
+      <div>
+        <div style="color:#4a5568;font-size:9px;text-transform:uppercase;letter-spacing:.06em">PC</div>
+        <div style="color:#3fdc8a;font-weight:700;font-family:monospace">${r.pc||'—'}</div>
+      </div>
+      <div>
+        <div style="color:#4a5568;font-size:9px;text-transform:uppercase;letter-spacing:.06em">Model ID</div>
+        <div style="color:#a78bfa;font-family:monospace">${r.model_id||r.key_id||'—'}</div>
+      </div>
+      <div>
+        <div style="color:#4a5568;font-size:9px;text-transform:uppercase;letter-spacing:.06em">Job Type</div>
+        <div style="color:#dde1f5">${r.job_type||'—'}</div>
+      </div>
+      <div>
+        <div style="color:#4a5568;font-size:9px;text-transform:uppercase;letter-spacing:.06em">Rule Applied</div>
+        <div style="color:${r.rule?'#fb923c':'#4a5568'}">${r.rule||'none (auto)'}</div>
+      </div>
+      <div>
+        <div style="color:#4a5568;font-size:9px;text-transform:uppercase;letter-spacing:.06em">Tokens</div>
+        <div style="color:#dde1f5">${r.tokens_in||0} in · ${r.tokens_out||0} out</div>
+      </div>
+    </div>
+    <div style="margin-top:8px;padding-top:8px;border-top:1px solid #1e2030;font-size:10px;color:#4a5568">
+      Key ID: ${r.key_id||'—'} · Pollen: ${r.pollen_used||0}
+    </div>`;
+}
+
+async function sendChat() {
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+
+  const model   = document.getElementById('chatModel').value.trim();
+  const system  = document.getElementById('chatSystem').value;
+  const maxTok  = parseInt(document.getElementById('chatTokens').value)||400;
+  const jobType = document.getElementById('chatJobType').value;
+  const tags    = document.getElementById('chatTags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const box     = document.getElementById('chatBox');
+
+  chatHistory.push({role:'user',content:text});
+  box.innerHTML += `<div class="msg-user">You: ${escHtml(text)}</div>`;
+  box.scrollTop = box.scrollHeight;
+
+  const thinking = document.createElement('div');
+  thinking.className = 'msg-ai';
+  thinking.textContent = 'Routing…';
+  box.appendChild(thinking);
+  box.scrollTop = box.scrollHeight;
+
+  try {
+    // Use smart-chat so rules + auto-fallback apply
+    const payload = {messages: chatHistory, system, max_tokens: maxTok, job_type: jobType, tags};
+    if (model) payload.model = model;
+    const r = await fetch(BASE+'/smart-chat',{
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    }).then(r=>r.json());
+
+    if (r.ok) {
+      chatHistory.push({role:'assistant', content:r.text});
+      showRoutingPanel(r);
+      const dispModel = r.model_id || model || '?';
+      thinking.innerHTML = `<b>JARVIS:</b> ${escHtml(r.text)}<div class="msg-meta" style="margin-top:4px;font-size:9px;color:#4a5568">
+        <span style="color:${r.provider==='pollinations'?'#3fdc8a':'#6b8cff'}">${r.provider}</span> ·
+        <span style="color:#a78bfa">${dispModel}</span> ·
+        <span style="color:#3fdc8a">PC ${r.pc}</span>
+        ${r.rule?`· <span style="color:#fb923c">rule: ${escHtml(r.rule)}</span>`:''}
+      </div>`;
+      loadJobs();
+    } else {
+      thinking.innerHTML = `<span style="color:#f87171">Error: ${escHtml(r.error||'unknown')}</span>`;
+      chatHistory.pop();
+    }
+  } catch(e) {
+    thinking.innerHTML = `<span style="color:#f87171">${escHtml(e.message)}</span>`;
+    chatHistory.pop();
+  }
+  box.scrollTop = box.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ── Rules ─────────────────────────────────────────────────────────────────────
+async function loadRules() {
+  const body = document.getElementById('rulesBody');
+  try {
+    const rules = await fetch(BASE+'/rules').then(r=>r.json());
+    if (!rules.length) {
+      body.innerHTML='<tr><td colspan="11" style="color:#4a5568;text-align:center;padding:20px">No rules — add one above</td></tr>';
+      return;
+    }
+    body.innerHTML = rules.map(r => `
+      <tr style="${!r.enabled?'opacity:.4':''}">
+        <td><b>${r.priority}</b></td>
+        <td style="font-weight:600;color:#dde1f5">${escHtml(r.name)}</td>
+        <td><span class="badge" style="background:#1a2a5c;color:#6b8cff">${r.condition_type}</span></td>
+        <td style="font-family:monospace;font-size:10px;color:#facc15">${escHtml(r.condition_value||'—')}</td>
+        <td style="font-family:monospace;font-size:10px;color:#3fdc8a">${escHtml(r.action_model||'—')}</td>
+        <td style="font-size:10px;color:#7880a0">${escHtml(r.action_tags||'—')}</td>
+        <td style="font-size:10px">${r.action_tier||'—'}</td>
+        <td style="font-size:10px">${r.action_provider||'—'}</td>
+        <td style="font-size:10px;color:#4a5568">${escHtml(r.notes||'')}</td>
+        <td><span class="dot ${r.enabled?'on':'off'}"></span></td>
+        <td style="display:flex;gap:3px">
+          <button class="btn sm" onclick="toggleRule(${r.id},${r.enabled?0:1})">${r.enabled?'Off':'On'}</button>
+          <button class="btn sm danger" onclick="deleteRule(${r.id})">Del</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) { body.innerHTML=`<tr><td colspan="11" style="color:#f87171">${e.message}</td></tr>`; }
+}
+
+async function addRule() {
+  const body = {
+    name:           document.getElementById('rName').value.trim()||'New Rule',
+    priority:       parseInt(document.getElementById('rPriority').value)||0,
+    condition_type: document.getElementById('rCondType').value,
+    condition_value:document.getElementById('rCondVal').value.trim(),
+    action_model:   document.getElementById('rModel').value.trim(),
+    action_tags:    document.getElementById('rTags').value.trim(),
+    action_tier:    document.getElementById('rTier').value,
+    action_provider:document.getElementById('rProvider').value,
+    notes:          document.getElementById('rNotes').value.trim(),
+  };
+  if (!body.action_model && !body.action_tags && !body.action_tier && !body.action_provider) {
+    toast('Set at least one action (model, tags, tier, or provider)', true); return;
+  }
+  const r = await fetch(BASE+'/rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
+  if (r.ok) { toast('Rule added'); ['rName','rCondVal','rModel','rTags','rNotes'].forEach(id=>document.getElementById(id).value=''); loadRules(); }
+  else toast(r.error||'Error', true);
+}
+
+async function deleteRule(id) {
+  if (!confirm('Delete rule '+id+'?')) return;
+  await fetch(BASE+'/rules/'+id,{method:'DELETE'});
+  toast('Rule deleted'); loadRules();
+}
+
+async function toggleRule(id, enabled) {
+  await fetch(BASE+'/rules/'+id+'/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
+  loadRules();
+}
+
+const _PRESETS = {
+  'coding':       {name:'Coding jobs → Qwen3 Coder',  priority:20, condition_type:'job_type', condition_value:'coding',  action_model:'qwen-coder',    notes:'Code writing, review, debug'},
+  'search':       {name:'Search → Gemini Search',      priority:20, condition_type:'tags',     condition_value:'search',  action_model:'gemini-search', notes:'Real-time web search jobs'},
+  'recipe':       {name:'Recipe → Mistral Small',      priority:15, condition_type:'job_type', condition_value:'recipe',  action_model:'mistral',       notes:'Food/recipe queries'},
+  'image':        {name:'Image jobs → Flux Pro',       priority:20, condition_type:'job_type', condition_value:'image',   action_model:'flux-pro',      notes:'Image generation jobs'},
+  'safety':       {name:'Safety check → Qwen3Guard',   priority:30, condition_type:'job_type', condition_value:'safety',  action_model:'qwen-safety',   notes:'Content moderation pass'},
+  'fast-default': {name:'Default → Fast model',        priority:1,  condition_type:'always',   condition_value:'',        action_tags:'fast,chat', action_tier:'fast', notes:'Global fallback to fast model'},
+};
+
+async function addPreset(key) {
+  const p = _PRESETS[key];
+  if (!p) return;
+  const r = await fetch(BASE+'/rules',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}).then(r=>r.json());
+  if (r.ok) { toast('Preset added: '+p.name); loadRules(); }
+  else toast(r.error||'Error', true);
+}
+
+// ── Connect PC ────────────────────────────────────────────────────────────────
+async function connectPc() {
+  const ip   = document.getElementById('cpIp').value.trim();
+  const pass = document.getElementById('cpPass').value.trim();
+  const port = document.getElementById('cpPort').value.trim() || '4050';
+  if (!ip || !pass) { toast('IP and password required', true); return; }
+  const log = document.getElementById('cpLog');
+  log.textContent = 'Connecting to '+ip+' ...\n';
+  document.getElementById('cpBtn').disabled = true;
+  try {
+    const r = await fetch('/api/ai-router/connect-pc', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ip, password: pass, port })
+    });
+    const d = await r.json();
+    log.textContent += d.log || JSON.stringify(d, null, 2);
+    if (d.ok) { toast('PC connected!'); loadFleet(); }
+    else toast(d.error || 'Setup failed', true);
+  } catch(e) {
+    log.textContent += 'Error: '+e.message;
+    toast(e.message, true);
+  }
+  document.getElementById('cpBtn').disabled = false;
+}
+
+async function testPc() {
+  const ip = document.getElementById('cpIp').value.trim();
+  const log = document.getElementById('cpLog');
+  if (!ip) { toast('Enter IP first', true); return; }
+  log.textContent = 'Testing '+ip+':4050 ...\n';
+  try {
+    const r = await fetch('/api/ai-router/test-pc', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ip })
+    });
+    const d = await r.json();
+    log.textContent += d.ok
+      ? 'OK — AI router responding on '+ip+':4050\n'+JSON.stringify(d.health, null, 2)
+      : 'FAIL: '+(d.error||JSON.stringify(d));
+  } catch(e) { log.textContent += 'Error: '+e.message; }
+}
+
+async function loadConnectedPcs() {
+  const el = document.getElementById('connectedPcs');
+  if (!el) return;
+  try {
+    const d = await fetch(BASE+'/key-stats').then(r=>r.json());
+    const jobs = d.recent_jobs || [];
+    // Unique caller PCs from job log
+    const callers = {};
+    for (const j of jobs) {
+      if (!j.pc_ip) continue;
+      if (!callers[j.pc_ip]) callers[j.pc_ip] = { calls: 0, last: j.created_at };
+      callers[j.pc_ip].calls++;
+    }
+    const ips = Object.keys(callers);
+    if (!ips.length) { el.innerHTML = '<span style="color:#4a5568">No client PCs have called the router yet.</span>'; return; }
+    el.innerHTML = ips.map(ip => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #1e2030">
+        <div>
+          <span class="dot on"></span>
+          <span style="color:#fff;margin-left:6px;font-weight:600">${ip}</span>
+        </div>
+        <div style="font-size:10px;color:#7880a0">${callers[ip].calls} calls · last ${new Date(callers[ip].last).toLocaleTimeString()}</div>
+      </div>`).join('');
+  } catch(e) { el.textContent = 'Error: '+e.message; }
+}
+
+// ── Site API Keys ─────────────────────────────────────────────────────────────
+async function generateSiteKey() {
+  const tiers = [...document.querySelectorAll('#tierPicker input:checked')].map(e=>e.value).join(',');
+  const tags  = [...document.querySelectorAll('#tagPicker input:checked')].map(e=>e.value).join(',');
+  const models= document.getElementById('skModels').value.trim();
+  const label = document.getElementById('skLabel').value.trim();
+  const limit = parseInt(document.getElementById('skLimit').value) || 0;
+  const r = await fetch(BASE+'/site-keys', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ label, allowed_models: models, allowed_tags: tags,
+                           allowed_tier: tiers, daily_limit: limit })
+  }).then(r=>r.json());
+  if (r.ok) {
+    document.getElementById('skNewKey').innerHTML =
+      `New key: <strong>${r.key_value}</strong><br>` +
+      `<small style="color:#4a5568">Use as: Authorization: Bearer ${r.key_value}</small>`;
+    toast('Key generated!');
+    loadSiteKeys();
+  } else toast(r.error||'Error', true);
+}
+
+async function loadSiteKeys() {
+  const body = document.getElementById('siteKeysBody');
+  if (!body) return;
+  const keys = await fetch(BASE+'/site-keys').then(r=>r.json());
+  if (!keys.length) {
+    body.innerHTML = '<tr><td colspan="8" style="color:#4a5568;text-align:center;padding:16px">No keys yet — generate one above</td></tr>';
+    return;
+  }
+  body.innerHTML = keys.map(k => {
+    const scope = [
+      k.allowed_models ? `models: ${k.allowed_models}` : '',
+      k.allowed_tags   ? `tags: ${k.allowed_tags}` : '',
+      k.allowed_tier   ? `tier: ${k.allowed_tier}` : '',
+    ].filter(Boolean).join(' · ') || '<span style="color:#3fdc8a">ALL models</span>';
+    return `<tr style="${!k.enabled?'opacity:.4':''}">
+      <td style="font-family:monospace;font-size:10px;color:#6b8cff">${k.key_value}</td>
+      <td>${escHtml(k.label||'—')}</td>
+      <td style="font-size:10px;color:#94a3b8">${scope}</td>
+      <td style="color:${k.calls_today>0?'#3fdc8a':'#4a5568'}">${k.calls_today}</td>
+      <td>${k.calls_total}</td>
+      <td style="color:#7880a0">${k.daily_limit||'∞'}</td>
+      <td style="font-size:10px;color:#4a5568">${k.last_used?new Date(k.last_used).toLocaleString():'never'}</td>
+      <td style="display:flex;gap:3px">
+        <button class="btn sm" onclick="toggleSiteKey(${k.id},${k.enabled?0:1})">${k.enabled?'Disable':'Enable'}</button>
+        <button class="btn sm danger" onclick="deleteSiteKey(${k.id})">Del</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function toggleSiteKey(id, enabled) {
+  await fetch(BASE+`/site-keys/${id}/toggle`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
+  loadSiteKeys();
+}
+async function deleteSiteKey(id) {
+  if (!confirm('Delete this key?')) return;
+  await fetch(BASE+`/site-keys/${id}`,{method:'DELETE'});
+  loadSiteKeys();
+}
+
+// ── Route Diagram ─────────────────────────────────────────────────────────────
+async function loadDiagram() {
+  const el = document.getElementById('routeDiagram');
+  if (!el) return;
+  try {
+    const [fleet, keys, siteKeys] = await Promise.all([
+      fetch(BASE+'/key-stats').then(r=>r.json()),
+      fetch(BASE+'/keys').then(r=>r.json()),
+      fetch(BASE+'/site-keys').then(r=>r.json()),
+    ]);
+    const gemKeys = (fleet.by_provider||{}).gemini || [];
+    const polKeys = (fleet.by_provider||{}).pollinations || [];
+    const callers = {};
+    for (const j of fleet.recent_jobs||[]) {
+      if (j.pc_ip) callers[j.pc_ip] = (callers[j.pc_ip]||0)+1;
+    }
+
+    el.innerHTML = `
+<div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:0;align-items:start">
+
+  <!-- Left: Client PCs -->
+  <div>
+    <div style="color:#facc15;font-weight:700;margin-bottom:8px;font-size:12px">CLIENT PCs</div>
+    <div style="color:#7880a0;font-size:10px;margin-bottom:6px">PCs that CALL the router</div>
+    ${Object.keys(callers).length
+      ? Object.keys(callers).map(ip=>`
+        <div style="background:#0d0f17;border:1px solid #facc1533;border-radius:6px;padding:8px 10px;margin-bottom:6px">
+          <div style="font-weight:700;color:#fff">${ip}</div>
+          <div style="font-size:10px;color:#7880a0">${callers[ip]} recent calls</div>
+          ${siteKeys.filter(sk=>sk.enabled).length
+            ? `<div style="font-size:9px;color:#4a5568;margin-top:3px">using site keys</div>`:''}
+        </div>`).join('')
+      : '<div style="color:#4a5568;font-size:10px">No calls yet — add a PC</div>'}
+    <div style="background:#0d0f17;border:1px dashed #facc1533;border-radius:6px;padding:8px 10px;margin-top:6px;color:#4a5568;font-size:10px">
+      + Any new PC<br>→ Connect PC tab
+    </div>
+  </div>
+
+  <!-- Arrow 1 -->
+  <div style="display:flex;align-items:center;justify-content:center;padding:0 12px;padding-top:60px">
+    <div style="text-align:center">
+      <div style="color:#6b8cff;font-size:18px">→</div>
+      <div style="font-size:9px;color:#4a5568">sk-jar-xxx<br>+ model/tags</div>
+    </div>
+  </div>
+
+  <!-- Centre: Router -->
+  <div>
+    <div style="color:#6b8cff;font-weight:700;margin-bottom:8px;font-size:12px">AI ROUTER</div>
+    <div style="background:#0a1628;border:2px solid #6b8cff44;border-radius:8px;padding:12px">
+      <div style="font-weight:700;color:#fff;margin-bottom:6px">192.168.0.3:4050</div>
+      <div style="font-size:10px;color:#94a3b8;line-height:1.8">
+        <div>① Validate site key</div>
+        <div>② Check model allowed</div>
+        <div>③ Pick best model (tags/tier)</div>
+        <div>④ Round-robin Gemini keys</div>
+        <div>⑤ Log to jobs table</div>
+      </div>
+      <div style="margin-top:8px;border-top:1px solid #1e2030;padding-top:8px">
+        <div style="font-size:10px;color:#7880a0">Site Keys: <span style="color:#3fdc8a">${siteKeys.filter(k=>k.enabled).length} active</span></div>
+        <div style="font-size:10px;color:#7880a0">Models: <span style="color:#6b8cff">59 registered</span></div>
+      </div>
+    </div>
+    ${siteKeys.filter(k=>k.enabled).length ? `
+    <div style="margin-top:8px">
+      <div style="font-size:10px;color:#facc15;font-weight:700;margin-bottom:4px">Active Key Groups</div>
+      ${siteKeys.filter(k=>k.enabled).map(sk=>`
+        <div style="background:#0d0f17;border:1px solid #facc1522;border-radius:4px;padding:5px 8px;margin-bottom:4px;font-size:10px">
+          <span style="color:#fff">${escHtml(sk.label||'Unnamed')}</span>
+          <span style="color:#4a5568;margin-left:4px">${sk.allowed_tier||sk.allowed_tags||sk.allowed_models||'all'}</span>
+        </div>`).join('')}
+    </div>` : ''}
+  </div>
+
+  <!-- Arrow 2 -->
+  <div style="display:flex;align-items:center;justify-content:center;padding:0 12px;padding-top:60px">
+    <div style="text-align:center">
+      <div style="color:#6b8cff;font-size:18px">→</div>
+      <div style="font-size:9px;color:#4a5568">round-robin<br>key selection</div>
+    </div>
+  </div>
+
+  <!-- Right: Key Pools -->
+  <div>
+    <div style="color:#3fdc8a;font-weight:700;margin-bottom:8px;font-size:12px">API KEY POOLS</div>
+
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:#6b8cff;font-weight:700;margin-bottom:4px">GEMINI (${gemKeys.length} keys)</div>
+      ${gemKeys.map((k,i)=>`
+        <div style="background:#0d0f17;border:1px solid #6b8cff22;border-radius:4px;padding:5px 8px;margin-bottom:3px;display:flex;justify-content:space-between;font-size:10px">
+          <span style="color:#fff">Key #${k.id} <span style="color:#4a5568">${k.label||''}</span></span>
+          <span style="color:${k.daily_used>k.daily_limit*0.8?'#f87171':'#3fdc8a'}">${k.daily_used}/${k.daily_limit}/day</span>
+        </div>`).join('')}
+      ${!gemKeys.length?'<div style="color:#4a5568;font-size:10px">No Gemini keys — add in API Keys tab</div>':''}
+    </div>
+
+    <div>
+      <div style="font-size:10px;color:#3fdc8a;font-weight:700;margin-bottom:4px">POLLINATIONS (${polKeys.length} keys)</div>
+      ${polKeys.map(k=>`
+        <div style="background:#0d0f17;border:1px solid #3fdc8a22;border-radius:4px;padding:5px 8px;margin-bottom:3px;display:flex;justify-content:space-between;font-size:10px">
+          <span style="color:#fff">Key #${k.id} <span style="color:#4a5568">${k.label||''}</span></span>
+          <span style="color:#3fdc8a">${k.balance?.toFixed(1)||'free'} 🌻</span>
+        </div>`).join('')}
+      <div style="font-size:9px;color:#4a5568;margin-top:4px">+ direct Pollinations (free, no key)</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom legend -->
+<div style="margin-top:20px;border-top:1px solid #1e2030;padding-top:14px;display:flex;gap:24px;flex-wrap:wrap;font-size:10px;color:#7880a0">
+  <div><span style="color:#facc15">■</span> Client PC: calls router with site key + job type</div>
+  <div><span style="color:#6b8cff">■</span> Router: picks model, picks key, dispatches, logs</div>
+  <div><span style="color:#3fdc8a">■</span> Key pools: Gemini round-robin, Pollinations by balance</div>
+  <div><span style="color:#c084fc">■</span> Local LLM: add any Ollama/local model to pool when available</div>
+</div>`;
+  } catch(e) { el.innerHTML = `<div style="color:#f87171">Error: ${e.message}</div>`; }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadStatus();
+loadKeyStats();
+loadConnectedPcs();
+setInterval(loadStatus, 30000);
+setInterval(loadKeyStats, 20000);
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

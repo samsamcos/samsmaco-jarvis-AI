@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Message Context Rules — JARVIS</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    --purple: #bc8cff; --orange: #ffa657; --pink: #ff7b72;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; }
+
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+  .header h1 { font-size: 16px; font-weight: 600; }
+  .header .sub { color: var(--muted); font-size: 12px; margin-left: auto; }
+  .back-btn { color: var(--accent); text-decoration: none; font-size: 13px; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  /* Test bar */
+  .test-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .test-bar input { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 7px 10px; font-size: 13px; flex: 1; min-width: 120px; }
+  .test-bar input::placeholder { color: var(--muted); }
+  .test-bar label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 7px 14px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap; }
+  .btn:hover { opacity: .85; }
+  .btn.green  { background: var(--green); }
+  .btn.red    { background: var(--red); }
+  .btn.muted  { background: var(--border); }
+  #test-result { padding: 10px 14px; border-radius: 6px; font-size: 13px; display: none; margin-top: 8px; width: 100%; }
+  #test-result.hit  { background: #1a3a1a; border: 1px solid var(--green); color: var(--green); }
+  #test-result.miss { background: #2a1a1a; border: 1px solid var(--red);   color: var(--red); }
+
+  /* Add rule form */
+  .add-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+  .add-card h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--accent); }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+  .form-grid label { display: block; color: var(--muted); font-size: 11px; margin-bottom: 3px; }
+  .form-grid input, .form-grid select, .form-grid textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); padding: 7px 9px; font-size: 13px;
+  }
+  .form-grid textarea { resize: vertical; min-height: 56px; grid-column: span 2; }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  /* Rules table */
+  .rules-section h2 { font-size: 14px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .count-badge { background: var(--border); color: var(--muted); border-radius: 10px; padding: 1px 8px; font-size: 12px; }
+  .filter-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filter-row input { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 6px 10px; font-size: 13px; flex: 1; min-width: 180px; }
+  .filter-btn { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; font-size: 12px; }
+  .filter-btn.active { border-color: var(--accent); color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: var(--surface); padding: 9px 10px; text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: rgba(88,166,255,.04); }
+  tbody td { padding: 9px 10px; font-size: 13px; vertical-align: middle; }
+  tbody tr.disabled { opacity: .45; }
+
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .tag-browser      { background: #1a2a3a; color: var(--accent); }
+  .tag-staff        { background: #1a3a1a; color: var(--green); }
+  .tag-staff_group  { background: #2a1a3a; color: var(--purple); }
+  .tag-keyword      { background: #3a2a1a; color: var(--orange); }
+  .tag-browser\+staff { background: #2a1a2a; color: var(--pink); }
+
+  .action-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+  .act-set_group      { background: #1a2a3a; color: var(--accent); }
+  .act-set_staff      { background: #1a3a1a; color: var(--green); }
+  .act-set_worker_vm  { background: #2a1a3a; color: var(--purple); }
+  .act-override_model { background: #3a2a1a; color: var(--orange); }
+  .act-block          { background: #3a1a1a; color: var(--red); }
+  .act-forward_webhook{ background: #1a2a2a; color: #4ec9b0; }
+
+  .priority-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+  .row-actions { display: flex; gap: 5px; }
+  .icon-btn { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--muted); cursor: pointer; padding: 3px 7px; font-size: 12px; }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .icon-btn.del:hover { border-color: var(--red); color: var(--red); }
+
+  .inline-edit { background: var(--bg); border: 1px solid var(--accent); border-radius: 4px; color: var(--text); padding: 3px 6px; font-size: 12px; width: 100%; }
+  .edit-row td { background: rgba(88,166,255,.06); }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px; }
+  .toggle { cursor: pointer; user-select: none; }
+
+  /* Trigger type legend */
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+
+  .instructions-cell { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="back-btn" href="/">← Back</a>
+  <h1>🔀 Message Context Rules</h1>
+  <span class="sub">Routes messages to the right person, group, VM, or bot based on who sent it</span>
+</div>
+
+<div class="container">
+
+  <!-- Test bar -->
+  <div class="test-bar">
+    <div style="width:100%;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600;">🧪 Test a message — see which rule fires</div>
+    <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:120px">
+      <label>Browser / Source</label>
+      <input id="t-browser" placeholder="e.g. Me, Work, Delf Browser, Jobs">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:120px">
+      <label>Staff / Person name</label>
+      <input id="t-staff" placeholder="e.g. Sam, Luna">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px;flex:2;min-width:180px">
+      <label>Message</label>
+      <input id="t-message" placeholder="e.g. find cheap flights London to Dubai">
+    </div>
+    <button class="btn" onclick="testRule()" style="margin-top:16px">Test →</button>
+    <div id="test-result"></div>
+  </div>
+
+  <!-- Add new rule -->
+  <div class="add-card">
+    <h2>➕ Add New Rule</h2>
+    <div class="form-grid">
+      <div>
+        <label>Trigger Type *</label>
+        <select id="new-type" onchange="updateTypeHint()">
+          <option value="browser">browser — source/UI name</option>
+          <option value="staff">staff — individual name</option>
+          <option value="staff_group">staff_group — NocoDB group</option>
+          <option value="keyword">keyword — in message text</option>
+          <option value="browser+staff">browser+staff — both match</option>
+        </select>
+      </div>
+      <div>
+        <label id="val1-label">Trigger Value *</label>
+        <input id="new-val" placeholder="e.g. Me, Sam, flight">
+      </div>
+      <div id="val2-wrap" style="display:none">
+        <label>Trigger Value 2 (staff for browser+staff)</label>
+        <input id="new-val2" placeholder="e.g. Sam">
+      </div>
+      <div>
+        <label>Action Type *</label>
+        <select id="new-action">
+          <option value="set_group">set_group — route to NocoDB group</option>
+          <option value="set_staff">set_staff — assign to staff slot</option>
+          <option value="set_worker_vm">set_worker_vm — send browser to VM</option>
+          <option value="override_model">override_model — use specific AI model</option>
+          <option value="block">block — reject request</option>
+          <option value="forward_webhook">forward_webhook — POST to URL</option>
+        </select>
+      </div>
+      <div>
+        <label>Action Value *</label>
+        <input id="new-actval" placeholder="e.g. Jobs, Sam, 192.168.0.8, gemini-2.5-pro">
+      </div>
+      <div>
+        <label>Priority (higher = first)</label>
+        <input id="new-priority" type="number" value="10" min="1" max="100">
+      </div>
+      <div class="full">
+        <label>Extra AI Instructions (injected into blueprint for this rule)</label>
+        <textarea id="new-instructions" placeholder="e.g. Focus on job search tasks. Use UK job boards only."></textarea>
+      </div>
+      <div class="full">
+        <label>Notes (for your reference)</label>
+        <input id="new-notes" placeholder="e.g. All 180 Sam group staff → 0.8 browser VM">
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <button class="btn green" onclick="addRule()">Add Rule</button>
+      <span id="add-status" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+  </div>
+
+  <!-- Rules list -->
+  <div class="rules-section">
+    <h2>
+      📋 Active Rules
+      <span class="count-badge" id="rule-count">0</span>
+    </h2>
+
+    <div class="legend">
+      <span class="legend-item"><span class="tag tag-browser">browser</span> Source/UI name</span>
+      <span class="legend-item"><span class="tag tag-staff">staff</span> Person name</span>
+      <span class="legend-item"><span class="tag tag-staff_group">staff_group</span> NocoDB group (all members)</span>
+      <span class="legend-item"><span class="tag tag-keyword">keyword</span> Word in message</span>
+      <span class="legend-item"><span class="tag" style="background:#2a1a2a;color:var(--pink)">browser+staff</span> Both match</span>
+    </div>
+
+    <div class="filter-row">
+      <input id="search-filter" placeholder="🔍 Filter by trigger value, action, notes…" oninput="renderTable()">
+      <button class="filter-btn active" id="f-all"      onclick="setFilter('all')">All</button>
+      <button class="filter-btn"        id="f-browser"  onclick="setFilter('browser')">Browser</button>
+      <button class="filter-btn"        id="f-staff"    onclick="setFilter('staff')">Staff</button>
+      <button class="filter-btn"        id="f-group"    onclick="setFilter('staff_group')">Group</button>
+      <button class="filter-btn"        id="f-keyword"  onclick="setFilter('keyword')">Keyword</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28px">#</th>
+          <th>Trigger Type</th>
+          <th>Trigger Value</th>
+          <th>Action</th>
+          <th>Action Value</th>
+          <th>Priority</th>
+          <th>Instructions</th>
+          <th>Notes</th>
+          <th style="width:90px">Enabled</th>
+          <th style="width:110px"></th>
+        </tr>
+      </thead>
+      <tbody id="rules-body">
+        <tr><td colspan="10" class="empty">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+let rules = [];
+let filterType = 'all';
+let editingId = null;
+
+async function load() {
+  const r = await fetch('/api/routing-rules');
+  const d = await r.json();
+  rules = d.rules || [];
+  renderTable();
+}
+
+function setFilter(t) {
+  filterType = t;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('f-' + (t === 'staff_group' ? 'group' : t === 'all' ? 'all' : t)).classList.add('active');
+  renderTable();
+}
+
+function renderTable() {
+  const q     = (document.getElementById('search-filter').value || '').toLowerCase();
+  const tbody = document.getElementById('rules-body');
+  document.getElementById('rule-count').textContent = rules.length;
+
+  let filtered = rules.filter(r => {
+    if (filterType !== 'all' && r.Trigger_Type !== filterType) return false;
+    if (!q) return true;
+    return (r.Trigger_Value||'').toLowerCase().includes(q)
+        || (r.Trigger_Value2||'').toLowerCase().includes(q)
+        || (r.Action_Value||'').toLowerCase().includes(q)
+        || (r.Notes||'').toLowerCase().includes(q)
+        || (r.Instructions||'').toLowerCase().includes(q)
+        || (r.Action_Type||'').toLowerCase().includes(q)
+        || (r.Trigger_Type||'').toLowerCase().includes(q);
+  });
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">No rules match</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((r, i) => {
+    const pColor = r.Priority >= 15 ? '#f85149' : r.Priority >= 10 ? '#d29922' : '#3fb950';
+    const typeTag = `<span class="tag tag-${r.Trigger_Type}">${r.Trigger_Type}</span>`;
+    const val2 = r.Trigger_Value2 ? ` + <b>${r.Trigger_Value2}</b>` : '';
+    const actTag = `<span class="action-tag act-${r.Action_Type}">${r.Action_Type}</span>`;
+    const enBtn = r.Enabled
+      ? `<button class="icon-btn" onclick="toggle(${r.Id})" title="Disable">✅ On</button>`
+      : `<button class="icon-btn" onclick="toggle(${r.Id})" title="Enable">⬜ Off</button>`;
+    return `
+      <tr class="${r.Enabled ? '' : 'disabled'}" id="row-${r.Id}">
+        <td style="color:var(--muted)">${r.Id}</td>
+        <td>${typeTag}</td>
+        <td><b>${r.Trigger_Value || '—'}</b>${val2}</td>
+        <td>${actTag}</td>
+        <td><code style="color:var(--text)">${r.Action_Value || '—'}</code></td>
+        <td><span class="priority-dot" style="background:${pColor}"></span>${r.Priority || 5}</td>
+        <td class="instructions-cell" title="${(r.Instructions||'').replace(/"/g,'&quot;')}">${r.Instructions || '—'}</td>
+        <td class="instructions-cell" title="${(r.Notes||'').replace(/"/g,'&quot;')}">${r.Notes || '—'}</td>
+        <td>${enBtn}</td>
+        <td class="row-actions">
+          <button class="icon-btn" onclick="startEdit(${r.Id})" title="Edit">✏️</button>
+          <button class="icon-btn del" onclick="deleteRule(${r.Id})" title="Delete">🗑</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function updateTypeHint() {
+  const t = document.getElementById('new-type').value;
+  const v2 = document.getElementById('val2-wrap');
+  const lbl = document.getElementById('val1-label');
+  v2.style.display = t === 'browser+staff' ? '' : 'none';
+  const hints = {
+    browser:       'Browser/Source name (e.g. Me, Work, Delf Browser)',
+    staff:         'Staff first name (e.g. Sam, Luna)',
+    staff_group:   'NocoDB Group name (e.g. sam — all members match)',
+    keyword:       'Word/phrase in the message (e.g. flight)',
+    'browser+staff': 'Browser name (e.g. Jobs)',
+  };
+  lbl.textContent = (hints[t] || 'Trigger Value') + ' *';
+}
+
+async function addRule() {
+  const rule = {
+    Trigger_Type:   document.getElementById('new-type').value,
+    Trigger_Value:  document.getElementById('new-val').value.trim(),
+    Trigger_Value2: document.getElementById('new-val2').value.trim(),
+    Action_Type:    document.getElementById('new-action').value,
+    Action_Value:   document.getElementById('new-actval').value.trim(),
+    Priority:       parseInt(document.getElementById('new-priority').value) || 10,
+    Instructions:   document.getElementById('new-instructions').value.trim(),
+    Notes:          document.getElementById('new-notes').value.trim(),
+    Enabled:        true,
+  };
+  if (!rule.Trigger_Value || !rule.Action_Value) {
+    document.getElementById('add-status').textContent = '⚠️ Trigger Value and Action Value are required';
+    return;
+  }
+  const r = await fetch('/api/routing-rules', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(rule) });
+  if (r.ok) {
+    document.getElementById('add-status').textContent = '✅ Rule added';
+    ['new-val','new-val2','new-actval','new-instructions','new-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('new-priority').value = '10';
+    await load();
+  } else {
+    document.getElementById('add-status').textContent = '❌ Failed to add';
+  }
+  setTimeout(() => document.getElementById('add-status').textContent = '', 3000);
+}
+
+async function toggle(id) {
+  await fetch(`/api/routing-rules/${id}/toggle`, { method:'POST' });
+  await load();
+}
+
+async function deleteRule(id) {
+  if (!confirm('Delete this rule?')) return;
+  await fetch(`/api/routing-rules/${id}`, { method:'DELETE' });
+  await load();
+}
+
+function startEdit(id) {
+  const rule = rules.find(r => r.Id === id);
+  if (!rule) return;
+  editingId = id;
+  const row = document.getElementById(`row-${id}`);
+  row.classList.add('edit-row');
+  row.innerHTML = `
+    <td style="color:var(--muted)">${rule.Id}</td>
+    <td>
+      <select class="inline-edit" id="e-type" onchange="toggleEditVal2()">
+        ${['browser','staff','staff_group','keyword','browser+staff'].map(t =>
+          `<option value="${t}" ${t===rule.Trigger_Type?'selected':''}>${t}</option>`).join('')}
+      </select>
+    </td>
+    <td>
+      <input class="inline-edit" id="e-val" value="${rule.Trigger_Value||''}">
+      <span id="e-val2-wrap" style="${rule.Trigger_Type==='browser+staff'?'':'display:none'}">
+        + <input class="inline-edit" id="e-val2" value="${rule.Trigger_Value2||''}" style="width:80px">
+      </span>
+    </td>
+    <td>
+      <select class="inline-edit" id="e-action">
+        ${['set_group','set_staff','set_worker_vm','override_model','block','forward_webhook'].map(a =>
+          `<option value="${a}" ${a===rule.Action_Type?'selected':''}>${a}</option>`).join('')}
+      </select>
+    </td>
+    <td><input class="inline-edit" id="e-actval" value="${rule.Action_Value||''}"></td>
+    <td><input class="inline-edit" id="e-priority" type="number" value="${rule.Priority||5}" style="width:55px"></td>
+    <td colspan="2"><input class="inline-edit" id="e-instructions" value="${(rule.Instructions||'').replace(/"/g,'&quot;')}" placeholder="Instructions…"></td>
+    <td></td>
+    <td class="row-actions">
+      <button class="btn green" onclick="saveEdit(${id})" style="padding:3px 10px;font-size:12px">Save</button>
+      <button class="btn muted" onclick="cancelEdit()" style="padding:3px 8px;font-size:12px">✕</button>
+    </td>`;
+}
+
+function toggleEditVal2() {
+  const t = document.getElementById('e-type').value;
+  const w = document.getElementById('e-val2-wrap');
+  if (w) w.style.display = t === 'browser+staff' ? '' : 'none';
+}
+
+async function saveEdit(id) {
+  const updates = {
+    Trigger_Type:   document.getElementById('e-type').value,
+    Trigger_Value:  document.getElementById('e-val').value.trim(),
+    Trigger_Value2: (document.getElementById('e-val2') || {value:''}).value.trim(),
+    Action_Type:    document.getElementById('e-action').value,
+    Action_Value:   document.getElementById('e-actval').value.trim(),
+    Priority:       parseInt(document.getElementById('e-priority').value) || 5,
+    Instructions:   document.getElementById('e-instructions').value.trim(),
+  };
+  await fetch(`/api/routing-rules/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(updates) });
+  editingId = null;
+  await load();
+}
+
+function cancelEdit() {
+  editingId = null;
+  renderTable();
+}
+
+async function testRule() {
+  const browser = document.getElementById('t-browser').value.trim();
+  const staff   = document.getElementById('t-staff').value.trim();
+  const message = document.getElementById('t-message').value.trim();
+  const el = document.getElementById('test-result');
+  el.style.display = 'block';
+  el.textContent = '⏳ Testing…';
+  el.className = '';
+  const r = await fetch('/api/routing-rules/test', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ browser, staff, message }),
+  });
+  const d = await r.json();
+  if (d.matched && d.rule) {
+    const rule = d.rule;
+    el.className = 'hit';
+    el.innerHTML = `✅ <b>Rule matched!</b> &nbsp;[${rule.Trigger_Type}] "${rule.Trigger_Value}" → <b>${rule.Action_Type}: ${rule.Action_Value}</b>&nbsp;&nbsp;Priority: ${rule.Priority}${rule.Instructions ? `<br><span style="color:#8b949e;font-size:12px">Instructions: ${rule.Instructions}</span>` : ''}`;
+  } else {
+    el.className = 'miss';
+    el.innerHTML = `❌ <b>No rule matched</b> — this message goes to the default flow (group: Jarvis, VM: 192.168.0.8)`;
+  }
+}
+
+// Enter key on test inputs
+['t-browser','t-staff','t-message'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') testRule(); });
+});
+
+updateTypeHint();
+load();
+setInterval(load, 15000);
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

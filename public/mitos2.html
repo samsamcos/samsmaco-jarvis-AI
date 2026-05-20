@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MITOS2 — Webhook Overlay</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0f14;color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;min-height:100vh;padding:20px}
+h1{font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #1e2433}
+.logo{width:32px;height:32px;background:linear-gradient(135deg,#5b9cf6,#b57aff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#3fdc8a;margin-left:auto;box-shadow:0 0 6px #3fdc8a88}
+.status-dot.off{background:#555;box-shadow:none}
+.tab-bar{display:flex;gap:4px;margin-bottom:20px}
+.tab{padding:6px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:#6b7280;border:none;transition:all .15s}
+.tab.active{background:#1e2433;color:#e2e8f0}
+.tab:hover:not(.active){color:#a0aec0}
+.panel{display:none}
+.panel.active{display:block}
+
+/* Feed panel */
+.feed{display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 220px);overflow-y:auto;padding-right:4px}
+.feed::-webkit-scrollbar{width:4px}
+.feed::-webkit-scrollbar-track{background:transparent}
+.feed::-webkit-scrollbar-thumb{background:#2d3748;border-radius:2px}
+
+.card{background:#141824;border:1px solid #1e2433;border-radius:12px;padding:16px;position:relative;animation:slideIn .25s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.card.type-message{border-left:3px solid #5b9cf6}
+.card.type-result{border-left:3px solid #3fdc8a}
+.card.type-error{border-left:3px solid #f87171}
+.card.type-info{border-left:3px solid #facc15}
+.card-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.card-type{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:2px 8px;border-radius:4px;background:#1e2433}
+.card-time{font-size:11px;color:#4a5568;margin-left:auto}
+.card-body{font-size:14px;color:#cbd5e0;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.card-meta{font-size:11px;color:#4a5568;margin-top:6px}
+.card-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn-go{background:#1a3a5c;color:#5b9cf6;border:1px solid #2a4a6c}
+.btn-go:hover{background:#2a4a6c}
+.btn-stop{background:#3a1c1c;color:#f87171;border:1px solid #4a2c2c}
+.btn-stop:hover{background:#4a2c2c}
+.btn-msg{background:#1e2433;color:#a0aec0;border:1px solid #2d3748}
+.btn-msg:hover{background:#2d3748;color:#e2e8f0}
+.btn-dismiss{background:transparent;color:#4a5568;border:1px solid #2d3748;font-size:11px;padding:4px 10px}
+.btn-dismiss:hover{color:#6b7280}
+
+/* Compose area */
+.compose{background:#141824;border:1px solid #1e2433;border-radius:12px;padding:16px;margin-bottom:16px}
+.compose-label{font-size:11px;font-weight:600;color:#4a5568;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.compose-row{display:flex;gap:8px}
+.compose-input{flex:1;background:#0d0f14;border:1px solid #2d3748;border-radius:8px;padding:10px 14px;color:#e2e8f0;font-size:14px;outline:none;resize:none;font-family:inherit}
+.compose-input:focus{border-color:#5b9cf6}
+.btn-send{background:#5b9cf6;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-send:hover{background:#4a8ae6}
+.btn-send:disabled{background:#2d3748;color:#4a5568;cursor:not-allowed}
+
+/* Config panel */
+.config-section{background:#141824;border:1px solid #1e2433;border-radius:12px;padding:18px;margin-bottom:14px}
+.config-title{font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.form-row{margin-bottom:12px}
+.form-label{font-size:11px;font-weight:600;color:#4a5568;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block}
+.form-input{width:100%;background:#0d0f14;border:1px solid #2d3748;border-radius:7px;padding:9px 12px;color:#e2e8f0;font-size:13px;outline:none;font-family:inherit}
+.form-input:focus{border-color:#5b9cf6}
+.btn-primary{background:#5b9cf6;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-primary:hover{background:#4a8ae6}
+.btn-secondary{background:#1e2433;color:#a0aec0;border:1px solid #2d3748;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer}
+.btn-secondary:hover{background:#2d3748}
+.btn-danger-sm{background:#3a1c1c;color:#f87171;border:1px solid #4a2c2c;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer}
+.btn-danger-sm:hover{background:#4a2c2c}
+.webhook-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.webhook-item{display:flex;align-items:center;gap:8px;background:#0d0f14;border:1px solid #2d3748;border-radius:7px;padding:8px 12px}
+.webhook-url{flex:1;font-size:12px;color:#a0aec0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.webhook-name{font-size:11px;font-weight:600;color:#6b7280;margin-right:6px}
+.inline-row{display:flex;gap:8px;align-items:flex-end}
+.inline-row .form-row{flex:1;margin-bottom:0}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.badge-blue{background:#1a3a5c;color:#5b9cf6}
+.badge-green{background:#1a3a24;color:#3fdc8a}
+.toast{position:fixed;bottom:20px;right:20px;background:#1e2433;border:1px solid #2d3748;border-radius:8px;padding:10px 16px;font-size:13px;color:#e2e8f0;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* History panel */
+.history-list{display:flex;flex-direction:column;gap:8px}
+.hist-item{background:#141824;border:1px solid #1e2433;border-radius:8px;padding:12px 14px}
+.hist-dir{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.hist-dir.in{color:#5b9cf6}
+.hist-dir.out{color:#3fdc8a}
+.hist-body{font-size:13px;color:#a0aec0;white-space:pre-wrap;word-break:break-word}
+.hist-time{font-size:11px;color:#4a5568;margin-top:4px}
+.empty-state{text-align:center;padding:40px 20px;color:#4a5568;font-size:13px}
+.empty-state .icon{font-size:32px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">M2</div>
+  <div>
+    <h1>MITOS2</h1>
+    <div style="font-size:11px;color:#4a5568;margin-top:1px">Webhook Overlay</div>
+  </div>
+  <div class="status-dot off" id="status-dot" title="SSE connection"></div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab active" onclick="switchTab('feed')">Feed</button>
+  <button class="tab" onclick="switchTab('config')">Webhooks</button>
+  <button class="tab" onclick="switchTab('history')">History</button>
+</div>
+
+<!-- FEED -->
+<div class="panel active" id="panel-feed">
+  <div class="compose">
+    <div class="compose-label">Send Message</div>
+    <div class="compose-row">
+      <textarea class="compose-input" id="compose-text" rows="2" placeholder="Type a message to send via webhook…" onkeydown="composeKey(event)"></textarea>
+      <button class="btn-send" id="compose-btn" onclick="sendMessage()">Send ▶</button>
+    </div>
+  </div>
+  <div class="feed" id="feed">
+    <div class="empty-state" id="empty-msg"><div class="icon">📡</div>Waiting for webhook messages…</div>
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div class="panel" id="panel-config">
+  <div class="config-section">
+    <div class="config-title">📥 Incoming Webhook</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:14px">POST messages to this URL and they'll appear in your feed:</div>
+    <div style="background:#0d0f14;border:1px solid #2d3748;border-radius:7px;padding:10px 14px;font-size:13px;color:#5b9cf6;font-family:monospace;word-break:break-all" id="incoming-url">loading…</div>
+    <button class="btn-secondary" style="margin-top:10px;font-size:12px;padding:6px 14px" onclick="copyIncoming()">Copy URL</button>
+  </div>
+
+  <div class="config-section">
+    <div class="config-title">📤 Reply / Outgoing Webhooks</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:12px">Replies and "Carry On" actions will POST to these URLs.</div>
+    <div class="inline-row" style="margin-bottom:10px">
+      <div class="form-row"><label class="form-label">Name</label><input class="form-input" id="new-wh-name" placeholder="e.g. n8n" style="width:100%"></div>
+      <div class="form-row" style="flex:3"><label class="form-label">Webhook URL</label><input class="form-input" id="new-wh-url" placeholder="https://…"></div>
+    </div>
+    <button class="btn-primary" onclick="addWebhook()">+ Add Webhook</button>
+    <div class="webhook-list" id="webhook-list"></div>
+  </div>
+
+  <div class="config-section">
+    <div class="config-title">🧪 Test</div>
+    <div class="form-row"><label class="form-label">Test Payload (JSON)</label><textarea class="form-input" id="test-payload" rows="3">{"message":"Hello from MITOS2 test","source":"test"}</textarea></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn-primary" onclick="testIncoming()">Test Incoming</button>
+      <button class="btn-secondary" onclick="testOutgoing()">Test Outgoing</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="panel" id="panel-history">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <span style="font-size:13px;color:#6b7280" id="hist-count">0 events</span>
+    <button class="btn-secondary" style="font-size:12px;padding:5px 12px" onclick="clearFeed()">Clear All</button>
+  </div>
+  <div class="history-list" id="history-list">
+    <div class="empty-state"><div class="icon">🗒️</div>No history yet</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE = '';
+let sseSource = null;
+let webhooks = [];
+let allEvents = [];
+let activeCard = null;
+
+// --- SSE ---
+function connectSSE() {
+  if (sseSource) sseSource.close();
+  sseSource = new EventSource(BASE + '/mitos2/stream');
+  sseSource.onopen = () => setDot(true);
+  sseSource.onerror = () => { setDot(false); setTimeout(connectSSE, 3000); };
+  sseSource.onmessage = (e) => {
+    try {
+      const ev = JSON.parse(e.data);
+      handleEvent(ev);
+    } catch(err) {}
+  };
+}
+
+function setDot(on) {
+  const d = document.getElementById('status-dot');
+  d.className = 'status-dot' + (on ? '' : ' off');
+}
+
+function handleEvent(ev) {
+  allEvents.push(ev);
+  removeEmpty();
+  const card = buildCard(ev);
+  const feed = document.getElementById('feed');
+  feed.insertBefore(card, feed.firstChild);
+  updateHistCount();
+}
+
+function removeEmpty() {
+  const e = document.getElementById('empty-msg');
+  if (e) e.remove();
+}
+
+// --- Card building ---
+function buildCard(ev) {
+  const card = document.createElement('div');
+  const type = ev.type || 'message';
+  card.className = `card type-${type}`;
+  card.id = `card-${ev.id}`;
+
+  const ts = ev.ts ? new Date(ev.ts).toLocaleTimeString() : '';
+  const src = ev.source ? `<span class="badge badge-blue">${esc(ev.source)}</span>` : '';
+  const typeLabel = `<span class="card-type">${esc(type)}</span>`;
+
+  let body = ev.message || ev.text || ev.content || JSON.stringify(ev.data || ev, null, 2);
+  if (typeof body !== 'string') body = JSON.stringify(body, null, 2);
+
+  let meta = '';
+  if (ev.from) meta += `from: ${esc(ev.from)} &nbsp;`;
+  if (ev.url) meta += `url: <a href="${esc(ev.url)}" target="_blank" style="color:#5b9cf6">${esc(ev.url)}</a>`;
+
+  card.innerHTML = `
+    <div class="card-header">${typeLabel}${src}<span class="card-time">${ts}</span></div>
+    <div class="card-body">${esc(body)}</div>
+    ${meta ? `<div class="card-meta">${meta}</div>` : ''}
+    <div class="card-actions">
+      <button class="btn btn-go" onclick="cardAction('${ev.id}','carry_on',this)">▶ Carry On</button>
+      <button class="btn btn-stop" onclick="cardAction('${ev.id}','stop',this)">⏹ Stop</button>
+      <button class="btn btn-msg" onclick="cardReply('${ev.id}')">✏️ New Message</button>
+      <button class="btn btn-dismiss" onclick="dismissCard('${ev.id}')">✕ Dismiss</button>
+    </div>
+    <div id="reply-${ev.id}" style="display:none;margin-top:10px">
+      <div style="display:flex;gap:6px">
+        <input class="form-input" id="reply-input-${ev.id}" placeholder="Type reply…" style="flex:1;padding:7px 10px" onkeydown="replyKey(event,'${ev.id}')">
+        <button class="btn btn-go" onclick="sendReply('${ev.id}')">Send</button>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function cardAction(id, action, btn) {
+  fetch(BASE + '/mitos2/action', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({event_id: id, action})
+  }).then(r=>r.json()).then(d=>{
+    toast(d.ok ? `Action: ${action}` : (d.error || 'Error'));
+    if (action === 'stop') dismissCard(id);
+  }).catch(()=>toast('Request failed'));
+}
+
+function cardReply(id) {
+  const box = document.getElementById(`reply-${id}`);
+  if (!box) return;
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  if (box.style.display === 'block') document.getElementById(`reply-input-${id}`)?.focus();
+}
+
+function replyKey(e, id) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(id); }
+}
+
+function sendReply(id) {
+  const inp = document.getElementById(`reply-input-${id}`);
+  const msg = inp?.value.trim();
+  if (!msg) return;
+  fetch(BASE + '/mitos2/action', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({event_id: id, action: 'new_message', message: msg})
+  }).then(r=>r.json()).then(d=>{
+    if (d.ok) { toast('Message sent'); inp.value = ''; document.getElementById(`reply-${id}`).style.display='none'; }
+    else toast(d.error || 'Error');
+  }).catch(()=>toast('Request failed'));
+}
+
+function dismissCard(id) {
+  const c = document.getElementById(`card-${id}`);
+  if (c) { c.style.opacity='0'; c.style.transform='translateY(-4px)'; setTimeout(()=>c.remove(), 200); }
+}
+
+// --- Compose ---
+function composeKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function sendMessage() {
+  const txt = document.getElementById('compose-text').value.trim();
+  if (!txt) return;
+  const btn = document.getElementById('compose-btn');
+  btn.disabled = true;
+  fetch(BASE + '/webhook/send', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({message: txt, source: 'mitos2-compose'})
+  }).then(r=>r.json()).then(d=>{
+    toast(d.ok ? 'Sent' : (d.error || 'Error'));
+    document.getElementById('compose-text').value = '';
+  }).catch(()=>toast('Send failed')).finally(()=>{ btn.disabled=false; });
+}
+
+// --- Clear ---
+function clearFeed() {
+  fetch(BASE + '/mitos2/clear', {method:'POST'}).then(()=>{
+    document.getElementById('feed').innerHTML = '<div class="empty-state" id="empty-msg"><div class="icon">📡</div>Waiting for webhook messages…</div>';
+    allEvents = [];
+    document.getElementById('history-list').innerHTML = '<div class="empty-state"><div class="icon">🗒️</div>No history yet</div>';
+    updateHistCount();
+    toast('Cleared');
+  });
+}
+
+// --- Tabs ---
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', ['feed','config','history'][i]===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(`panel-${name}`).classList.add('active');
+  if (name === 'history') loadHistory();
+  if (name === 'config') loadConfig();
+}
+
+// --- Config ---
+function loadConfig() {
+  const origin = window.location.origin;
+  document.getElementById('incoming-url').textContent = `${origin}/webhook/receive`;
+
+  fetch(BASE + '/webhook/config').then(r=>r.json()).then(d=>{
+    webhooks = d.webhooks || [];
+    renderWebhooks();
+  }).catch(()=>{});
+}
+
+function renderWebhooks() {
+  const el = document.getElementById('webhook-list');
+  if (!webhooks.length) { el.innerHTML = '<div style="font-size:12px;color:#4a5568;margin-top:6px">No outgoing webhooks configured.</div>'; return; }
+  el.innerHTML = webhooks.map((w,i) => `
+    <div class="webhook-item">
+      <span class="webhook-name">${esc(w.name||'Webhook')}</span>
+      <span class="webhook-url">${esc(w.url)}</span>
+      <button class="btn-danger-sm" onclick="removeWebhook(${i})">Remove</button>
+    </div>
+  `).join('');
+}
+
+function addWebhook() {
+  const name = document.getElementById('new-wh-name').value.trim() || 'Webhook';
+  const url = document.getElementById('new-wh-url').value.trim();
+  if (!url) { toast('Enter a URL'); return; }
+  webhooks.push({name, url});
+  saveWebhooks();
+  document.getElementById('new-wh-name').value = '';
+  document.getElementById('new-wh-url').value = '';
+}
+
+function removeWebhook(i) {
+  webhooks.splice(i, 1);
+  saveWebhooks();
+}
+
+function saveWebhooks() {
+  fetch(BASE + '/webhook/config', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({webhooks})
+  }).then(r=>r.json()).then(d=>{
+    if (d.ok) { renderWebhooks(); toast('Saved'); }
+    else toast(d.error || 'Error');
+  }).catch(()=>toast('Save failed'));
+}
+
+function copyIncoming() {
+  const url = document.getElementById('incoming-url').textContent;
+  navigator.clipboard.writeText(url).then(()=>toast('Copied!')).catch(()=>{});
+}
+
+function testIncoming() {
+  let payload;
+  try { payload = JSON.parse(document.getElementById('test-payload').value); }
+  catch(e) { toast('Invalid JSON'); return; }
+  fetch(BASE + '/webhook/receive', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  }).then(r=>r.json()).then(d=>toast(d.ok ? 'Test sent to feed!' : (d.error||'Error'))).catch(()=>toast('Failed'));
+}
+
+function testOutgoing() {
+  fetch(BASE + '/webhook/test', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({message:'MITOS2 test ping'})
+  }).then(r=>r.json()).then(d=>{
+    if (d.results) {
+      const ok = d.results.filter(r=>r.ok).length;
+      toast(`Sent to ${ok}/${d.results.length} webhooks`);
+    } else toast(d.error||'Error');
+  }).catch(()=>toast('Failed'));
+}
+
+// --- History ---
+function loadHistory() {
+  fetch(BASE + '/webhook/history?last=100').then(r=>r.json()).then(items=>{
+    const el = document.getElementById('history-list');
+    if (!items.length) { el.innerHTML = '<div class="empty-state"><div class="icon">🗒️</div>No history yet</div>'; return; }
+    el.innerHTML = items.slice().reverse().map(h=>`
+      <div class="hist-item">
+        <div class="hist-dir ${h.direction||'in'}">${h.direction==='out'?'▲ Outgoing':'▼ Incoming'}</div>
+        <div class="hist-body">${esc(typeof h.payload==='string'?h.payload:JSON.stringify(h.payload,null,2))}</div>
+        <div class="hist-time">${h.ts ? new Date(h.ts).toLocaleString() : ''}</div>
+      </div>
+    `).join('');
+  }).catch(()=>{});
+}
+
+function updateHistCount() {
+  document.getElementById('hist-count').textContent = `${allEvents.length} event${allEvents.length===1?'':'s'}`;
+}
+
+// --- Toast ---
+function toast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+// --- Init ---
+window.addEventListener('DOMContentLoaded', ()=>{
+  connectSSE();
+  // Load existing events
+  fetch(BASE + '/mitos2/events?last=50').then(r=>r.json()).then(evs=>{
+    evs.forEach(ev=>{ allEvents.push(ev); removeEmpty(); const c=buildCard(ev); document.getElementById('feed').appendChild(c); });
+    updateHistCount();
+  }).catch(()=>{});
+});
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

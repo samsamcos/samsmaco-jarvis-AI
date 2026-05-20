@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS — About & System Guide</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'JetBrains Mono',monospace,system-ui;font-size:13px;line-height:1.7;min-height:100vh}
+a{color:#5b9cf6;text-decoration:none}
+a:hover{text-decoration:underline}
+.top{background:#0d0f17;border-bottom:1px solid #1e2030;padding:11px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.logo{font-size:14px;font-weight:700;color:#fff}.logo span{color:#5b9cf6}
+.nav{margin-left:auto;display:flex;gap:14px;font-size:11px}
+.nav a{color:#4a5568}.nav a:hover{color:#dde1f5}
+.nav a.active{color:#5b9cf6}
+
+.layout{display:grid;grid-template-columns:220px 1fr;max-width:1100px;margin:0 auto;gap:32px;padding:32px 20px}
+
+/* Sidebar TOC */
+.toc{position:sticky;top:60px;height:fit-content}
+.toc-title{font-size:9px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+.toc a{display:block;font-size:11px;color:#4a5568;padding:4px 0 4px 10px;border-left:2px solid #1e2030;margin-bottom:2px;transition:all .15s}
+.toc a:hover,.toc a.on{color:#5b9cf6;border-left-color:#5b9cf6;text-decoration:none}
+.toc-section{margin-top:10px}
+.toc-section-label{font-size:9px;font-weight:700;color:#2a3050;text-transform:uppercase;letter-spacing:.08em;margin:8px 0 4px 10px}
+
+/* Content */
+.content h1{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;line-height:1.2}
+.content .sub{font-size:12px;color:#4a5568;margin-bottom:32px}
+.content h2{font-size:15px;font-weight:700;color:#fff;margin:36px 0 12px;padding-top:8px;border-top:1px solid #1e2030}
+.content h2:first-of-type{margin-top:0;border-top:none}
+.content h3{font-size:12px;font-weight:700;color:#5b9cf6;margin:20px 0 8px;text-transform:uppercase;letter-spacing:.05em}
+.content p{color:#a0aec0;margin-bottom:12px}
+.content ul,.content ol{color:#a0aec0;padding-left:20px;margin-bottom:12px}
+.content li{margin-bottom:5px}
+.content strong{color:#dde1f5}
+.content code{background:#13151f;border:1px solid #1e2030;border-radius:4px;padding:1px 6px;font-size:11px;color:#3fdc8a;font-family:monospace}
+
+.card{background:#0d0f17;border:1px solid #1e2030;border-radius:10px;padding:16px;margin-bottom:14px}
+.card-title{font-size:11px;font-weight:700;color:#fff;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.card p{margin-bottom:0;font-size:12px}
+
+.arch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+.arch-box{background:#0a0c14;border:1px solid #1e2030;border-radius:8px;padding:12px;text-align:center}
+.arch-box-icon{font-size:22px;margin-bottom:6px}
+.arch-box-title{font-size:11px;font-weight:700;color:#dde1f5;margin-bottom:4px}
+.arch-box-desc{font-size:10px;color:#4a5568;line-height:1.5}
+
+.profile-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0}
+.profile-box{border-radius:8px;padding:10px;text-align:center}
+.profile-box-n{font-size:16px;font-weight:800;margin-bottom:3px}
+.profile-box-label{font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0;background:#0a0c14;border:1px solid #1e2030;border-radius:8px;padding:14px}
+.flow-step{background:#13151f;border:1px solid #1e2030;border-radius:6px;padding:6px 12px;font-size:11px;color:#dde1f5;white-space:nowrap}
+.flow-arr{color:#4a5568;font-size:14px;flex-shrink:0}
+
+.tag{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.tag-green{background:rgba(63,220,138,.15);color:#3fdc8a}
+.tag-blue{background:rgba(91,156,246,.15);color:#5b9cf6}
+.tag-orange{background:rgba(255,154,74,.15);color:#ff9a4a}
+.tag-purple{background:rgba(181,122,255,.15);color:#b57aff}
+
+.url-line{background:#13151f;border:1px solid #1e2030;border-radius:6px;padding:7px 12px;font-family:monospace;font-size:11px;color:#5b9cf6;margin:6px 0}
+
+table{width:100%;border-collapse:collapse;margin:12px 0}
+th{font-size:10px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:1px solid #1e2030;text-align:left}
+td{padding:7px 10px;border-bottom:1px solid #13151f;font-size:11px;color:#a0aec0}
+td:first-child{color:#dde1f5;font-weight:600}
+tr:hover td{background:#0d0f17}
+
+.edit-note{background:rgba(91,156,246,.07);border:1px solid rgba(91,156,246,.2);border-radius:8px;padding:12px 14px;margin:16px 0;font-size:11px;color:#7880a0}
+.edit-note strong{color:#5b9cf6}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo"><span>JARVIS</span> Browser</div>
+  <div class="nav">
+    <a href="/">Agent</a>
+    <a href="/router">Router</a>
+    <a href="/route">Route</a>
+    <a href="/syncs">Sync</a>
+    <a href="/webhooks">Webhooks</a>
+    <a href="/links">Links</a>
+    <a href="/manual">Manual</a>
+    <a href="/about" class="active">About</a>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- Sidebar TOC -->
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <div class="toc-section">
+      <div class="toc-section-label">Overview</div>
+      <a href="#what-is-jarvis">What is JARVIS</a>
+      <a href="#hardware">Hardware & VM</a>
+      <a href="#architecture">System Architecture</a>
+    </div>
+    <div class="toc-section">
+      <div class="toc-section-label">Core Systems</div>
+      <a href="#server">Flask Server</a>
+      <a href="#ai-brain">AI Brain</a>
+      <a href="#chrome-profiles">Chrome Profiles</a>
+      <a href="#vnc">VNC & Display</a>
+      <a href="#webhooks">Webhooks</a>
+    </div>
+    <div class="toc-section">
+      <div class="toc-section-label">Pages</div>
+      <a href="#page-agent">Agent (Main Chat)</a>
+      <a href="#page-browser">Browser Page</a>
+      <a href="#page-sites">Sites Page</a>
+      <a href="#page-worker">Worker</a>
+      <a href="#page-mobile">Mobile & Overlay</a>
+    </div>
+    <div class="toc-section">
+      <div class="toc-section-label">Integrations</div>
+      <a href="#gemini">Gemini Search</a>
+      <a href="#genspark">Genspark Agents</a>
+      <a href="#mitos">MITOS Display</a>
+      <a href="#telegram">Telegram</a>
+      <a href="#proxmox">Proxmox Future</a>
+    </div>
+    <div class="toc-section">
+      <div class="toc-section-label">Reference</div>
+      <a href="#ports">Ports & URLs</a>
+      <a href="#files">Key Files</a>
+      <a href="#commands">Chat Commands</a>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div class="content">
+    <h1>JARVIS System Guide</h1>
+    <p class="sub">Full technical reference — how everything works, where everything lives, and how to extend it.</p>
+
+    <!-- WHAT IS JARVIS -->
+    <h2 id="what-is-jarvis">What is JARVIS</h2>
+    <p>JARVIS is a self-hosted AI browser automation system. It runs entirely on your local network — no cloud dependency, no monthly SaaS cost. At its core it is a Python Flask server that connects together a set of AI models, a real Chrome browser, a VNC remote desktop, Telegram notifications, and a set of web interfaces you can access from any device on your network.</p>
+    <p>The name JARVIS reflects the intent: it is always on, always reachable, and can be given tasks in plain English. You type (or speak, via mobile) what you want. JARVIS works out how to do it — searching the web, filling in forms, extracting data, booking things — and reports back.</p>
+    <p>Unlike cloud AI assistants, JARVIS has a persistent browser. It remembers logins. It can hold a Google session open and reuse it. It runs in the background while you do other things, and notifies you (on screen, via Telegram, on the MITOS display) when it finishes.</p>
+
+    <div class="card">
+      <div class="card-title">🎯 What it can do today</div>
+      <p>Search the web using a real Gemini browser session · Open any site and interact with it · Run background jobs while you do other things · Receive webhook calls from n8n, Home Assistant, or any HTTP client · Show results on a MITOS physical display · Send Telegram notifications · Manage up to 5 separate Google/Chrome accounts · Accept commands from chat, mobile, popup overlay, or remote HTTP</p>
+    </div>
+
+    <!-- HARDWARE -->
+    <h2 id="hardware">Hardware & VM</h2>
+    <p>The system runs on a single virtual machine called <strong>MiniJavisVm</strong> on your local network. Its IP address is <code>192.168.0.8</code>. This VM runs Debian Linux and is the central control node for the entire JARVIS stack.</p>
+
+    <div class="arch-grid">
+      <div class="arch-box">
+        <div class="arch-box-icon">🖥️</div>
+        <div class="arch-box-title">MiniJavisVm</div>
+        <div class="arch-box-desc">192.168.0.8<br>Debian Linux<br>Main control node<br>Runs everything now</div>
+      </div>
+      <div class="arch-box">
+        <div class="arch-box-icon">📺</div>
+        <div class="arch-box-title">MITOS Display</div>
+        <div class="arch-box-desc">192.168.0.3<br>Physical screen<br>Shows results, alerts<br>Port 9050</div>
+      </div>
+      <div class="arch-box">
+        <div class="arch-box-icon">🔲</div>
+        <div class="arch-box-title">Proxmox (future)</div>
+        <div class="arch-box-desc">Hypervisor host<br>Will run 4 profile VMs<br>Each VM = 1 Chrome<br>Configured in /setup</div>
+      </div>
+    </div>
+
+    <p>The VM has two virtual displays. <strong>Display :99</strong> is a headless Xvfb display used by Playwright for automated browser jobs — it has no VNC output and runs silently in the background. <strong>Display :1</strong> is the TightVNC desktop that you can see through the browser VNC viewer — Chrome windows opened for login and manual browsing appear here.</p>
+
+    <!-- ARCHITECTURE -->
+    <h2 id="architecture">System Architecture</h2>
+    <p>Every part of JARVIS communicates through the central Flask server on port 8080. Nothing talks directly to anything else — the server is the hub.</p>
+
+    <div class="flow">
+      <div class="flow-step">Your device<br><span style="font-size:9px;color:#4a5568">phone / laptop / tablet</span></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">JARVIS Server<br><span style="font-size:9px;color:#4a5568">:8080 Flask</span></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">AI Brain<br><span style="font-size:9px;color:#4a5568">Gemini / LiteLLM</span></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">Chrome Browser<br><span style="font-size:9px;color:#4a5568">Playwright / VNC</span></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">Result<br><span style="font-size:9px;color:#4a5568">RC · Telegram · MITOS</span></div>
+    </div>
+
+    <p>The server handles all routing. When you send a message, it decides which brain to use, what browser actions to take, and where to send the result. You never interact with Chrome, the AI, or the display system directly — everything goes through <code>http://192.168.0.8:8080</code>.</p>
+
+    <!-- FLASK SERVER -->
+    <h2 id="server">Flask Server</h2>
+    <p>The core of JARVIS is <code>server.py</code> — a Python Flask application that has been extended over time to cover everything the system needs. It runs as a background process managed by systemd (or started manually), always listening on port 8080.</p>
+    <p>It provides REST API endpoints, server-sent event (SSE) streams for live updates, static file serving for all the HTML pages, and background threads for long-running tasks. All the HTML pages in the system are just static files served by Flask — they call the API endpoints using <code>fetch()</code> in the browser.</p>
+
+    <h3>Key server responsibilities</h3>
+    <ul>
+      <li><strong>Task routing</strong> — receives a message, picks the right AI brain, runs browser steps, collects result</li>
+      <li><strong>SSE streams</strong> — pushes real-time events to connected browsers (RC overlay, agent page)</li>
+      <li><strong>Site & profile management</strong> — stores site configs in JSON, manages Chrome profile assignments</li>
+      <li><strong>Webhook routing</strong> — receives named webhooks and routes them to the correct search engine/site</li>
+      <li><strong>VNC control</strong> — launches Chrome on display :1 with the correct profile directory</li>
+      <li><strong>Proxmox integration</strong> — starts/stops/suspends VMs, monitors idle time</li>
+      <li><strong>Config management</strong> — reads/writes <code>.env</code> and JSON config files</li>
+    </ul>
+
+    <div class="edit-note"><strong>To edit server behaviour:</strong> all logic is in <code>/root/ai-browser/server.py</code>. The file is large (~2700 lines) but well-sectioned with comments. Search for the relevant route or function name to find what you want to change.</div>
+
+    <!-- AI BRAIN -->
+    <h2 id="ai-brain">AI Brain</h2>
+    <p>JARVIS uses a multi-brain architecture. When a message arrives, the server tries each brain in order until one produces a useful result. This means it always falls back gracefully — if the web search brain fails, the LLM brain still answers.</p>
+
+    <h3>Brain 0 — Gemini Browser Search</h3>
+    <p>For queries that look like searches (keywords: flight, price, news, weather, latest, find, buy, deal, hotel, etc.), Brain 0 fires first. It opens a real Chrome browser, goes to <code>gemini.google.com/app</code>, types the query, waits for the response, and extracts the text. This gives real-time grounded answers — prices, live news, today's weather — that a static LLM cannot provide.</p>
+
+    <h3>Brain 1 — LiteLLM Proxy</h3>
+    <p>For general questions and planning, Brain 1 calls the LiteLLM proxy running at <code>192.168.0.3:3080</code>. This proxy can route to Gemini API, OpenAI, Anthropic, or any other model depending on how it is configured. The default model is <code>gemini-2.5-flash</code>.</p>
+
+    <h3>Brain 2 — Browser Automation (Playwright)</h3>
+    <p>When the AI plan includes <code>browser_steps</code>, Brain 2 executes them using Playwright on the headless display :99. It can click, type, extract, screenshot, and navigate. Playwright uses persistent Chrome profiles so sessions (logins) are remembered between runs.</p>
+
+    <!-- CHROME PROFILES -->
+    <h2 id="chrome-profiles">Chrome Profiles</h2>
+    <p>JARVIS manages five Chrome profiles — one per account slot. Each profile is completely isolated: separate cookies, separate logins, separate history. You can be logged into five different Google accounts simultaneously.</p>
+
+    <div class="profile-row">
+      <div class="profile-box" style="background:rgba(107,140,255,.1);border:1px solid rgba(107,140,255,.2)">
+        <div class="profile-box-n" style="color:#6b8cff">0</div>
+        <div class="profile-box-label" style="color:#6b8cff">Default</div>
+        <div style="font-size:9px;color:#4a5568;margin-top:4px">Chrome: Default<br>Main account</div>
+      </div>
+      <div class="profile-box" style="background:rgba(63,220,138,.1);border:1px solid rgba(63,220,138,.2)">
+        <div class="profile-box-n" style="color:#3fdc8a">1</div>
+        <div class="profile-box-label" style="color:#3fdc8a">Profile 1</div>
+        <div style="font-size:9px;color:#4a5568;margin-top:4px">Chrome: Profile 1<br>Account 2</div>
+      </div>
+      <div class="profile-box" style="background:rgba(255,154,74,.1);border:1px solid rgba(255,154,74,.2)">
+        <div class="profile-box-n" style="color:#ff9a4a">2</div>
+        <div class="profile-box-label" style="color:#ff9a4a">Profile 2</div>
+        <div style="font-size:9px;color:#4a5568;margin-top:4px">Chrome: Profile 2<br>Account 3</div>
+      </div>
+      <div class="profile-box" style="background:rgba(181,122,255,.1);border:1px solid rgba(181,122,255,.2)">
+        <div class="profile-box-n" style="color:#b57aff">3</div>
+        <div class="profile-box-label" style="color:#b57aff">Profile 3</div>
+        <div style="font-size:9px;color:#4a5568;margin-top:4px">Chrome: Profile 3<br>Account 4</div>
+      </div>
+      <div class="profile-box" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2)">
+        <div class="profile-box-n" style="color:#f87171">4</div>
+        <div class="profile-box-label" style="color:#f87171">Profile 4</div>
+        <div style="font-size:9px;color:#4a5568;margin-top:4px">Chrome: Profile 4<br>Account 5</div>
+      </div>
+    </div>
+
+    <p>Chrome profile data is stored in <code>~/.config/google-chrome/</code>. The profile directories are named exactly as Chrome names them: <code>Default</code>, <code>Profile 1</code>, <code>Profile 2</code>, <code>Profile 3</code>, <code>Profile 4</code>. When you log into a Google account in one of these profiles, Chrome saves the session cookies to that directory. Next time that profile is opened, you are already logged in.</p>
+
+    <p>Switching profiles works by gracefully closing Chrome (SIGTERM so it saves sessions), waiting for it to exit cleanly, removing the singleton lock file, then launching a fresh Chrome instance with <code>--profile-directory="Profile N"</code>. Because Chrome is force-quit only as a last resort (after 4 seconds), session data is always preserved.</p>
+
+    <p>The Playwright browser used for automated tasks uses separate profile directories at <code>/root/ai-browser/profiles/</code> — these are distinct from the VNC Chrome profiles and run on the hidden display :99.</p>
+
+    <!-- VNC -->
+    <h2 id="vnc">VNC & Display System</h2>
+    <p>There are two display layers in the system, serving different purposes.</p>
+
+    <h3>Display :1 — TightVNC (visible desktop)</h3>
+    <p>TightVNC runs on display :1, port 5901. This is the desktop you see in the VNC viewer inside the browser. When you click "Open Site" or "Open Login in VNC", Google Chrome opens here. You can interact with it — type passwords, click buttons, solve CAPTCHAs — and the session is saved. The VNC desktop is 1280×720.</p>
+
+    <h3>Display :99 — Xvfb (headless automation)</h3>
+    <p>Xvfb runs on display :99. This is an invisible virtual display used exclusively by Playwright for automated browser jobs. Jobs run here silently while you use the system normally. Screenshots from automated jobs come from this display.</p>
+
+    <h3>noVNC — browser VNC viewer</h3>
+    <p>noVNC (a JavaScript VNC client) is served at port 6082 via websockify. It translates the VNC WebSocket connection into a browser canvas. The URL <code>http://192.168.0.8:6082/vnc.html?autoconnect=1&resize=scale</code> gives you a full interactive desktop in any browser tab. The Browser and Sites pages embed this as an iframe.</p>
+
+    <h3>x11vnc — no-password VNC bridge</h3>
+    <p>A second VNC server, x11vnc, runs on port 5903 — also pointing at display :1, but without a password requirement. websockify at port 6082 connects to this no-password server. This is what allows the embedded noVNC iframe to connect automatically without a login prompt.</p>
+
+    <!-- WEBHOOKS -->
+    <h2 id="webhooks">Webhooks</h2>
+    <p>Webhooks let any external system send a search query to JARVIS with a simple HTTP POST. No UI needed — just send JSON to a URL and the result arrives in Telegram and the overlay.</p>
+
+    <p>The base pattern is: <code>POST http://192.168.0.8:8080/webhook/[site-id]-search</code> with body <code>{"message": "your query"}</code>. For example, <code>/webhook/gemini-search</code> uses the Gemini web browser, <code>/webhook/amazon-search</code> opens Amazon and searches there.</p>
+
+    <p>Profile-specific webhooks let you target a particular Chrome profile: <code>/webhook/profile1/gemini-search</code> runs the search logged into Profile 1's Google account. This is useful if you have different Google accounts with different Gemini plans or search histories.</p>
+
+    <p>Webhook results are pushed to the RC overlay (visible on all connected screens), sent to Telegram, and optionally POSTed to a <code>reply_url</code> you include in the request body.</p>
+
+    <!-- AGENT PAGE -->
+    <h2 id="page-agent">Agent — Main Chat Interface</h2>
+    <p>The main page at <code>http://192.168.0.8:8080</code> is the primary way to interact with JARVIS. It has a chat input, a results panel, a right-side panel with tabs (Output, Screen, Worker), and a navigation sidebar.</p>
+    <p>Type any question or instruction. For search queries, JARVIS uses Brain 0 (Gemini browser) to get live results. For tasks requiring browser automation, it builds a plan and executes browser steps. Flight results are rendered as cards with action buttons. Long text is rendered as formatted markdown.</p>
+    <p>You can say <code>profile 1</code> to switch Chrome to Profile 1, <code>profile 2 gemini</code> to open Gemini in Profile 2, or <code>flight 1 mitos</code> to send the first flight result to the MITOS display.</p>
+
+    <!-- BROWSER PAGE -->
+    <h2 id="page-browser">Browser Page</h2>
+    <p>The Browser page at <code>/browser</code> shows the live VNC view alongside a sidebar of your saved sites grouped by profile. Click any site to open it in Chrome on the VNC desktop, using that site's assigned profile. The URL bar at the top lets you type any URL and open it directly.</p>
+
+    <!-- SITES PAGE -->
+    <h2 id="page-sites">Sites Page</h2>
+    <p>The Sites page at <code>/sites</code> manages which sites are assigned to which Chrome profile. Each site has a name, URL, login URL, and profile assignment. You can add a site to all 5 profiles at once using the "ALL Profiles" option — useful for sites like Gmail or Gemini where you want one login per profile.</p>
+    <p>The "Open Login in VNC" button opens Chrome to that site's login page using the correct profile. Log in manually in the VNC viewer — sessions save automatically when Chrome is closed gracefully (SIGTERM).</p>
+
+    <!-- WORKER -->
+    <h2 id="page-worker">Worker</h2>
+    <p>The Worker page at <code>/worker</code> shows background browser jobs — multi-step automation tasks that run while you do other things. A job can browse multiple pages, extract data, fill forms, and return a structured result. Jobs are defined in JSON with a list of steps: <code>goto</code>, <code>click</code>, <code>type</code>, <code>extract</code>, <code>gemini</code>, <code>screenshot</code>.</p>
+
+    <!-- MOBILE & OVERLAY -->
+    <h2 id="page-mobile">Mobile & Overlay</h2>
+    <p>The mobile interface at <code>/mobile</code> is a full-screen chat interface optimised for phones. It supports the same commands as the main agent page including profile switching and flight shortcuts.</p>
+    <p>The RC overlay at <code>/overlay/rc</code> is a compact panel designed for a second screen or small display. It shows incoming results, approval requests, and job status in real time via SSE. The big overlay at <code>/overlay/big</code> is designed for a TV or large display — results appear in large readable cards.</p>
+    <p>The popup overlay at <code>/overlay/popup</code> is a browser extension-style popup — a small floating window you can keep open on any screen to see and send messages without switching tabs.</p>
+
+    <!-- GEMINI -->
+    <h2 id="gemini">Gemini Browser Search</h2>
+    <p>This is JARVIS's most powerful search feature. Instead of calling an API (which has rate limits and stale training data), it opens a real Chrome browser, navigates to <code>gemini.google.com/app</code>, types your query into the chat box, and reads the response back. Because it uses a real Google session, it can access Gemini's web search grounding, get today's news, real prices, live flight data, and current weather.</p>
+    <p>The Gemini profile directory is <code>/root/ai-browser/profiles/gemini</code> — a dedicated Playwright persistent context. This is separate from the 5 Chrome VNC profiles. You need to log into Gemini once through the Sites page (Open Login in VNC → gemini profile) and after that all automated searches use that logged-in session.</p>
+    <p>Up to 5 Gemini API keys can be configured in Setup for rotation — if one hits its rate limit, the next is used automatically with a staggered cooldown timer.</p>
+
+    <!-- GENSPARK -->
+    <h2 id="genspark">Genspark Agents</h2>
+    <p>JARVIS integrates with <strong>Genspark</strong> — an AI super-agent platform — via a permission-gated webhook system. Because Genspark requires your login session, it is disabled by default and must be explicitly enabled before any agent can be triggered. This prevents accidental use.</p>
+
+    <p><strong>How to enable:</strong> There are three ways to unlock Genspark access:</p>
+    <ul style="margin:8px 0 8px 20px;line-height:2;">
+      <li>Toggle the Genspark switch in the Sites page</li>
+      <li>Send a webhook: <code>POST http://192.168.0.8:8080/webhook/Genspark/enable</code></li>
+      <li>Type <code>genspark on</code> in the overlay or agent chat</li>
+    </ul>
+
+    <p><strong>Calling an agent via webhook:</strong></p>
+    <pre style="background:#0a0b11;border:1px solid #1e2030;border-radius:6px;padding:12px;font-size:11px;overflow-x:auto;margin:10px 0;">POST http://192.168.0.8:8080/webhook/Genspark/&lt;agent&gt;
+Content-Type: application/json
+
+{"query": "your task or search query"}</pre>
+
+    <p><strong>All 23 available agents:</strong></p>
+    <table>
+      <tr><th>Webhook path</th><th>Genspark Agent</th></tr>
+      <tr><td>/webhook/Genspark/claw</td><td>Claw — super web search agent</td></tr>
+      <tr><td>/webhook/Genspark/research</td><td>Deep Research</td></tr>
+      <tr><td>/webhook/Genspark/fact-check</td><td>Fact Check Agent</td></tr>
+      <tr><td>/webhook/Genspark/call</td><td>Call For Me (Twilio)</td></tr>
+      <tr><td>/webhook/Genspark/download</td><td>Download For Me</td></tr>
+      <tr><td>/webhook/Genspark/slides</td><td>AI Presentation / Slides</td></tr>
+      <tr><td>/webhook/Genspark/sheets</td><td>AI Sheets</td></tr>
+      <tr><td>/webhook/Genspark/docs</td><td>AI Docs / Webpage Generator</td></tr>
+      <tr><td>/webhook/Genspark/developer</td><td>AI Developer</td></tr>
+      <tr><td>/webhook/Genspark/designer</td><td>AI Designer</td></tr>
+      <tr><td>/webhook/Genspark/image</td><td>AI Image Generator</td></tr>
+      <tr><td>/webhook/Genspark/video</td><td>AI Video</td></tr>
+      <tr><td>/webhook/Genspark/audio</td><td>AI Audio</td></tr>
+      <tr><td>/webhook/Genspark/music</td><td>AI Music Generator</td></tr>
+      <tr><td>/webhook/Genspark/meeting</td><td>AI Meeting Notes</td></tr>
+      <tr><td>/webhook/Genspark/translation</td><td>Translation</td></tr>
+      <tr><td>/webhook/Genspark/workflows</td><td>Workflow Automation</td></tr>
+      <tr><td>/webhook/Genspark/inbox</td><td>Email & Inbox Management</td></tr>
+      <tr><td>/webhook/Genspark/photo</td><td>Photo Genius</td></tr>
+      <tr><td>/webhook/Genspark/clip</td><td>Clip Genius</td></tr>
+      <tr><td>/webhook/Genspark/pods</td><td>AI Pods</td></tr>
+      <tr><td>/webhook/Genspark/chat</td><td>AI Chat</td></tr>
+      <tr><td>/webhook/Genspark/search</td><td>Genspark Search</td></tr>
+    </table>
+
+    <p style="margin-top:10px;"><strong>Genspark API key:</strong> If you have a Genspark API key, add it to Setup → API Keys as <code>GENSPARK_API_KEY</code>. When set, JARVIS routes Genspark agent calls directly through the API instead of using the browser — faster, no login required, and works headlessly. The API key is stored in <code>config/.env</code> and loaded automatically on server restart.</p>
+
+    <p>The <strong>Overlay popup</strong> at <code>/overlay/popup</code> has a dedicated Genspark tab — you can see the current lock status, pick a mode, and run tasks directly without needing to use webhooks.</p>
+
+    <!-- MITOS -->
+    <h2 id="mitos">MITOS Physical Display</h2>
+    <p>MITOS is a 500×500 pixel physical screen running at <code>http://192.168.0.3:9050</code>. JARVIS can push content to it via POST requests to its API. Supported content types: <code>text</code> (plain message), <code>info</code> (formatted info card), <code>link</code> (URL with title), <code>cli</code> (monospace output), <code>full-txt</code> (multi-line text), <code>calendar</code> (calendar event).</p>
+    <p>From the agent page you can say <code>flight 1 mitos</code> to send the first flight result to the MITOS screen. The Agent page has a dedicated MITOS action bar on each result card with quick-send buttons.</p>
+
+    <!-- TELEGRAM -->
+    <h2 id="telegram">Telegram Notifications</h2>
+    <p>Configure a Telegram bot token and chat ID in Setup to receive notifications. JARVIS sends Telegram messages when: a background job completes, a webhook search returns a result, an approval is needed (guardrail trigger), or an error occurs. The Telegram bot can also be used to send commands to JARVIS — configure the webhook URL on your bot to point to <code>/webhook/receive</code>.</p>
+
+    <!-- PROXMOX -->
+    <h2 id="proxmox">Proxmox VM Fleet (Future)</h2>
+    <p>The current setup runs all 5 Chrome profiles on one machine. When more capacity is needed, the plan is to offload profiles 1–4 to separate VMs running on Proxmox, each one a clone of this VM.</p>
+
+    <div class="flow">
+      <div class="flow-step">Profile 0<br><span style="font-size:9px;color:#4a5568">This VM (local)</span></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">Profile 1<br><span style="font-size:9px;color:#4a5568">VM1 192.168.0.10</span></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">Profile 2<br><span style="font-size:9px;color:#4a5568">VM2 192.168.0.11</span></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">Profile 3<br><span style="font-size:9px;color:#4a5568">VM3 192.168.0.12</span></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">Profile 4<br><span style="font-size:9px;color:#4a5568">VM4 192.168.0.13</span></div>
+    </div>
+
+    <p>Each VM is a lightweight clone — same Debian base, same JARVIS stack, but only running Chrome and VNC (no AI models). The AI stays on this main VM. When a profile is requested, this VM starts the relevant Proxmox VM via API, waits for it to boot, then routes the Chrome open command to that VM's JARVIS agent.</p>
+    <p>VMs that are not in use are automatically suspended (paused to RAM — uses about 5% CPU and RAM, wakes in under 2 seconds) or hibernated (saved to disk — zero RAM, wakes in ~10 seconds) based on the idle settings configured in Setup. The idle timeout and idle action (suspend / hibernate / shutdown) are fully configurable per VM slot.</p>
+    <p>To set up: go to <code>/setup</code> → Proxmox VM Fleet → enter Proxmox host IP, API token, and for each profile slot the VM IP and VM ID. Save. JARVIS handles the rest automatically — boot on demand, idle after inactivity, route VNC stream to the browser.</p>
+
+    <!-- PORTS -->
+    <h2 id="ports">Ports & URLs</h2>
+    <table>
+      <tr><th>URL</th><th>What it is</th></tr>
+      <tr><td>http://192.168.0.8:8080</td><td>Main JARVIS agent interface</td></tr>
+      <tr><td>http://192.168.0.8:8080/browser</td><td>Browser + VNC + sites sidebar</td></tr>
+      <tr><td>http://192.168.0.8:8080/sites</td><td>Site & profile management</td></tr>
+      <tr><td>http://192.168.0.8:8080/webhooks</td><td>Webhook config & URLs</td></tr>
+      <tr><td>http://192.168.0.8:8080/setup</td><td>System configuration</td></tr>
+      <tr><td>http://192.168.0.8:8080/about</td><td>This page</td></tr>
+      <tr><td>http://192.168.0.8:8080/mobile</td><td>Mobile chat interface</td></tr>
+      <tr><td>http://192.168.0.8:8080/worker</td><td>Background job runner</td></tr>
+      <tr><td>http://192.168.0.8:8080/overlay/rc</td><td>RC overlay (second screen)</td></tr>
+      <tr><td>http://192.168.0.8:8080/overlay/big</td><td>Big display overlay</td></tr>
+      <tr><td>http://192.168.0.8:8080/overlay/popup</td><td>Floating AI overlay panel (chat, highlight, OCR, Genspark)</td></tr>
+      <tr><td>http://192.168.0.8:8080/webhook/Genspark/enable</td><td>Enable Genspark access via webhook</td></tr>
+      <tr><td>http://192.168.0.8:8080/webhook/Genspark/&lt;agent&gt;</td><td>Run any of 23 Genspark agents</td></tr>
+      <tr><td>http://192.168.0.8:6082/vnc.html</td><td>noVNC browser desktop viewer</td></tr>
+      <tr><td>http://192.168.0.3:9050</td><td>MITOS physical display</td></tr>
+    </table>
+
+    <!-- FILES -->
+    <h2 id="files">Key Files</h2>
+    <table>
+      <tr><th>File</th><th>Purpose</th></tr>
+      <tr><td>/root/ai-browser/server.py</td><td>Main Flask server — all API routes and logic</td></tr>
+      <tr><td>/root/ai-browser/agent.html</td><td>Main chat interface</td></tr>
+      <tr><td>/root/ai-browser/browser.html</td><td>Browser page with VNC + site sidebar</td></tr>
+      <tr><td>/root/ai-browser/sites.html</td><td>Site and profile manager</td></tr>
+      <tr><td>/root/ai-browser/webhooks.html</td><td>Webhook configuration page</td></tr>
+      <tr><td>/root/ai-browser/setup.html</td><td>System settings and Proxmox config</td></tr>
+      <tr><td>/root/ai-browser/mobile.html</td><td>Mobile chat interface</td></tr>
+      <tr><td>/root/ai-browser/config/.env</td><td>API keys, tokens, model config</td></tr>
+      <tr><td>/root/ai-browser/config/sites.json</td><td>Saved sites and profile assignments</td></tr>
+      <tr><td>/root/ai-browser/config/proxmox.json</td><td>Proxmox host, token, VM slot config</td></tr>
+      <tr><td>/root/ai-browser/config/search_sites.json</td><td>Search sites and webhook definitions</td></tr>
+      <tr><td>/root/ai-browser/config/genspark_state.json</td><td>Genspark enabled/disabled state (persists across restarts)</td></tr>
+      <tr><td>/root/ai-browser/brain_playwright.py</td><td>Multi-brain Playwright engine (Brain 0/2) + Deep Research + Vision</td></tr>
+      <tr><td>/root/ai-browser/overlay.html</td><td>Floating overlay panel (chat, highlight, OCR, Genspark tab)</td></tr>
+      <tr><td>/root/ai-browser/logs/server.log</td><td>Server log — all requests and errors</td></tr>
+      <tr><td>~/.config/google-chrome/Default</td><td>Chrome Profile 0 data (cookies, logins)</td></tr>
+      <tr><td>~/.config/google-chrome/Profile 1</td><td>Chrome Profile 1 data</td></tr>
+      <tr><td>/root/ai-browser/profiles/gemini</td><td>Playwright Gemini search profile</td></tr>
+      <tr><td>/etc/systemd/system/x11vnc-nopw.service</td><td>x11vnc systemd service (no-password VNC)</td></tr>
+      <tr><td>/etc/systemd/system/novnc-public.service</td><td>noVNC websockify systemd service</td></tr>
+    </table>
+
+    <!-- COMMANDS -->
+    <h2 id="commands">Chat Commands</h2>
+    <p>These commands work in the main agent, mobile interface, and popup overlay.</p>
+    <table>
+      <tr><th>Command</th><th>What it does</th></tr>
+      <tr><td>profile 0</td><td>Switch Chrome to Profile 0 (Default)</td></tr>
+      <tr><td>profile 1</td><td>Switch Chrome to Profile 1</td></tr>
+      <tr><td>profile 2 gemini</td><td>Open Gemini in Chrome Profile 2</td></tr>
+      <tr><td>profile default</td><td>Switch to Default profile</td></tr>
+      <tr><td>flight 1</td><td>Show first flight result details</td></tr>
+      <tr><td>flight 1 mitos</td><td>Send flight 1 to MITOS display</td></tr>
+      <tr><td>flight 1 book</td><td>Open flight 1 booking URL in browser</td></tr>
+      <tr><td>flight 1 tg</td><td>Send flight 1 to Telegram</td></tr>
+      <tr><td>genspark on</td><td>Enable Genspark access</td></tr>
+      <tr><td>genspark off</td><td>Disable Genspark access</td></tr>
+    </table>
+
+    <div class="edit-note">
+      <strong>Editing this page:</strong> This file is at <code>/root/ai-browser/about.html</code>. It is a standard HTML file — edit it directly to add notes, update IPs, add new sections, or record anything you want to remember about the system. The table of contents links use <code>id</code> attributes on the headings — add a matching <code>id</code> and a link in the <code>.toc</code> sidebar to include new sections.
+    </div>
+  </div>
+</div>
+
+<script>
+// Highlight active TOC item on scroll
+const headings = document.querySelectorAll('h2[id], h3[id]');
+const tocLinks = document.querySelectorAll('.toc a');
+function onScroll(){
+  let current = '';
+  headings.forEach(h=>{
+    if(h.getBoundingClientRect().top < 120) current = h.id;
+  });
+  tocLinks.forEach(a=>{
+    a.classList.toggle('on', a.getAttribute('href')==='#'+current);
+  });
+}
+window.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

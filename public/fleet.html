@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JARVIS — LiteLLM Fleet</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100dvh}
+
+#hdr{background:#0a0c14;border-bottom:1px solid #1e2030;padding:12px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+#hdr h1{font-size:15px;font-weight:700;color:#f5c518}
+#hdr .sub{font-size:11px;color:#475569}
+#hdr a{margin-left:auto;font-size:11px;color:#475569;text-decoration:none;padding:4px 12px;border:1px solid #1e2030;border-radius:6px}
+#hdr a:hover{color:#e2e8f0;border-color:#2d3a52}
+
+/* stats bar */
+#stats{display:flex;gap:0;border-bottom:1px solid #1e2030}
+.stat{flex:1;padding:12px 20px;border-right:1px solid #1e2030;text-align:center}
+.stat:last-child{border-right:none}
+.sv{font-size:24px;font-weight:800}
+.sl{font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+/* add PC bar */
+#add-bar{display:flex;gap:8px;align-items:center;padding:14px 20px;border-bottom:1px solid #1e2030;background:#0a0c14}
+#add-bar input{background:#020305;border:1px solid #2d3a52;color:#e2e8f0;border-radius:6px;padding:7px 12px;font-size:13px;outline:none;font-family:monospace}
+#add-bar input:focus{border-color:#6b8cff}
+#ip-inp{width:160px}
+#label-inp{width:120px}
+.btn{border:1px solid #2d3a52;background:transparent;color:#94a3b8;border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:600;transition:all .15s}
+.btn:hover{border-color:#6b8cff;color:#e2e8f0}
+.btn-blue{background:#6b8cff;border-color:#6b8cff;color:#fff}
+.btn-blue:hover{background:#8ba3ff}
+.btn-red{border-color:#ef4444;color:#ef4444}
+.btn-red:hover{background:#ef4444;color:#fff}
+.btn-grn{border-color:#22c55e;color:#22c55e}
+.btn-grn:hover{background:#22c55e;color:#000}
+.btn-sm{padding:4px 10px;font-size:11px}
+
+/* PC grid */
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;padding:20px}
+
+.pc-card{background:#0a0c14;border:1px solid #1e2030;border-radius:12px;overflow:hidden;transition:border-color .2s}
+.pc-card.online{border-color:#166534}
+.pc-card.setting-up{border-color:#f5c518}
+
+.pc-hdr{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #1e2030}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:#334155}
+.dot.online{background:#22c55e}
+.dot.offline{background:#ef4444}
+.dot.busy{background:#f5c518;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pc-name{font-size:13px;font-weight:700}
+.pc-ip{font-size:10px;color:#475569;font-family:monospace}
+.pc-badges{margin-left:auto;display:flex;gap:5px}
+.badge{font-size:10px;padding:2px 8px;border-radius:10px}
+.b-keys{background:#0d2a3a;color:#38bdf8}
+.b-online{background:#16532d;color:#4ade80}
+.b-offline{background:#3a0d0d;color:#f87171}
+.b-busy{background:#3a2a0d;color:#f5c518}
+
+.pc-body{padding:14px 16px}
+
+/* key rows */
+.key-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.key-num{font-size:10px;color:#475569;width:18px;text-align:right;flex-shrink:0}
+.key-inp{flex:1;background:#020305;border:1px solid #1e2030;color:#e2e8f0;border-radius:5px;padding:5px 9px;font-size:11px;font-family:monospace;outline:none;transition:border .15s}
+.key-inp:focus{border-color:#6b8cff}
+.key-inp.filled{border-color:#166534}
+.key-inp.invalid{border-color:#ef4444}
+.key-clear{font-size:10px;color:#334155;background:none;border:none;cursor:pointer;padding:2px 4px}
+.key-clear:hover{color:#ef4444}
+
+.pc-footer{display:flex;gap:6px;align-items:center;padding:10px 16px;border-top:1px solid #1e2030;background:#020305}
+.pc-status{font-size:10px;color:#475569;flex:1;min-height:14px}
+
+/* log panel */
+.log-wrap{display:none;margin:0 16px 14px;background:#020305;border:1px solid #1e2030;border-radius:6px;max-height:140px;overflow-y:auto}
+.log-line{font-size:10px;font-family:monospace;padding:2px 8px;border-bottom:1px solid #0d0f17;color:#64748b}
+.log-line:last-child{border-bottom:none}
+.log-ok{color:#4ade80}
+.log-err{color:#f87171}
+.log-info{color:#f5c518}
+
+/* toast */
+.toast{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.t{padding:10px 16px;border-radius:8px;font-size:12px;font-weight:600;opacity:0;transform:translateY(-8px);transition:all .3s;pointer-events:auto}
+.t.show{opacity:1;transform:none}
+.t-ok{background:#16532d;border:1px solid #166534;color:#4ade80}
+.t-err{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5}
+.t-info{background:#1e3a5f;border:1px solid #1d4ed8;color:#93c5fd}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <h1>🛰 LiteLLM Fleet</h1>
+  <div class="sub">Auto-setup · 5 keys/PC · master proxy at :4000</div>
+  <a href="/gemini-keys">🔑 Key Broker</a>
+  <a href="/Pipeline">💬 Pipeline</a>
+</div>
+
+<div id="stats">
+  <div class="stat"><div class="sv" id="st-pcs" style="color:#6b8cff">—</div><div class="sl">PCs Online</div></div>
+  <div class="stat"><div class="sv" id="st-keys" style="color:#22c55e">—</div><div class="sl">Total Keys</div></div>
+  <div class="stat"><div class="sv" id="st-rpm" style="color:#f5c518">—</div><div class="sl">Max RPM</div></div>
+  <div class="stat"><div class="sv" id="st-proxy" style="color:#38bdf8">—</div><div class="sl">Master Proxy</div></div>
+</div>
+
+<div id="add-bar">
+  <input id="ip-inp" placeholder="192.168.0.X" type="text">
+  <input id="label-inp" placeholder="Label (e.g. PC-Gaming)" type="text">
+  <button class="btn btn-blue" onclick="addPC()">+ Add PC</button>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn btn-sm" onclick="loadAll()">↺ Refresh</button>
+    <button class="btn btn-sm" style="color:#f5c518;border-color:#f5c518" onclick="rebuildProxy()">⚡ Rebuild Proxy Config</button>
+  </div>
+</div>
+
+<div id="grid"></div>
+<div class="toast" id="toast-box"></div>
+
+<script>
+const DEFAULT_PCS = [
+  {ip:'192.168.0.3', label:'Master'},
+  {ip:'192.168.0.8', label:'PC-0.8'},
+  {ip:'192.168.0.9', label:'PC-0.9'},
+  {ip:'192.168.0.10',label:'PC-0.10'},
+  {ip:'192.168.0.11',label:'PC-0.11'},
+  {ip:'192.168.0.12',label:'PC-0.12'},
+];
+
+let _pcs = [];     // loaded from fleet-nodes.json + defaults
+let _litellm = {}; // litellm status per IP
+
+// ── Load state ────────────────────────────────────────────────────────────────
+async function loadAll() {
+  const [nodes, status] = await Promise.all([
+    fetch('/api/fleet/nodes').then(r=>r.json()).catch(()=>({nodes:[]})),
+    fetch('/api/fleet/litellm-status').then(r=>r.json()).catch(()=>({})),
+  ]);
+
+  // Merge registered nodes + defaults
+  const reg = nodes.nodes || [];
+  const regIps = new Set(reg.map(n=>n.ip));
+  _pcs = [...DEFAULT_PCS.filter(d=>!regIps.has(d.ip)), ...reg]
+    .sort((a,b)=>{
+      const na = a.ip.split('.').pop()*1, nb = b.ip.split('.').pop()*1;
+      return na - nb;
+    });
+
+  // Add any extra registered nodes not in defaults
+  reg.forEach(n=>{ if(!DEFAULT_PCS.find(d=>d.ip===n.ip) && !_pcs.find(p=>p.ip===n.ip)) _pcs.push(n); });
+
+  _litellm = status;
+  renderAll();
+  updateStats(reg);
+}
+
+function updateStats(nodes) {
+  const online = nodes.filter(n=>n.status==='active').length;
+  const keys   = nodes.reduce((s,n)=>s+(n.keys||0), 0);
+  set('st-pcs',  online + ' / ' + nodes.length);
+  set('st-keys', keys || (nodes.length ? '—' : '0'));
+  set('st-rpm',  keys ? (keys * 60) + '/min' : '—');
+  set('st-proxy', nodes.length ? '✓ ' + nodes.length + ' nodes' : 'no nodes');
+}
+
+function set(id, v) { const e=document.getElementById(id); if(e) e.textContent=v; }
+
+// ── Render PC cards ────────────────────────────────────────────────────────────
+function renderAll() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = _pcs.map(pc => renderPC(pc)).join('');
+  // Restore saved keys from localStorage
+  _pcs.forEach(pc => {
+    for(let i=1;i<=5;i++){
+      const saved = localStorage.getItem(`key_${pc.ip}_${i}`);
+      const inp = document.getElementById(`k_${pc.ip.replace(/\./g,'_')}_${i}`);
+      if(saved && inp) { inp.value=saved; inp.classList.add('filled'); }
+    }
+  });
+}
+
+function renderPC(pc) {
+  const id    = pc.ip.replace(/\./g,'_');
+  const isReg = !!pc.status; // has been set up
+  const nkeys = pc.keys || 0;
+  const online = pc.status === 'active';
+
+  const dotCls = isReg ? (online?'online':'offline') : '';
+  const cardCls = isReg && online ? 'online' : '';
+  const badge = isReg
+    ? `<span class="badge ${online?'b-online':'b-offline'}">${online?'running':'offline'}</span>`
+    : '<span class="badge" style="background:#1e2030;color:#475569">not set up</span>';
+  const keyBadge = nkeys ? `<span class="badge b-keys">${nkeys} keys</span>` : '';
+
+  const keyRows = [1,2,3,4,5].map(i => `
+    <div class="key-row">
+      <span class="key-num">${i}</span>
+      <input class="key-inp" id="k_${id}_${i}" type="password"
+        placeholder="AIza…" autocomplete="off"
+        oninput="onKeyInput('${pc.ip}',${i},this)"
+        onfocus="this.type='text'" onblur="this.type='password'">
+      <button class="key-clear" onclick="clearKey('${pc.ip}',${i})" title="Clear">✕</button>
+    </div>`).join('');
+
+  return `
+  <div class="pc-card ${cardCls}" id="card_${id}">
+    <div class="pc-hdr">
+      <div class="dot ${dotCls}" id="dot_${id}"></div>
+      <div>
+        <div class="pc-name" id="pcname_${id}">${pc.label||pc.ip}</div>
+        <div class="pc-ip">${pc.ip}:4100</div>
+      </div>
+      <div class="pc-badges">${keyBadge}${badge}</div>
+    </div>
+    <div class="pc-body">
+      ${keyRows}
+    </div>
+    <div class="log-wrap" id="log_${id}"></div>
+    <div class="pc-footer">
+      <div class="pc-status" id="st_${id}">${isReg ? (online?'LiteLLM running on :4100':'LiteLLM offline') : 'Enter keys then click Setup'}</div>
+      <button class="btn btn-sm" onclick="pingPC('${pc.ip}')">Ping</button>
+      ${isReg ? `<button class="btn btn-sm btn-red" onclick="removePC('${pc.ip}')">Remove</button>` : ''}
+      <button class="btn btn-sm btn-grn" id="setupbtn_${id}" onclick="setupPC('${pc.ip}')">
+        ${isReg?'Re-setup':'Setup'}
+      </button>
+    </div>
+  </div>`;
+}
+
+// ── Key input ─────────────────────────────────────────────────────────────────
+function onKeyInput(ip, num, el) {
+  const v = el.value.trim();
+  el.classList.toggle('filled', v.startsWith('AIza') && v.length > 20);
+  el.classList.toggle('invalid', v.length > 3 && !v.startsWith('AIza'));
+  localStorage.setItem(`key_${ip}_${num}`, v);
+}
+
+function clearKey(ip, num) {
+  const id = ip.replace(/\./g,'_');
+  const el = document.getElementById(`k_${id}_${num}`);
+  if(el){ el.value=''; el.classList.remove('filled','invalid'); }
+  localStorage.removeItem(`key_${ip}_${num}`);
+}
+
+function getKeys(ip) {
+  return [1,2,3,4,5]
+    .map(i=>{ const el=document.getElementById(`k_${ip.replace(/\./g,'_')}_${i}`); return el?el.value.trim():''; })
+    .filter(k=>k.startsWith('AIza') && k.length>20);
+}
+
+// ── Setup PC ─────────────────────────────────────────────────────────────────
+async function setupPC(ip) {
+  const id  = ip.replace(/\./g,'_');
+  const keys = getKeys(ip);
+  if(!keys.length){ toast('Enter at least 1 Gemini key first','err'); return; }
+
+  const pc = _pcs.find(p=>p.ip===ip) || {};
+  const label = pc.label || ip;
+
+  setBusy(id, true, 'Setting up…');
+  showLog(id, []);
+
+  try {
+    const r = await fetch('/api/fleet/setup', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ip, label, user:'root', keys})
+    });
+    const d = await r.json();
+    showLog(id, d.logs || []);
+
+    if(d.ok) {
+      setBusy(id, false, `✓ Running — ${keys.length} keys · master proxy updated`);
+      setDot(id, 'online');
+      toast(`${label} set up with ${keys.length} keys — proxy rebuilt`, 'ok');
+      await loadAll();
+    } else {
+      setBusy(id, false, '✗ ' + (d.error||'Setup failed'));
+      setDot(id, 'offline');
+      toast('Setup failed: ' + (d.error||'unknown'), 'err');
+    }
+  } catch(e) {
+    setBusy(id, false, '✗ ' + e.message);
+    toast('Error: ' + e.message, 'err');
+  }
+}
+
+function setBusy(id, busy, msg) {
+  const btn = document.getElementById('setupbtn_'+id);
+  const st  = document.getElementById('st_'+id);
+  const card = document.getElementById('card_'+id);
+  if(btn)  { btn.disabled=busy; btn.textContent=busy?'Setting up…':'Re-setup'; }
+  if(st)   st.textContent = msg;
+  if(card) { card.classList.toggle('setting-up', busy); }
+}
+
+function setDot(id, cls) {
+  const d = document.getElementById('dot_'+id);
+  if(d) { d.className='dot '+cls; }
+}
+
+function showLog(id, lines) {
+  const el = document.getElementById('log_'+id);
+  if(!el) return;
+  if(!lines.length) { el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML = lines.map(l=>{
+    const cls = l.startsWith('✓')||l.includes('OK')||l.includes('up') ? 'log-ok'
+              : l.startsWith('✗')||l.includes('ERROR')||l.includes('failed') ? 'log-err'
+              : 'log-info';
+    return `<div class="log-line ${cls}">${escHtml(l)}</div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Ping ──────────────────────────────────────────────────────────────────────
+async function pingPC(ip) {
+  const id = ip.replace(/\./g,'_');
+  const st = document.getElementById('st_'+id);
+  if(st) st.textContent = 'Pinging…';
+  try {
+    const r = await fetch('/api/fleet/ping', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ip})
+    });
+    const d = await r.json();
+    if(d.litellm_ok) {
+      setDot(id,'online');
+      if(st) st.textContent = `LiteLLM online — ${d.models||'?'} models · ${Math.round(d.latency_ms||0)}ms`;
+    } else {
+      setDot(id,'offline');
+      if(st) st.textContent = 'LiteLLM not responding on :4100';
+    }
+  } catch(e) {
+    if(st) st.textContent = 'Ping failed: ' + e.message;
+  }
+}
+
+// ── Remove ────────────────────────────────────────────────────────────────────
+async function removePC(ip) {
+  if(!confirm(`Remove ${ip} from fleet and rebuild proxy config?`)) return;
+  const r = await fetch('/api/fleet/remove', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ip})
+  });
+  const d = await r.json();
+  toast(`Removed — ${d.remaining} nodes remaining`, 'ok');
+  await loadAll();
+}
+
+// ── Add PC ────────────────────────────────────────────────────────────────────
+function addPC() {
+  let ip = document.getElementById('ip-inp').value.trim();
+  const label = document.getElementById('label-inp').value.trim();
+  if(!ip) { toast('Enter an IP address', 'err'); return; }
+  // auto-prefix if just a number
+  if(/^\d+$/.test(ip)) ip = '192.168.0.' + ip;
+  if(_pcs.find(p=>p.ip===ip)) { toast('PC already in list', 'err'); return; }
+  _pcs.push({ip, label: label || ip});
+  renderAll();
+  document.getElementById('ip-inp').value = '';
+  document.getElementById('label-inp').value = '';
+}
+
+// ── Rebuild proxy ─────────────────────────────────────────────────────────────
+async function rebuildProxy() {
+  const btn = document.querySelector('[onclick="rebuildProxy()"]');
+  if(btn) { btn.textContent='Rebuilding…'; btn.disabled=true; }
+  try {
+    const r = await fetch('/api/fleet/rebuild-proxy', {method:'POST'});
+    const d = await r.json();
+    toast(`Proxy rebuilt — ${d.local_keys} local + ${d.remote_nodes} remote nodes`, 'ok');
+  } catch(e) { toast('Rebuild failed: '+e.message,'err'); }
+  finally { if(btn){btn.textContent='⚡ Rebuild Proxy Config';btn.disabled=false;} }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='ok') {
+  const box = document.getElementById('toast-box');
+  const el = document.createElement('div');
+  el.className = `t t-${type}`;
+  el.textContent = msg;
+  box.appendChild(el);
+  requestAnimationFrame(()=>{ el.classList.add('show'); });
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(),400); }, 4000);
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JARVIS Vision</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+#topbar{display:flex;align-items:center;gap:8px;padding:7px 14px;background:#111827;border-bottom:1px solid #1f2937;flex-shrink:0}
+#topbar h1{font-size:14px;font-weight:700;color:#6366f1;letter-spacing:.05em;margin-right:auto}
+.tb-badge{font-size:10px;padding:2px 7px;border-radius:9px;background:#1f2937;color:#9ca3af;border:1px solid #374151}
+.tb-badge.live{background:#064e3b;color:#34d399;border-color:#065f46}
+#status-dot{width:8px;height:8px;border-radius:50%;background:#6b7280;flex-shrink:0}
+#status-dot.live{background:#34d399;box-shadow:0 0 6px #34d399}
+#status-dot.err{background:#ef4444}
+#status-text{font-size:11px;color:#6b7280;min-width:90px}
+#btn-mic{padding:3px 8px;border:1px solid #374151;background:#1f2937;color:#9ca3af;border-radius:5px;font-size:11px;cursor:pointer}
+#btn-mic.active{background:#7c3aed;border-color:#8b5cf6;color:#fff}
+
+#main{display:flex;flex:1;overflow:hidden}
+
+/* ── LEFT ── */
+#left{width:340px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid #1f2937;background:#0d1117;overflow-y:auto}
+#left::-webkit-scrollbar{width:3px}
+#left::-webkit-scrollbar-thumb{background:#1f2937}
+
+/* video */
+#video-wrap{position:relative;background:#000;flex-shrink:0}
+#video-wrap video,#video-wrap canvas{width:100%;display:block}
+#vid{aspect-ratio:16/9;object-fit:cover}
+#roi-canvas{position:absolute;top:0;left:0;cursor:crosshair;opacity:.85}
+#vid-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#374151;font-size:13px;pointer-events:none}
+#ring-wrap{position:absolute;bottom:6px;right:6px;pointer-events:none}
+#ring-svg{width:40px;height:40px;transform:rotate(-90deg)}
+#ring-bg{fill:none;stroke:#1f2937;stroke-width:4}
+#ring-fg{fill:none;stroke:#6366f1;stroke-width:4;stroke-linecap:round}
+#ring-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#6366f1;font-weight:700}
+#snap-label{position:absolute;top:6px;left:6px;background:#6366f1;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;display:none}
+#roi-badge{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.7);color:#f59e0b;font-size:9px;padding:2px 5px;border-radius:3px;display:none}
+
+/* section headers */
+.sec{padding:6px 10px;font-size:9px;color:#374151;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #111827;background:#060b14;flex-shrink:0}
+
+/* control rows */
+.ctrl{padding:8px 10px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;border-bottom:1px solid #1f2937}
+.row{display:flex;gap:5px;align-items:center}
+.lbl{font-size:10px;color:#6b7280;min-width:46px;flex-shrink:0}
+.src-btn,.prov-btn,.sp-btn,.act-btn{border:1px solid #374151;background:#1f2937;color:#6b7280;border-radius:5px;font-size:10px;cursor:pointer;transition:all .15s;padding:4px 0}
+.src-btn,.prov-btn{flex:1}
+.sp-btn{flex:1;padding:3px 0}
+.act-btn{flex:1;padding:5px 0}
+.src-btn.active,.prov-btn.active{background:#4f46e5;border-color:#6366f1;color:#fff}
+.sp-btn.active{background:#064e3b;border-color:#065f46;color:#34d399}
+.act-btn.active{background:#7c3aed;border-color:#8b5cf6;color:#fff}
+#btn-start{flex:1;padding:6px;background:#4f46e5;border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+#btn-start.running{background:#dc2626}
+#btn-snap{padding:5px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#9ca3af;font-size:12px;cursor:pointer}
+#btn-snap:hover{background:#374151}
+#btn-clear-roi{padding:3px 7px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#f59e0b;font-size:10px;cursor:pointer;display:none}
+
+/* inputs */
+.inp{flex:1;background:#0d1117;border:1px solid #374151;border-radius:4px;color:#e2e8f0;font-size:10px;padding:3px 6px}
+.inp.ok{border-color:#065f46}
+.inp-lg{width:100%;background:#0d1117;border:1px solid #374151;border-radius:4px;color:#e2e8f0;font-size:10px;padding:4px 7px;resize:none}
+select.inp{cursor:pointer}
+.save-btn{padding:3px 8px;background:#4f46e5;border:none;border-radius:4px;color:#fff;font-size:10px;cursor:pointer}
+
+/* camera selector */
+#cam-select-row{display:none}
+
+/* thumbs */
+#thumbs{display:flex;gap:5px;padding:7px;overflow-x:auto;height:62px;background:#060b14;border-bottom:1px solid #1f2937;flex-shrink:0}
+#thumbs::-webkit-scrollbar{height:3px}
+#thumbs::-webkit-scrollbar-thumb{background:#374151;border-radius:2px}
+.thumb{width:76px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer;border:2px solid transparent;flex-shrink:0}
+.thumb:hover,.thumb.new{border-color:#6366f1}
+
+/* template grid */
+#tpl-grid{display:flex;gap:6px;flex-wrap:wrap;padding:6px 10px}
+.tpl-card{position:relative;width:80px;height:54px;border-radius:5px;overflow:hidden;border:1px solid #374151;cursor:pointer}
+.tpl-card img{width:100%;height:100%;object-fit:cover}
+.tpl-card .tpl-del{position:absolute;top:1px;right:2px;background:rgba(0,0,0,.7);color:#fca5a5;border:none;border-radius:3px;font-size:9px;cursor:pointer;padding:1px 3px}
+.tpl-card .tpl-lbl{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.65);color:#e2e8f0;font-size:8px;padding:1px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tpl-add{width:80px;height:54px;border:1px dashed #374151;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#374151;cursor:pointer}
+#tpl-add:hover{border-color:#6366f1;color:#6366f1}
+
+/* clip gallery */
+#clip-gallery{display:flex;flex-direction:column;gap:5px;padding:6px 10px;max-height:180px;overflow-y:auto}
+.clip-row{display:flex;gap:8px;align-items:center;background:#111827;border:1px solid #1f2937;border-radius:5px;padding:5px 7px}
+.clip-row video{width:80px;height:46px;object-fit:cover;border-radius:3px;flex-shrink:0}
+.clip-info{flex:1;min-width:0}
+.clip-name{font-size:9px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clip-kw{font-size:10px;color:#f59e0b}
+.clip-dl{padding:2px 6px;background:#1f2937;border:1px solid #374151;border-radius:3px;color:#9ca3af;font-size:9px;cursor:pointer;text-decoration:none}
+
+/* trigger list */
+#trigger-list{padding:6px 10px;display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto}
+.trig-row{display:flex;gap:5px;align-items:center;background:#111827;border:1px solid #1f2937;border-radius:5px;padding:4px 6px}
+.trig-kw{flex:1;font-size:10px;color:#e2e8f0;word-break:break-all}
+.trig-url{flex:2;font-size:9px;color:#6b7280;word-break:break-all;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trig-del{padding:1px 5px;background:#7f1d1d;border:none;border-radius:3px;color:#fca5a5;font-size:10px;cursor:pointer}
+
+/* ── RIGHT ── */
+#right{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#now-card{padding:12px 16px;border-bottom:1px solid #1f2937;flex-shrink:0}
+.nc-hdr{font-size:9px;color:#4b5563;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.nc-hdr .ts{margin-left:auto;font-size:10px;color:#374151}
+#now-desc{font-size:17px;line-height:1.5;color:#e2e8f0;font-weight:500;min-height:50px}
+#now-provider{font-size:10px;color:#4b5563;margin-top:3px}
+#stt-bar{padding:7px 16px;border-bottom:1px solid #1f2937;font-size:12px;color:#a78bfa;display:none;align-items:center;gap:8px;flex-shrink:0}
+#stt-bar span{flex:1;font-style:italic}
+#feed-hdr{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:10px;color:#4b5563;border-bottom:1px solid #111827;flex-shrink:0}
+#feed-count{margin-left:auto;background:#1f2937;padding:2px 7px;border-radius:10px;font-size:10px;color:#6b7280}
+#feed{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:7px}
+#feed::-webkit-scrollbar{width:4px}
+#feed::-webkit-scrollbar-thumb{background:#1f2937;border-radius:2px}
+.feed-item{display:flex;gap:9px;background:#111827;border:1px solid #1f2937;border-radius:7px;padding:7px}
+.feed-item.triggered{border-color:#f59e0b}
+.fi-thumb{width:68px;height:46px;object-fit:cover;border-radius:4px;cursor:pointer;flex-shrink:0}
+.fi-body{flex:1;min-width:0}
+.fi-ts{font-size:9px;color:#374151;margin-bottom:2px}
+.fi-desc{font-size:11px;color:#cbd5e1;line-height:1.5}
+.fi-prov{font-size:9px;color:#374151;margin-top:2px}
+.fi-trig{font-size:9px;color:#f59e0b;margin-top:2px}
+
+/* lightbox */
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;align-items:center;justify-content:center}
+#lightbox.open{display:flex}
+#lb-img{max-width:90vw;max-height:90vh;border-radius:8px}
+#lb-close{position:absolute;top:14px;right:18px;color:#9ca3af;font-size:26px;cursor:pointer}
+
+#kbhint{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);background:#111827;border:1px solid #1f2937;border-radius:20px;padding:3px 12px;font-size:9px;color:#374151;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>⬡ JARVIS VISION</h1>
+  <span class="tb-badge" id="badge-src">No Source</span>
+  <span class="tb-badge" id="badge-speed">30s</span>
+  <div id="status-dot"></div>
+  <span id="status-text">Stopped</span>
+  <button id="btn-mic" onclick="toggleMic()" title="Speech to text">🎤 Mic</button>
+</div>
+
+<div id="main">
+<div id="left">
+
+  <!-- VIDEO -->
+  <div id="video-wrap">
+    <video id="vid" autoplay muted playsinline></video>
+    <canvas id="roi-canvas"></canvas>
+    <div id="vid-placeholder">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.3">
+        <path d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+      </svg>
+      Select a source to begin
+    </div>
+    <div id="ring-wrap">
+      <svg id="ring-svg" viewBox="0 0 40 40"><circle id="ring-bg" cx="20" cy="20" r="16"/><circle id="ring-fg" cx="20" cy="20" r="16"/></svg>
+      <div id="ring-label">—</div>
+    </div>
+    <div id="snap-label">📸</div>
+    <div id="roi-badge">📐 ROI</div>
+  </div>
+
+  <!-- SOURCE -->
+  <div class="sec">Source</div>
+  <div class="ctrl">
+    <div class="row">
+      <button class="src-btn active" id="btn-cam"  onclick="setSource('cam')">📷 Camera</button>
+      <button class="src-btn"        id="btn-scr"  onclick="setSource('screen')">🖥 Screen</button>
+      <button class="src-btn"        id="btn-cam2" onclick="setSource('cam2')">📹 Cam 2</button>
+    </div>
+    <div class="row" id="cam-select-row">
+      <label class="lbl">Device</label>
+      <select class="inp" id="sel-cam" onchange="onCamChange()"></select>
+    </div>
+    <div class="row">
+      <label class="lbl">Interval</label>
+      <div style="flex:1;display:flex;gap:3px" id="speed-bar"></div>
+    </div>
+    <div class="row">
+      <button id="btn-start" onclick="toggleRun()">▶ Start</button>
+      <button id="btn-snap"  onclick="manualSnap()">📸</button>
+      <button id="btn-clear-roi" onclick="clearRoi()">✕ ROI</button>
+    </div>
+    <div class="row" style="font-size:10px;color:#4b5563">Draw a box on the video to focus on a region (OCR/crop)</div>
+  </div>
+
+  <!-- PROVIDER -->
+  <div class="sec">AI Provider</div>
+  <div class="ctrl">
+    <div class="row">
+      <button class="prov-btn active" id="pb-auto"   onclick="setProvider('auto')">⚡ Auto</button>
+      <button class="prov-btn"        id="pb-groq"   onclick="setProvider('groq')">🟠 Groq</button>
+      <button class="prov-btn"        id="pb-gemini" onclick="setProvider('gemini')">🔵 Gemini</button>
+    </div>
+    <div class="row">
+      <label class="lbl" id="key-label">Key</label>
+      <input class="inp" id="inp-key" type="password" placeholder="…" autocomplete="off">
+      <button class="save-btn" onclick="saveKey()">Save</button>
+    </div>
+    <div class="row">
+      <label class="lbl">Model</label>
+      <select class="inp" id="sel-model">
+        <option value="groq:meta-llama/llama-4-scout-17b-16e-instruct">Llama 4 Scout — Groq ⚡</option>
+        <option value="groq:llama-3.2-11b-vision-preview">Llama 3.2 11B — Groq</option>
+        <option value="groq:llama-3.2-90b-vision-preview">Llama 3.2 90B — Groq</option>
+        <option value="gemini:gemini-2.0-flash-lite">gemini-2.0-flash-lite 🆓</option>
+        <option value="gemini:gemini-1.5-flash">gemini-1.5-flash</option>
+        <option value="gemini:gemini-2.0-flash">gemini-2.0-flash</option>
+      </select>
+    </div>
+    <div class="row">
+      <label class="lbl" style="flex-shrink:0">Mode</label>
+      <button class="act-btn" id="mode-desc" onclick="setMode('describe')" title="Describe scene">👁 Describe</button>
+      <button class="act-btn" id="mode-ocr"  onclick="setMode('ocr')"      title="Extract all text (OCR)">📄 OCR</button>
+      <button class="act-btn" id="mode-game" onclick="setMode('game')"     title="Game tracking">🎮 Game</button>
+    </div>
+  </div>
+
+  <!-- GAME CONTEXT -->
+  <div class="sec">Game / Session Context</div>
+  <div class="ctrl">
+    <div class="row">
+      <label class="lbl">Game</label>
+      <input class="inp" id="inp-game" type="text" placeholder="e.g. Combat Master" list="game-list" onchange="applyGameProfile(this.value)">
+      <datalist id="game-list">
+        <option value="Combat Master">
+        <option value="Valorant">
+        <option value="CS2">
+        <option value="Fortnite">
+        <option value="Warzone">
+        <option value="Apex Legends">
+        <option value="Minecraft">
+        <option value="GTA V">
+      </datalist>
+    </div>
+    <div class="row">
+      <label class="lbl">Player</label>
+      <input class="inp" id="inp-player" type="text" placeholder="Player / username to track">
+    </div>
+    <div class="row">
+      <label class="lbl">Notes</label>
+      <input class="inp" id="inp-notes" type="text" placeholder="Extra context for AI…">
+    </div>
+    <div class="row">
+      <label class="lbl">Prompt</label>
+      <input class="inp" id="inp-prompt" type="text" value="Describe what is happening in 30 words or fewer.">
+    </div>
+    <div class="row">
+      <button class="save-btn" style="flex:1" onclick="saveContext()">💾 Save Context</button>
+    </div>
+  </div>
+
+  <!-- GAME TEMPLATES -->
+  <div class="sec">Game Visual Templates <span style="color:#4b5563;font-size:8px">(reference screenshots for AI)</span></div>
+  <div id="tpl-grid">
+    <div id="tpl-add" onclick="document.getElementById('tpl-file').click()" title="Upload reference screenshot">＋</div>
+  </div>
+  <input type="file" id="tpl-file" accept="image/*" style="display:none" multiple onchange="addTemplates(this)">
+
+  <!-- CLIPS -->
+  <div class="sec">Saved Clips <span id="clip-count" style="color:#4b5563;font-size:8px"></span> <button style="float:right;font-size:9px;background:none;border:none;color:#4b5563;cursor:pointer;margin-top:-1px" onclick="loadClips()">↻</button></div>
+  <div id="clip-gallery"></div>
+
+  <!-- TRIGGERS -->
+  <div class="sec">Webhook Triggers (fire on keyword match)</div>
+  <div class="ctrl">
+    <div class="row">
+      <input class="inp" id="inp-trig-kw"  type="text" placeholder="Keyword (e.g. kill, headshot)">
+      <input class="inp" id="inp-trig-url" type="text" placeholder="Webhook URL">
+      <button class="save-btn" onclick="addTrigger()">+</button>
+    </div>
+  </div>
+  <div id="trigger-list"></div>
+
+  <!-- THUMBS -->
+  <div id="thumbs"></div>
+
+</div><!-- /left -->
+
+<!-- RIGHT -->
+<div id="right">
+  <div id="now-card">
+    <div class="nc-hdr">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      CURRENT VIEW
+      <span class="ts" id="now-ts">—</span>
+    </div>
+    <div id="now-desc">Waiting for first capture…</div>
+    <div id="now-provider"></div>
+  </div>
+
+  <div id="stt-bar">
+    🎤 <span id="stt-text">Listening…</span>
+  </div>
+
+  <div id="feed-hdr">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4b5563" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+    VISUAL LOG
+    <span id="feed-count">0 frames</span>
+  </div>
+  <div id="feed"></div>
+</div>
+</div>
+
+<div id="lightbox" onclick="closeLb()">
+  <span id="lb-close" onclick="closeLb()">✕</span>
+  <img id="lb-img" src="" alt="">
+</div>
+<div id="kbhint">Space=start/stop · S=snap · ↑↓=speed · M=mic</div>
+<canvas id="cap" style="display:none"></canvas>
+
+<script>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+const SPEEDS = [5,10,15,20,30,45,60,90,120];
+let speedIdx   = 4;
+let running    = false;
+let sourceType = 'cam';
+let stream     = null;
+let cdHandle   = null;
+let countdown  = 0;
+let feedCount  = 0;
+let ringCirc   = 0;
+let roi        = null;   // {x,y,w,h} normalised 0-1
+let roiDrawing = false;
+let roiStart   = null;
+let activeMode = localStorage.getItem('jarvis_vision_mode') || 'describe';
+let activeProvider = localStorage.getItem('jarvis_vision_provider') || 'auto';
+let triggers   = JSON.parse(localStorage.getItem('jarvis_vision_triggers')||'[]');
+let lastDescs  = [];   // last 5 descriptions — dedup
+let micOn      = false;
+let recognition= null;
+let camDevices = [];
+
+// ═══════════════════════════════════════════════
+// ELEMENTS
+// ═══════════════════════════════════════════════
+const vid       = document.getElementById('vid');
+const roiCanvas = document.getElementById('roi-canvas');
+const cap       = document.getElementById('cap');
+const feed      = document.getElementById('feed');
+const nowDesc   = document.getElementById('now-desc');
+const nowTs     = document.getElementById('now-ts');
+const nowProv   = document.getElementById('now-provider');
+const thumbs    = document.getElementById('thumbs');
+const dot       = document.getElementById('status-dot');
+const stxt      = document.getElementById('status-text');
+const badgeSrc  = document.getElementById('badge-src');
+const badgeSpeed= document.getElementById('badge-speed');
+const ringFg    = document.getElementById('ring-fg');
+const ringLabel = document.getElementById('ring-label');
+const inpKey    = document.getElementById('inp-key');
+const inpPrompt = document.getElementById('inp-prompt');
+const snapLabel = document.getElementById('snap-label');
+const roiBadge  = document.getElementById('roi-badge');
+const roiCtx    = roiCanvas.getContext('2d');
+
+// ═══════════════════════════════════════════════
+// RING
+// ═══════════════════════════════════════════════
+const R = 16;
+ringCirc = 2 * Math.PI * R;
+ringFg.style.strokeDasharray  = ringCirc;
+ringFg.style.strokeDashoffset = ringCirc;
+
+// ═══════════════════════════════════════════════
+// SPEED BUTTONS
+// ═══════════════════════════════════════════════
+(function(){
+  const bar = document.getElementById('speed-bar');
+  SPEEDS.forEach((s,i)=>{
+    const b = document.createElement('button');
+    b.className = 'sp-btn'+(i===speedIdx?' active':'');
+    b.textContent = s<60?s+'s':(s/60)+'m';
+    b.onclick = ()=>{ speedIdx=i; updateSpeedUI(); };
+    bar.appendChild(b);
+  });
+})();
+function updateSpeedUI(){
+  document.querySelectorAll('.sp-btn').forEach((b,i)=>b.classList.toggle('active',i===speedIdx));
+  badgeSpeed.textContent = SPEEDS[speedIdx]<60?SPEEDS[speedIdx]+'s':(SPEEDS[speedIdx]/60)+'m';
+  if(running){ clearInterval(cdHandle); scheduleNext(); }
+}
+
+// ═══════════════════════════════════════════════
+// MODE
+// ═══════════════════════════════════════════════
+function setMode(m){
+  activeMode = m;
+  localStorage.setItem('jarvis_vision_mode', m);
+  ['describe','ocr','game'].forEach(id=>
+    document.getElementById('mode-'+id).classList.toggle('active', id===m)
+  );
+  // auto-set prompt
+  const game   = document.getElementById('inp-game').value.trim();
+  const player = document.getElementById('inp-player').value.trim();
+  if(m==='ocr'){
+    inpPrompt.value = 'Extract all visible text from this image exactly as shown.';
+  } else if(m==='game'){
+    const ctx = [game&&`Game: ${game}`, player&&`Track player: ${player}`].filter(Boolean).join('. ');
+    inpPrompt.value = (ctx?ctx+'. ':'')+'Describe what is happening in 30 words. Focus on kills, deaths, score, events. No hallucination.';
+  } else {
+    inpPrompt.value = 'Describe what is happening in this image in 30 words or fewer.';
+  }
+}
+setMode(activeMode);
+
+// ═══════════════════════════════════════════════
+// GAME PROFILES (auto-ROI + triggers + prompt)
+// ═══════════════════════════════════════════════
+const GAME_PROFILES = {
+  'Combat Master': {
+    notes: 'First-person shooter. Track kills, deaths, damage, round wins.',
+    triggers: [
+      {kw:'eliminated', url:''},
+      {kw:'you died',   url:''},
+      {kw:'victory',    url:''},
+    ],
+    roi: {x:0.7, y:0.0, w:0.3, h:0.12},   // top-right kill feed
+    prompt: 'Describe events in 20 words. Focus on kills, deaths, score. Game: Combat Master.',
+  },
+  'Valorant': {
+    notes: 'Tactical FPS. Track kills, spike plant/defuse, round result.',
+    triggers: [{kw:'eliminated',url:''},{kw:'spike planted',url:''},{kw:'victory',url:''}],
+    roi: {x:0.0, y:0.0, w:0.3, h:0.1},
+    prompt: 'Describe events in 20 words. Focus on kills, abilities, round result. Game: Valorant.',
+  },
+  'CS2': {
+    notes: 'Tactical FPS. Track kills, bomb, round result.',
+    triggers: [{kw:'killed',url:''},{kw:'bomb planted',url:''},{kw:'win',url:''}],
+    roi: {x:0.0, y:0.0, w:0.35, h:0.12},
+    prompt: 'Describe events in 20 words. Focus on kills, economy, bomb. Game: CS2.',
+  },
+  'Fortnite': {
+    notes: 'Battle royale. Track eliminations, storm, placement.',
+    triggers: [{kw:'eliminated',url:''},{kw:'victory royale',url:''}],
+    roi: {x:0.02, y:0.02, w:0.18, h:0.08},
+    prompt: 'Describe events in 20 words. Focus on eliminations, storm, placement. Game: Fortnite.',
+  },
+  'Apex Legends': {
+    notes: 'Battle royale. Track kills, squad wipes, ring.',
+    triggers: [{kw:'killed',url:''},{kw:'champion',url:''},{kw:'squad wiped',url:''}],
+    roi: {x:0.78, y:0.0, w:0.22, h:0.15},
+    prompt: 'Describe events in 20 words. Focus on kills, abilities, ring. Game: Apex Legends.',
+  },
+};
+
+function applyGameProfile(gameName){
+  const p = GAME_PROFILES[gameName];
+  if(!p) return;
+  // apply notes + prompt
+  document.getElementById('inp-notes').value  = p.notes;
+  inpPrompt.value = p.prompt;
+  // apply triggers (keep URL blank — user fills in)
+  if(p.triggers?.length){
+    // merge — don't overwrite existing triggers
+    p.triggers.forEach(t=>{
+      if(!triggers.find(ex=>ex.kw===t.kw)){
+        triggers.push({kw:t.kw, url:t.url||''});
+      }
+    });
+    localStorage.setItem('jarvis_vision_triggers', JSON.stringify(triggers));
+    renderTriggers();
+  }
+  // apply ROI
+  if(p.roi){
+    roi = {...p.roi};
+    document.getElementById('btn-clear-roi').style.display='block';
+    roiBadge.style.display='block';
+    drawRoi();
+  }
+  showSnap(gameName+' profile loaded!');
+}
+
+// ═══════════════════════════════════════════════
+// GAME CONTEXT
+// ═══════════════════════════════════════════════
+function loadContext(){
+  document.getElementById('inp-game').value   = localStorage.getItem('jarvis_vision_game')||'';
+  document.getElementById('inp-player').value = localStorage.getItem('jarvis_vision_player')||'';
+  document.getElementById('inp-notes').value  = localStorage.getItem('jarvis_vision_notes')||'';
+}
+function saveContext(){
+  localStorage.setItem('jarvis_vision_game',   document.getElementById('inp-game').value.trim());
+  localStorage.setItem('jarvis_vision_player',  document.getElementById('inp-player').value.trim());
+  localStorage.setItem('jarvis_vision_notes',   document.getElementById('inp-notes').value.trim());
+  setMode(activeMode);
+  loadTemplates(); // reload templates for this game
+  showSnap('Saved!');
+}
+loadContext();
+
+// ═══════════════════════════════════════════════
+// PROVIDER / KEY
+// ═══════════════════════════════════════════════
+const PROVIDER_META = {
+  groq:   { label:'Groq Key',   placeholder:'gsk_…',  check:k=>k.startsWith('gsk_'),  lsKey:'jarvis_vision_key_groq'   },
+  gemini: { label:'Gemini Key', placeholder:'AIza…',  check:k=>k.startsWith('AIza'),  lsKey:'jarvis_vision_key_gemini' },
+};
+function setProvider(p){
+  activeProvider = p;
+  localStorage.setItem('jarvis_vision_provider', p);
+  ['auto','groq','gemini'].forEach(id=>
+    document.getElementById('pb-'+id).classList.toggle('active', id===p)
+  );
+  const meta = PROVIDER_META[p==='auto'?'groq':p];
+  document.getElementById('key-label').textContent = p==='auto'?'Groq Key':meta.label;
+  inpKey.placeholder = meta.placeholder;
+  updateModelList(p);
+  loadKey();
+}
+function updateModelList(p){
+  const sel = document.getElementById('sel-model');
+  Array.from(sel.options).forEach(o=>{
+    o.hidden = p!=='auto' && o.value.split(':')[0]!==p;
+  });
+  const first = Array.from(sel.options).find(o=>!o.hidden);
+  if(first && sel.options[sel.selectedIndex]?.hidden) sel.value = first.value;
+}
+function loadKey(){
+  const p = activeProvider==='auto'?'groq':activeProvider;
+  const meta = PROVIDER_META[p];
+  const k = localStorage.getItem(meta.lsKey)||'';
+  inpKey.value = k;
+  inpKey.classList.toggle('ok', meta.check(k));
+}
+function saveKey(){
+  const p = activeProvider==='auto'?'groq':activeProvider;
+  const meta = PROVIDER_META[p];
+  const k = inpKey.value.trim();
+  localStorage.setItem(meta.lsKey, k);
+  inpKey.classList.toggle('ok', meta.check(k));
+  showSnap('Key saved!');
+}
+function hasAnyKey(){
+  const gk = localStorage.getItem('jarvis_vision_key_groq')||'';
+  const gm = localStorage.getItem('jarvis_vision_key_gemini')||'';
+  if(activeProvider==='groq')   return gk.startsWith('gsk_');
+  if(activeProvider==='gemini') return gm.startsWith('AIza');
+  return gk.startsWith('gsk_') || gm.startsWith('AIza');
+}
+
+// persist model
+const selModel = document.getElementById('sel-model');
+const savedModel = localStorage.getItem('jarvis_vision_model');
+if(savedModel) selModel.value = savedModel;
+selModel.addEventListener('change',()=>localStorage.setItem('jarvis_vision_model', selModel.value));
+setProvider(activeProvider);
+
+// ═══════════════════════════════════════════════
+// CAMERA DEVICES
+// ═══════════════════════════════════════════════
+async function enumCameras(){
+  try {
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    camDevices = devs.filter(d=>d.kind==='videoinput');
+    const sel = document.getElementById('sel-cam');
+    sel.innerHTML='';
+    camDevices.forEach((d,i)=>{
+      const o=document.createElement('option');
+      o.value=d.deviceId; o.textContent=d.label||'Camera '+(i+1);
+      sel.appendChild(o);
+    });
+  } catch(e){}
+}
+function onCamChange(){
+  if(running){ stopMonitor(); }
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; vid.srcObject=null; }
+}
+
+// ═══════════════════════════════════════════════
+// SOURCE
+// ═══════════════════════════════════════════════
+async function setSource(type){
+  sourceType = type;
+  ['cam','scr','cam2'].forEach(id=>
+    document.getElementById('btn-'+id).classList.toggle('active', id===type)
+  );
+  document.getElementById('cam-select-row').style.display = type==='cam2'?'flex':'none';
+  if(type==='cam2') enumCameras();
+  if(running) stopMonitor();
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  vid.srcObject = null;
+  document.getElementById('vid-placeholder').style.display='flex';
+  badgeSrc.textContent = type==='cam'?'Camera':type==='scr'?'Screen':'Cam 2';
+  clearRoi();
+}
+async function startStream(){
+  try {
+    if(sourceType==='scr'){
+      stream = await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
+      stream.getVideoTracks()[0].addEventListener('ended',()=>{ if(running) stopMonitor(); });
+    } else {
+      const constraints = {video:{width:1280,height:720},audio:false};
+      if(sourceType==='cam2'){
+        const did = document.getElementById('sel-cam').value;
+        if(did) constraints.video = {deviceId:{exact:did}};
+      }
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    }
+    vid.srcObject = stream;
+    await new Promise(r=>vid.onloadedmetadata=r);
+    document.getElementById('vid-placeholder').style.display='none';
+    syncRoiCanvas();
+    return true;
+  } catch(e){
+    setStatus('err','Error: '+e.message);
+    alert('Camera/screen error: '+e.message+'\n\nMake sure you are on HTTPS.');
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ROI DRAWING
+// ═══════════════════════════════════════════════
+function syncRoiCanvas(){
+  roiCanvas.width  = vid.videoWidth  || roiCanvas.offsetWidth;
+  roiCanvas.height = vid.videoHeight || roiCanvas.offsetHeight;
+  roiCanvas.style.width  = vid.offsetWidth+'px';
+  roiCanvas.style.height = vid.offsetHeight+'px';
+  drawRoi();
+}
+function getVidPos(e){
+  const r = roiCanvas.getBoundingClientRect();
+  return {
+    x: (e.clientX-r.left)/r.width,
+    y: (e.clientY-r.top)/r.height
+  };
+}
+roiCanvas.addEventListener('mousedown',e=>{
+  roiDrawing = true;
+  roiStart   = getVidPos(e);
+  roi        = null;
+});
+roiCanvas.addEventListener('mousemove',e=>{
+  if(!roiDrawing) return;
+  const p = getVidPos(e);
+  const x = Math.min(roiStart.x, p.x), y = Math.min(roiStart.y, p.y);
+  const w = Math.abs(p.x-roiStart.x),  h = Math.abs(p.y-roiStart.y);
+  roi = {x,y,w,h};
+  drawRoi();
+});
+roiCanvas.addEventListener('mouseup',e=>{
+  roiDrawing = false;
+  if(roi && (roi.w<0.03 || roi.h<0.03)){ roi=null; drawRoi(); return; } // too small = clear
+  document.getElementById('btn-clear-roi').style.display = roi?'block':'none';
+  roiBadge.style.display = roi?'block':'none';
+  drawRoi();
+});
+function drawRoi(){
+  roiCtx.clearRect(0,0,roiCanvas.width,roiCanvas.height);
+  if(!roi) return;
+  const {x,y,w,h} = roi;
+  const cw=roiCanvas.width, ch=roiCanvas.height;
+  roiCtx.strokeStyle='#f59e0b';
+  roiCtx.lineWidth=2;
+  roiCtx.setLineDash([6,3]);
+  roiCtx.strokeRect(x*cw, y*ch, w*cw, h*ch);
+  roiCtx.fillStyle='rgba(245,158,11,0.08)';
+  roiCtx.fillRect(x*cw, y*ch, w*cw, h*ch);
+}
+function clearRoi(){
+  roi=null;
+  roiCtx.clearRect(0,0,roiCanvas.width,roiCanvas.height);
+  document.getElementById('btn-clear-roi').style.display='none';
+  roiBadge.style.display='none';
+}
+
+// ═══════════════════════════════════════════════
+// START / STOP
+// ═══════════════════════════════════════════════
+async function toggleRun(){
+  if(running) stopMonitor();
+  else await startMonitor();
+}
+async function startMonitor(){
+  if(!hasAnyKey()){
+    const need = activeProvider==='gemini'?'Gemini (AIza…)':activeProvider==='groq'?'Groq (gsk_…)':'Groq (gsk_…) or Gemini (AIza…)';
+    alert(`Enter your ${need} API key and click Save.`);
+    return;
+  }
+  const ok = await startStream();
+  if(!ok) return;
+  running = true;
+  document.getElementById('btn-start').textContent='■ Stop';
+  document.getElementById('btn-start').classList.add('running');
+  dot.className='live'; setStatus('live','Running');
+  badgeSrc.className='tb-badge live';
+  startRingBuffer(stream);
+  await doCapture();
+  scheduleNext();
+}
+function stopMonitor(){
+  running = false;
+  clearInterval(cdHandle);
+  stopRingBuffer();
+  document.getElementById('btn-start').textContent='▶ Start';
+  document.getElementById('btn-start').classList.remove('running');
+  dot.className=''; setStatus('','Stopped');
+  badgeSrc.className='tb-badge';
+  ringFg.style.strokeDashoffset=ringCirc; ringLabel.textContent='—';
+}
+function scheduleNext(){
+  const sec = SPEEDS[speedIdx];
+  countdown = sec;
+  clearInterval(cdHandle);
+  cdHandle = setInterval(()=>{
+    countdown--;
+    updateRing(countdown, sec);
+    if(countdown<=0){
+      clearInterval(cdHandle);
+      if(running) doCapture().then(()=>scheduleNext());
+    }
+  },1000);
+  updateRing(sec,sec);
+}
+function updateRing(remain, total){
+  ringFg.style.strokeDashoffset = ringCirc*(remain/total);
+  ringLabel.textContent = remain<60?remain+'s':Math.ceil(remain/60)+'m';
+}
+
+// ═══════════════════════════════════════════════
+// CAPTURE
+// ═══════════════════════════════════════════════
+async function doCapture(){
+  if(!vid.videoWidth) return;
+  const vw=vid.videoWidth, vh=vid.videoHeight;
+  let sx=0,sy=0,sw=vw,sh=vh;
+  if(roi){ sx=roi.x*vw; sy=roi.y*vh; sw=roi.w*vw; sh=roi.h*vh; }
+  cap.width=sw; cap.height=sh;
+  cap.getContext('2d').drawImage(vid,sx,sy,sw,sh,0,0,sw,sh);
+  const b64 = cap.toDataURL('image/jpeg',0.75).split(',')[1];
+  showSnap();
+  const ts = new Date().toLocaleTimeString();
+  setStatus('live','Analyzing…');
+  const {desc,prov} = await analyzeFrame(b64, inpPrompt.value.trim());
+  setStatus('live','Running');
+  const firedTriggers = desc ? triggers.filter(t=>desc.toLowerCase().includes(t.kw.toLowerCase())).map(t=>t.kw) : [];
+  if(desc) checkTriggers(desc, b64, ts);
+  addToFeed(b64, ts, desc, prov);
+  nowDesc.textContent = desc;
+  nowTs.textContent   = ts;
+  nowProv.textContent = prov?'↳ '+prov:'';
+  // log to server API
+  fetch('http://192.168.0.3:8080/api/vision/log-event',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      description:desc, provider:prov,
+      game:localStorage.getItem('jarvis_vision_game')||'',
+      player:localStorage.getItem('jarvis_vision_player')||'',
+      triggered:firedTriggers, roi:!!roi, mode:activeMode
+    })
+  }).catch(()=>{});
+}
+async function manualSnap(){
+  if(!stream){ alert('Start a source first.'); return; }
+  await doCapture();
+}
+
+// ═══════════════════════════════════════════════
+// DEDUP — avoid repeating same description
+// ═══════════════════════════════════════════════
+function isDuplicate(desc){
+  if(!desc) return false;
+  const norm = desc.toLowerCase().replace(/\s+/g,' ').trim();
+  const dup  = lastDescs.some(d=>similarity(d, norm)>0.85);
+  if(!dup){ lastDescs.push(norm); if(lastDescs.length>5) lastDescs.shift(); }
+  return dup;
+}
+function similarity(a,b){
+  if(a===b) return 1;
+  const la=a.split(' '), lb=b.split(' ');
+  const common = la.filter(w=>lb.includes(w)).length;
+  return (2*common)/(la.length+lb.length);
+}
+
+// ═══════════════════════════════════════════════
+// AI CALLS
+// ═══════════════════════════════════════════════
+function buildGroqPrompt(prompt){
+  const game   = localStorage.getItem('jarvis_vision_game')||'';
+  const player = localStorage.getItem('jarvis_vision_player')||'';
+  const notes  = localStorage.getItem('jarvis_vision_notes')||'';
+  let sys = 'You are a vision assistant. Be concise and accurate. Do not repeat yourself. Do not hallucinate.';
+  if(game)   sys += ` Game: ${game}.`;
+  if(player) sys += ` Track player: ${player}.`;
+  if(notes)  sys += ` ${notes}`;
+  // add last desc as context so it doesn't repeat
+  if(lastDescs.length){ sys += ` Previous observation: "${lastDescs[lastDescs.length-1]}". Report only NEW events.`; }
+  return {sys, user: prompt};
+}
+
+async function callGroq(b64, prompt, model){
+  const key = localStorage.getItem('jarvis_vision_key_groq')||'';
+  if(!key) return {ok:false, desc:'No Groq key set.'};
+  const {sys, user} = buildGroqPrompt(prompt);
+  const templates = getTemplates();
+  // build user content: templates first as reference, then current frame
+  const content = [];
+  if(templates.length){
+    content.push({type:'text', text:`Reference screenshots for ${localStorage.getItem('jarvis_vision_game')||'this game'} — recognise these UI elements:`});
+    templates.forEach(t=>{
+      content.push({type:'image_url', image_url:{url:t.src}});
+    });
+    content.push({type:'text', text:'Now analyse this current frame:'});
+  }
+  content.push({type:'image_url', image_url:{url:'data:image/jpeg;base64,'+b64}});
+  content.push({type:'text', text:user});
+  const body = {
+    model,
+    messages:[
+      {role:'system', content: sys},
+      {role:'user', content}
+    ],
+    max_tokens:150, temperature:0.2
+  };
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify(body)
+  });
+  if(!r.ok){ const e=await r.json().catch(()=>({})); return {ok:false,status:r.status,desc:e.error?.message||'HTTP '+r.status}; }
+  const j=await r.json();
+  const text=(j.choices?.[0]?.message?.content||'').trim();
+  return {ok:true, desc:text, prov:'Groq / '+model.split('/').pop()};
+}
+
+async function callGemini(b64, prompt, model){
+  const key = localStorage.getItem('jarvis_vision_key_gemini')||'';
+  if(!key) return {ok:false, desc:'No Gemini key set.'};
+  const game  = localStorage.getItem('jarvis_vision_game')||'';
+  const notes = localStorage.getItem('jarvis_vision_notes')||'';
+  let fullPrompt = prompt;
+  if(game)  fullPrompt = `Game: ${game}. ${fullPrompt}`;
+  if(notes) fullPrompt = `${fullPrompt} Context: ${notes}`;
+  if(lastDescs.length) fullPrompt += ` Previous: "${lastDescs[lastDescs.length-1]}". Report only NEW events.`;
+  const body = {
+    contents:[{parts:[
+      {inline_data:{mime_type:'image/jpeg',data:b64}},
+      {text:fullPrompt}
+    ]}],
+    generationConfig:{maxOutputTokens:150,temperature:0.2}
+  };
+  const r = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}
+  );
+  if(!r.ok){ const e=await r.json().catch(()=>({})); return {ok:false,status:r.status,desc:e.error?.message||'HTTP '+r.status}; }
+  const j=await r.json();
+  const text=(j.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
+  return {ok:true, desc:text, prov:'Gemini / '+model};
+}
+
+async function analyzeFrame(b64, prompt, _retry=1){
+  const sel  = document.getElementById('sel-model').value;
+  const [sp, sm] = sel.split(':');
+  let result;
+  if(activeProvider==='auto'){
+    const gk = localStorage.getItem('jarvis_vision_key_groq')||'';
+    const gm = localStorage.getItem('jarvis_vision_key_gemini')||'';
+    if(gk.startsWith('gsk_')){
+      result = await callGroq(b64, prompt, 'meta-llama/llama-4-scout-17b-16e-instruct');
+      if(!result.ok && result.status===429 && gm.startsWith('AIza')){
+        setStatus('live','Groq rate limit → Gemini…');
+        result = await callGemini(b64, prompt, 'gemini-2.0-flash-lite');
+      }
+    } else if(gm.startsWith('AIza')){
+      result = await callGemini(b64, prompt, 'gemini-2.0-flash-lite');
+    } else {
+      return {desc:'No API keys saved. Add a Groq or Gemini key.', prov:''};
+    }
+  } else if(sp==='groq'){
+    result = await callGroq(b64, prompt, sm);
+  } else {
+    result = await callGemini(b64, prompt, sm);
+  }
+  // auto-retry on rate limit
+  if(!result.ok && result.status===429 && _retry>0){
+    const m = (result.desc||'').match(/retry[^\d]*(\d+(?:\.\d+)?)\s*s/i);
+    const wait = m?Math.ceil(parseFloat(m[1]))*1000+500:32000;
+    const secs = Math.round(wait/1000);
+    setStatus('live',`Rate limited — retry in ${secs}s…`);
+    nowProv.textContent = `↳ Rate limited, retrying in ${secs}s`;
+    await new Promise(res=>setTimeout(res,wait));
+    if(!running) return {desc:'Stopped while waiting.',prov:''};
+    return analyzeFrame(b64, prompt, _retry-1);
+  }
+  if(!result.ok) return {desc:'Error: '+result.desc, prov:result.prov||''};
+  return {desc:result.desc||'(no description)', prov:result.prov};
+}
+
+// ═══════════════════════════════════════════════
+// TRIGGERS
+// ═══════════════════════════════════════════════
+function renderTriggers(){
+  const el = document.getElementById('trigger-list');
+  el.innerHTML='';
+  triggers.forEach((t,i)=>{
+    const d=document.createElement('div'); d.className='trig-row';
+    d.innerHTML=`<span class="trig-kw">🔔 ${escHtml(t.kw)}</span><span class="trig-url" title="${escHtml(t.url)}">${escHtml(t.url)}</span><button class="trig-del" onclick="delTrigger(${i})">✕</button>`;
+    el.appendChild(d);
+  });
+}
+function addTrigger(){
+  const kw  = document.getElementById('inp-trig-kw').value.trim();
+  const url = document.getElementById('inp-trig-url').value.trim();
+  if(!kw||!url){ alert('Enter keyword and webhook URL.'); return; }
+  triggers.push({kw,url});
+  localStorage.setItem('jarvis_vision_triggers', JSON.stringify(triggers));
+  document.getElementById('inp-trig-kw').value='';
+  document.getElementById('inp-trig-url').value='';
+  renderTriggers();
+}
+function delTrigger(i){
+  triggers.splice(i,1);
+  localStorage.setItem('jarvis_vision_triggers', JSON.stringify(triggers));
+  renderTriggers();
+}
+function checkTriggers(desc, b64, ts){
+  const low = desc.toLowerCase();
+  triggers.forEach(t=>{
+    if(low.includes(t.kw.toLowerCase())){
+      fireTrigger(t, desc, ts);
+    }
+  });
+}
+async function fireTrigger(t, desc, ts){
+  try {
+    await fetch(t.url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({keyword:t.kw, description:desc, timestamp:ts,
+        game:   localStorage.getItem('jarvis_vision_game')||'',
+        player: localStorage.getItem('jarvis_vision_player')||''})
+    });
+  } catch(e){}
+  // save 60s clip
+  saveClip(t.kw);
+}
+renderTriggers();
+
+// ═══════════════════════════════════════════════
+// FEED
+// ═══════════════════════════════════════════════
+function addToFeed(b64, ts, desc, prov){
+  feedCount++;
+  document.getElementById('feed-count').textContent = feedCount+' frame'+(feedCount===1?'':'s');
+  const src='data:image/jpeg;base64,'+b64;
+  const th=document.createElement('img');
+  th.src=src; th.className='thumb new'; th.title=ts;
+  th.onclick=()=>openLb(src);
+  thumbs.insertBefore(th,thumbs.firstChild);
+  setTimeout(()=>th.classList.remove('new'),400);
+  if(thumbs.children.length>20) thumbs.lastChild.remove();
+
+  const triggered = triggers.some(t=>desc.toLowerCase().includes(t.kw.toLowerCase()));
+  const item=document.createElement('div');
+  item.className='feed-item'+(triggered?' triggered':'');
+  item.innerHTML=`
+    <img class="fi-thumb" src="${src}" onclick="openLb(this.src)">
+    <div class="fi-body">
+      <div class="fi-ts">${ts}${roi?' · 📐 ROI':''}</div>
+      <div class="fi-desc">${escHtml(desc)}</div>
+      ${prov?`<div class="fi-prov">↳ ${escHtml(prov)}</div>`:''}
+      ${triggered?`<div class="fi-trig">🔔 Trigger fired</div>`:''}
+    </div>`;
+  feed.insertBefore(item,feed.firstChild);
+  if(feed.children.length>100) feed.lastChild.remove();
+}
+
+// ═══════════════════════════════════════════════
+// GAME TEMPLATES
+// ═══════════════════════════════════════════════
+function tplKey(){ return 'jarvis_vision_tpl_'+(localStorage.getItem('jarvis_vision_game')||'default'); }
+
+function loadTemplates(){
+  const stored = JSON.parse(localStorage.getItem(tplKey())||'[]');
+  const grid = document.getElementById('tpl-grid');
+  // clear existing cards (keep the + button)
+  Array.from(grid.querySelectorAll('.tpl-card')).forEach(c=>c.remove());
+  stored.forEach((t,i)=>renderTplCard(t,i));
+}
+function renderTplCard(t,i){
+  const grid = document.getElementById('tpl-grid');
+  const add  = document.getElementById('tpl-add');
+  const card = document.createElement('div'); card.className='tpl-card';
+  card.innerHTML=`<img src="${t.src}"><button class="tpl-del" onclick="delTemplate(${i})">✕</button><div class="tpl-lbl">${escHtml(t.label)}</div>`;
+  grid.insertBefore(card, add);
+}
+function addTemplates(inp){
+  const files = Array.from(inp.files);
+  const game  = localStorage.getItem('jarvis_vision_game')||'';
+  const stored= JSON.parse(localStorage.getItem(tplKey())||'[]');
+  let done=0;
+  files.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      stored.push({src:e.target.result, label:f.name.replace(/\.[^.]+$/,''), game});
+      done++;
+      if(done===files.length){
+        localStorage.setItem(tplKey(), JSON.stringify(stored.slice(-8))); // max 8
+        loadTemplates();
+        showSnap('Templates saved!');
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+  inp.value='';
+}
+function delTemplate(i){
+  const stored=JSON.parse(localStorage.getItem(tplKey())||'[]');
+  stored.splice(i,1);
+  localStorage.setItem(tplKey(), JSON.stringify(stored));
+  loadTemplates();
+}
+function getTemplates(){ return JSON.parse(localStorage.getItem(tplKey())||'[]'); }
+
+// ═══════════════════════════════════════════════
+// CLIP GALLERY
+// ═══════════════════════════════════════════════
+async function loadClips(){
+  try {
+    const r = await fetch('http://192.168.0.3:8080/api/vision/clips');
+    const j = await r.json();
+    const gallery = document.getElementById('clip-gallery');
+    gallery.innerHTML='';
+    document.getElementById('clip-count').textContent = j.clips?.length ? `(${j.clips.length})` : '';
+    (j.clips||[]).forEach(c=>{
+      const kw = c.file.split('_').slice(2,-1).join(' ') || 'clip';
+      const row=document.createElement('div'); row.className='clip-row';
+      row.innerHTML=`
+        <video src="http://192.168.0.3:8080${c.url}" preload="metadata" muted></video>
+        <div class="clip-info">
+          <div class="clip-kw">🔔 ${escHtml(kw)}</div>
+          <div class="clip-name">${escHtml(c.file)}</div>
+          <div class="clip-name">${c.size_mb} MB · ${c.ts?.slice(0,16)||''}</div>
+        </div>
+        <a class="clip-dl" href="http://192.168.0.3:8080${c.url}" download="${escHtml(c.file)}">⬇</a>`;
+      gallery.appendChild(row);
+    });
+    if(!j.clips?.length) gallery.innerHTML='<div style="font-size:10px;color:#374151;padding:6px">No clips yet.</div>';
+  } catch(e){}
+}
+loadClips();
+
+// ═══════════════════════════════════════════════
+// CLIP RING BUFFER (MediaRecorder — last 60s)
+// ═══════════════════════════════════════════════
+let recorder    = null;
+let clipChunks  = [];
+const CLIP_WINDOW = 60000; // 60s rolling
+let clipTimestamps = [];
+
+function startRingBuffer(mediaStream){
+  if(recorder && recorder.state!=='inactive') recorder.stop();
+  clipChunks=[]; clipTimestamps=[];
+  try {
+    recorder = new MediaRecorder(mediaStream, {mimeType:'video/webm;codecs=vp8'});
+  } catch(e){
+    recorder = new MediaRecorder(mediaStream);
+  }
+  recorder.ondataavailable = e=>{
+    if(e.data.size>0){
+      const now = Date.now();
+      clipChunks.push(e.data);
+      clipTimestamps.push(now);
+      // drop chunks older than CLIP_WINDOW
+      const cutoff = now - CLIP_WINDOW;
+      while(clipTimestamps.length && clipTimestamps[0]<cutoff){
+        clipTimestamps.shift(); clipChunks.shift();
+      }
+    }
+  };
+  recorder.start(2000); // 2s chunks
+}
+function stopRingBuffer(){
+  if(recorder && recorder.state!=='inactive') recorder.stop();
+  recorder=null; clipChunks=[]; clipTimestamps=[];
+}
+async function saveClip(keyword){
+  if(!clipChunks.length){ return; }
+  const blob = new Blob(clipChunks, {type:'video/webm'});
+  const ts   = new Date().toISOString().replace(/[:.]/g,'-');
+  const game = (localStorage.getItem('jarvis_vision_game')||'game').replace(/\s+/g,'_');
+  const fname= `clip_${game}_${keyword.replace(/\s+/g,'_')}_${ts}.webm`;
+  // offer browser download
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; a.click();
+  // also POST to server for NAS offload
+  try {
+    const fd=new FormData(); fd.append('clip',blob,fname);
+    fd.append('keyword',keyword); fd.append('game',localStorage.getItem('jarvis_vision_game')||'');
+    await fetch('https://192.168.0.3:8080/api/vision/save-clip',{method:'POST',body:fd});
+  } catch(e){}
+}
+
+// ═══════════════════════════════════════════════
+// SPEECH TO TEXT (Web Speech API)
+// ═══════════════════════════════════════════════
+function toggleMic(){
+  micOn = !micOn;
+  document.getElementById('btn-mic').classList.toggle('active', micOn);
+  document.getElementById('stt-bar').style.display = micOn?'flex':'none';
+  if(micOn) startStt();
+  else stopStt();
+}
+function startStt(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ alert('Speech recognition not supported in this browser. Use Chrome.'); micOn=false; return; }
+  recognition = new SR();
+  recognition.continuous    = true;
+  recognition.interimResults= true;
+  recognition.lang          = 'en-US';
+  let lastFinal = '';
+  recognition.onresult = e=>{
+    let interim='', final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    document.getElementById('stt-text').textContent = (final||interim||'…');
+    if(final && final.trim()!==lastFinal){
+      lastFinal=final.trim();
+      addSttToFeed(lastFinal);
+      fireSttWebhook(lastFinal);
+    }
+  };
+  recognition.onerror = ()=>{ if(micOn) setTimeout(startStt,1000); };
+  recognition.onend   = ()=>{ if(micOn) setTimeout(startStt,500); };
+  recognition.start();
+}
+function stopStt(){
+  if(recognition){ recognition.stop(); recognition=null; }
+  document.getElementById('stt-text').textContent='Listening…';
+}
+
+function addSttToFeed(text){
+  const ts = new Date().toLocaleTimeString();
+  const item=document.createElement('div');
+  item.className='feed-item';
+  item.style.borderColor='#7c3aed';
+  item.innerHTML=`<div style="font-size:11px;padding:2px 4px">🎤 <b style="color:#a78bfa">[HOST MIC]</b> <span style="color:#e2e8f0">${escHtml(text)}</span><div class="fi-ts" style="margin-top:3px">${ts}</div></div>`;
+  feed.insertBefore(item,feed.firstChild);
+}
+async function fireSttWebhook(text){
+  // fire to all triggers that have a stt_url, or just log to server
+  try {
+    await fetch('https://192.168.0.3:8080/api/vision/stt',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text, ts:new Date().toISOString(),
+        game:localStorage.getItem('jarvis_vision_game')||''})
+    });
+  } catch(e){}
+}
+
+// ═══════════════════════════════════════════════
+// LIGHTBOX / UTILS
+// ═══════════════════════════════════════════════
+function openLb(src){ document.getElementById('lb-img').src=src; document.getElementById('lightbox').classList.add('open'); }
+function closeLb(){ document.getElementById('lightbox').classList.remove('open'); }
+function setStatus(cls,txt){ dot.className=cls; stxt.textContent=txt; }
+function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showSnap(msg){
+  snapLabel.style.display='block'; snapLabel.textContent=msg||'📸';
+  clearTimeout(snapLabel._t); snapLabel._t=setTimeout(()=>snapLabel.style.display='none',1000);
+}
+
+// ═══════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  if(e.code==='Space'){ e.preventDefault(); toggleRun(); }
+  if(e.code==='KeyS'){ manualSnap(); }
+  if(e.code==='KeyM'){ toggleMic(); }
+  if(e.code==='ArrowUp'){ speedIdx=Math.max(0,speedIdx-1); updateSpeedUI(); }
+  if(e.code==='ArrowDown'){ speedIdx=Math.min(SPEEDS.length-1,speedIdx+1); updateSpeedUI(); }
+  if(e.code==='Escape'){ closeLb(); }
+});
+
+// resize ROI canvas if window resizes
+window.addEventListener('resize',()=>{ if(vid.videoWidth) syncRoiCanvas(); });
+badgeSrc.textContent='Camera';
+loadTemplates();
+</script>
+</body>
+</html>

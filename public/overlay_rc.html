@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>JARVIS RC</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#07080d;--s1:#0d0f17;--s2:#13151f;--b1:#1e2030;--b2:#2a2d42;--tx:#dde1f5;--tm:#7880a0;--tf:#3a3e55;--blue:#6b8cff;--grn:#3fdc8a;--red:#f87171;--orange:#ff9a4a}
+body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace,system-ui;font-size:14px;min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden}
+.top{background:var(--s1);border-bottom:1px solid var(--b1);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo{font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px}
+.logo span{color:var(--blue)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 6px var(--grn);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.status-pill{font-size:10px;padding:3px 10px;border-radius:99px;background:var(--s2);border:1px solid var(--b1);color:var(--tm);display:flex;align-items:center;gap:5px}
+
+/* Feed area */
+.feed{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--tf);text-align:center;gap:8px;padding:40px 20px}
+.empty-icon{font-size:48px;opacity:.4}
+.empty-text{font-size:13px;line-height:1.6}
+.empty-url{font-size:10px;color:var(--blue);font-family:monospace;background:var(--s2);border:1px solid var(--b1);border-radius:5px;padding:4px 8px;margin-top:4px;cursor:pointer}
+
+/* Job cards */
+.jcard{background:var(--s1);border:1px solid var(--b1);border-radius:14px;overflow:hidden;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.jcard-hd{padding:14px 16px 10px;display:flex;align-items:flex-start;gap:10px}
+.src-badge{font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(107,140,255,.12);color:var(--blue);border:1px solid rgba(107,140,255,.25);font-weight:700;flex-shrink:0;margin-top:2px}
+.jcard-title{font-size:13px;font-weight:700;color:#fff;flex:1;line-height:1.3}
+.jcard-msg{font-size:12px;color:var(--tm);padding:0 16px 12px;line-height:1.6}
+.jcard-time{font-size:9px;color:var(--tf);padding:0 16px 8px}
+.jcard-btns{display:flex;gap:8px;padding:10px 16px 14px;border-top:1px solid var(--b1);flex-wrap:wrap}
+.jbtn{flex:1;min-width:80px;padding:11px 10px;border-radius:10px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.jbtn:hover,.jbtn:active{opacity:.8}
+.jbtn-run{background:var(--blue);color:#fff}
+.jbtn-approve{background:var(--grn);color:#0a1a10}
+.jbtn-reject{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.25)}
+.jbtn-dismiss{background:var(--s2);color:var(--tm);border:1px solid var(--b1)}
+
+/* Input area */
+.input-area{background:var(--s1);border-top:1px solid var(--b1);padding:12px;flex-shrink:0}
+.inp-row{display:flex;gap:8px;align-items:flex-end}
+.inp-box{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:12px;padding:10px 14px;color:var(--tx);font-family:inherit;font-size:13px;outline:none;resize:none;min-height:44px;max-height:100px;line-height:1.4;transition:border-color .15s}
+.inp-box:focus{border-color:var(--blue)}
+.send-btn{width:44px;height:44px;border-radius:12px;background:var(--blue);border:none;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:opacity .15s}
+.send-btn:active{opacity:.8}
+
+/* Quick action chips */
+.chips{display:flex;gap:6px;overflow-x:auto;padding:8px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;font-size:11px;padding:6px 12px;border-radius:8px;background:var(--s2);border:1px solid var(--b2);color:var(--tm);cursor:pointer;font-family:inherit;white-space:nowrap}
+.chip:active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* Progress bar */
+.prog-bar{height:3px;background:var(--b1);border-radius:0}
+.prog-fill{height:3px;background:linear-gradient(90deg,var(--blue),var(--grn));border-radius:0;width:0%;transition:width .5s}
+</style>
+</head>
+<body>
+<div class="prog-bar"><div class="prog-fill" id="prog"></div></div>
+<div class="top">
+  <div class="logo">JARVIS <span>RC</span></div>
+  <div class="dot" id="conn-dot"></div>
+  <div class="top-right">
+    <div class="status-pill"><span id="conn-label">connecting…</span></div>
+    <a href="/overlay/big" style="font-size:11px;color:var(--blue);text-decoration:none" target="_blank">Big ↗</a>
+    <a href="/manual" style="font-size:11px;color:var(--orange);text-decoration:none">Docs</a>
+    <a href="/" style="font-size:11px;color:var(--tf);text-decoration:none">Agent</a>
+  </div>
+</div>
+
+<!-- Tab bar -->
+<div style="display:flex;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0">
+  <button id="tab-feed" onclick="switchRcTab('feed')" style="flex:1;padding:10px;font-size:11px;font-weight:700;font-family:inherit;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--blue);cursor:pointer">Feed</button>
+  <button id="tab-manual" onclick="switchRcTab('manual')" style="flex:1;padding:10px;font-size:11px;font-weight:700;font-family:inherit;background:none;border:none;border-bottom:2px solid transparent;color:var(--tm);cursor:pointer">Manual</button>
+</div>
+
+<!-- FEED TAB -->
+<div id="panel-feed" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <div class="feed" id="feed">
+    <div class="empty" id="empty-state">
+      <div class="empty-icon">📡</div>
+      <div class="empty-text">Waiting for jobs from n8n or webhooks…<br/>Send a POST to this URL:</div>
+      <div class="empty-url" onclick="copyUrl()">http://192.168.0.8:8080/overlay/rc/push</div>
+      <div style="font-size:10px;color:var(--tf);margin-top:8px">or say something below to send to JARVIS</div>
+    </div>
+  </div>
+  <div class="input-area">
+    <div class="chips" id="quick-chips">
+      <button class="chip" onclick="quickSend('Check my emails')">📧 emails</button>
+      <button class="chip" onclick="quickSend('What time is it and what have I got today in calendar?')">📅 today</button>
+      <button class="chip" onclick="quickSend('Run a status check on all systems')">🔧 status</button>
+      <button class="chip" onclick="quickSend('What can you do?')">❓ help</button>
+      <button class="chip" onclick="copyUrl()">📋 copy URL</button>
+    </div>
+    <div class="inp-row">
+      <textarea class="inp-box" id="rc-inp" rows="1" placeholder="Send a job to JARVIS…" oninput="resizeInp(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFromInput()}"></textarea>
+      <button class="send-btn" onclick="sendFromInput()">▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANUAL TAB — 2 webhook forms for n8n -->
+<div id="panel-manual" style="display:none;flex:1;overflow-y:auto;padding:14px 12px;gap:14px;flex-direction:column">
+
+  <div style="font-size:10px;color:var(--tf);margin-bottom:4px;letter-spacing:.5px;text-transform:uppercase;font-weight:700">Webhook 1 — Push New Card</div>
+  <div style="background:var(--s2);border:1px solid var(--b1);border-radius:12px;padding:14px">
+    <div style="font-size:11px;color:var(--tm);margin-bottom:10px;line-height:1.5">POST to <code style="background:var(--b1);border-radius:4px;padding:1px 5px;color:#c0caff;font-size:10px">http://192.168.0.8:8080/overlay/rc/push</code></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <input id="m-title" class="inp-box" style="min-height:36px;max-height:36px;resize:none" placeholder="Title (e.g. Flight results found)"/>
+      <textarea id="m-message" class="inp-box" rows="3" style="min-height:64px" placeholder="Message / results body…"></textarea>
+      <select id="m-source" style="background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:8px 12px;color:var(--tx);font-family:inherit;font-size:12px;outline:none">
+        <option value="n8n">n8n</option>
+        <option value="alert">alert</option>
+        <option value="search">search</option>
+        <option value="ok">ok</option>
+        <option value="warn">warn</option>
+        <option value="jarvis">jarvis</option>
+      </select>
+      <div style="display:flex;gap:6px">
+        <input id="m-reply" class="inp-box" style="min-height:36px;max-height:36px;resize:none" placeholder="reply_url (optional — your n8n webhook URL)"/>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--tf);align-self:center">Buttons:</span>
+        <label style="font-size:11px;color:var(--tm);display:flex;gap:4px;align-items:center"><input type="checkbox" id="btn-run" checked> ▶ Run</label>
+        <label style="font-size:11px;color:var(--tm);display:flex;gap:4px;align-items:center"><input type="checkbox" id="btn-approve"> ✓ Approve</label>
+        <label style="font-size:11px;color:var(--tm);display:flex;gap:4px;align-items:center"><input type="checkbox" id="btn-dismiss" checked> ✕ Dismiss</label>
+      </div>
+      <button class="send-btn" style="width:100%;border-radius:10px;height:40px;font-size:12px;font-weight:700;font-family:inherit" onclick="manualPush()">Push Card →</button>
+      <div id="m-push-result" style="font-size:10px;color:var(--grn);min-height:14px;text-align:center"></div>
+    </div>
+  </div>
+
+  <div style="font-size:10px;color:var(--tf);margin:8px 0 4px;letter-spacing:.5px;text-transform:uppercase;font-weight:700">Webhook 2 — Update Card Thread</div>
+  <div style="background:var(--s2);border:1px solid var(--b1);border-radius:12px;padding:14px">
+    <div style="font-size:11px;color:var(--tm);margin-bottom:10px;line-height:1.5">POST to <code style="background:var(--b1);border-radius:4px;padding:1px 5px;color:#c0caff;font-size:10px">http://192.168.0.8:8080/overlay/rc/update</code><br/>Use the <code style="background:var(--b1);border-radius:4px;padding:1px 5px;color:#c0caff;font-size:10px">id</code> from the Push response as thread_id.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <input id="u-thread" class="inp-box" style="min-height:36px;max-height:36px;resize:none" placeholder="thread_id (id returned from Push)"/>
+      <textarea id="u-message" class="inp-box" rows="3" style="min-height:64px" placeholder="Follow-up message or flight details…"></textarea>
+      <select id="u-source" style="background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:8px 12px;color:var(--tx);font-family:inherit;font-size:12px;outline:none">
+        <option value="n8n">n8n</option>
+        <option value="jarvis">jarvis</option>
+        <option value="ok">ok</option>
+        <option value="alert">alert</option>
+      </select>
+      <button class="send-btn" style="width:100%;border-radius:10px;height:40px;font-size:12px;font-weight:700;font-family:inherit" onclick="manualUpdate()">Send Update →</button>
+      <div id="m-update-result" style="font-size:10px;color:var(--grn);min-height:14px;text-align:center"></div>
+    </div>
+  </div>
+
+  <div style="padding-bottom:20px"></div>
+</div>
+
+<script>
+const API = '';
+let _sse = null;
+let _cards = {};
+
+function switchRcTab(name){
+  const tabs = ['feed','manual'];
+  tabs.forEach(t=>{
+    const panel = document.getElementById('panel-'+t);
+    const btn   = document.getElementById('tab-'+t);
+    if(panel) panel.style.display = t===name ? (t==='feed'?'flex':'flex') : 'none';
+    if(btn){
+      btn.style.color = t===name ? 'var(--blue)' : 'var(--tm)';
+      btn.style.borderBottomColor = t===name ? 'var(--blue)' : 'transparent';
+    }
+  });
+  if(name==='manual'){
+    document.getElementById('panel-manual').style.flexDirection='column';
+  }
+}
+
+async function manualPush(){
+  const title   = document.getElementById('m-title').value.trim() || 'New Job';
+  const message = document.getElementById('m-message').value.trim();
+  const source  = document.getElementById('m-source').value;
+  const replyUrl= document.getElementById('m-reply').value.trim();
+  const buttons = [];
+  if(document.getElementById('btn-run').checked)     buttons.push('▶ Run');
+  if(document.getElementById('btn-approve').checked) buttons.push('✓ Approve');
+  if(document.getElementById('btn-dismiss').checked) buttons.push('✕ Dismiss');
+  const res = document.getElementById('m-push-result');
+  res.style.color='var(--tm)'; res.textContent='Sending…';
+  try{
+    const r = await fetch(API+'/overlay/rc/push',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title,message,source,buttons,reply_url:replyUrl})
+    });
+    const d = await r.json();
+    res.style.color='var(--grn)';
+    res.textContent=`✓ Pushed — id: ${d.id}`;
+    // Pre-fill thread id field for convenience
+    document.getElementById('u-thread').value = d.id || '';
+  }catch(e){res.style.color='var(--red)';res.textContent='Error: '+e.message;}
+}
+
+async function manualUpdate(){
+  const threadId = document.getElementById('u-thread').value.trim();
+  const message  = document.getElementById('u-message').value.trim();
+  const source   = document.getElementById('u-source').value;
+  const res = document.getElementById('m-update-result');
+  if(!threadId){res.style.color='var(--red)';res.textContent='Enter a thread_id first';return;}
+  if(!message){res.style.color='var(--red)';res.textContent='Enter a message';return;}
+  res.style.color='var(--tm)'; res.textContent='Sending…';
+  try{
+    const r = await fetch(API+'/overlay/rc/update',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({thread_id:threadId,message,source})
+    });
+    const d = await r.json();
+    res.style.color='var(--grn)'; res.textContent='✓ Thread updated';
+  }catch(e){res.style.color='var(--red)';res.textContent='Error: '+e.message;}
+}
+
+function copyUrl(){
+  navigator.clipboard.writeText('http://192.168.0.8:8080/overlay/rc/push')
+    .then(()=>{ showToast('URL copied!'); });
+}
+
+function showToast(msg){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1e2030;border:1px solid #2a2d42;border-radius:8px;padding:8px 16px;font-size:12px;color:#dde1f5;z-index:9999;transition:opacity .3s';document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity='0',2000);
+}
+
+function resizeInp(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+
+function setConn(ok){
+  const dot=document.getElementById('conn-dot');
+  const lbl=document.getElementById('conn-label');
+  dot.style.background=ok?'var(--grn)':'var(--red)';
+  dot.style.boxShadow=ok?'0 0 6px var(--grn)':'0 0 6px var(--red)';
+  lbl.textContent=ok?'live':'reconnecting…';
+}
+
+function connectSSE(){
+  if(_sse) _sse.close();
+  _sse = new EventSource(API+'/overlay/rc/stream');
+  _sse.onopen = ()=>setConn(true);
+  _sse.onmessage = (e)=>{
+    try{
+      const ev=JSON.parse(e.data);
+      if(ev.type==='ping') return;
+      addCard(ev);
+    }catch{}
+  };
+  _sse.onerror = ()=>{ setConn(false); setTimeout(connectSSE, 3000); };
+}
+
+function addCard(ev){
+  const feed=document.getElementById('feed');
+  const empty=document.getElementById('empty-state');
+  if(empty) empty.style.display='none';
+
+  // deduplicate
+  if(_cards[ev.id]) return;
+  _cards[ev.id]=true;
+
+  const card=document.createElement('div');
+  card.className='jcard';
+  card.id='card-'+ev.id;
+  const time=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+
+  const btns=(ev.buttons||['▶ Run','✕ Dismiss']).map(b=>{
+    let cls='jbtn-dismiss',icon='';
+    const bl=b.toLowerCase();
+    if(bl.includes('run')||bl.includes('go')){cls='jbtn-run';icon='▶ ';}
+    else if(bl.includes('approve')||bl.includes('yes')){cls='jbtn-approve';icon='✓ ';}
+    else if(bl.includes('reject')||bl.includes('no')||bl.includes('stop')){cls='jbtn-reject';icon='✕ ';}
+    return `<button class="jbtn ${cls}" onclick="doAction('${ev.id}','${b}','${ev.reply_url||''}','${(ev.message||'').replace(/'/g,"\\'")}')">
+      ${icon}${b}
+    </button>`;
+  }).join('');
+
+  card.innerHTML=`
+    <div class="jcard-hd">
+      <span class="src-badge">${ev.source||'webhook'}</span>
+      <div class="jcard-title">${esc(ev.title||'New job')}</div>
+    </div>
+    ${ev.message?`<div class="jcard-msg">${esc(ev.message)}</div>`:''}
+    <div class="jcard-time">${time}</div>
+    <div class="jcard-btns">${btns}<button class="jbtn jbtn-dismiss" onclick="dismissCard('${ev.id}')">✕</button></div>
+  `;
+  feed.insertBefore(card, feed.firstChild);
+  setProg(100);
+  setTimeout(()=>setProg(0),1500);
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function dismissCard(id){
+  const c=document.getElementById('card-'+id);
+  if(c){c.style.opacity='0';c.style.transform='translateX(100px)';c.style.transition='all .3s';setTimeout(()=>c.remove(),300);}
+}
+
+async function doAction(id, action, replyUrl, message){
+  // optimistic dismiss
+  dismissCard(id);
+  showToast('Sending: '+action);
+  try{
+    const r=await fetch(API+'/overlay/rc/action',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({job_id:id,action,reply_url:replyUrl,message})
+    });
+    const d=await r.json();
+    if(d.task_id) showToast('Job started: '+d.task_id.slice(0,8));
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+async function sendFromInput(){
+  const inp=document.getElementById('rc-inp');
+  const msg=inp.value.trim();
+  if(!msg) return;
+  inp.value='';resizeInp(inp);
+  await quickSend(msg);
+}
+
+async function quickSend(msg){
+  showToast('Sending to JARVIS…');
+  try{
+    const r=await fetch(API+'/overlay/rc/push',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title:'From RC',message:msg,source:'RC',buttons:['▶ Run','✕ Dismiss']})
+    });
+    const d=await r.json();
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+function setProg(pct){document.getElementById('prog').style.width=pct+'%';}
+
+connectSSE();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

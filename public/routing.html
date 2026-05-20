@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chat Routing Rules</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111;color:#eee;font-family:'Segoe UI',sans-serif;font-size:14px}
+:root{--yel:#f5c400;--grn:#00c853;--red:#ff3b3b;--blu:#3a8fff;--bg2:#1a1a1a;--bg3:#252525;--brd:#333}
+
+/* ── Layout ── */
+.header{background:#1a1a1a;border-bottom:1px solid #333;padding:14px 24px;display:flex;align-items:center;gap:16px}
+.header h1{font-size:18px;font-weight:600;color:var(--yel)}
+.header a{color:#888;text-decoration:none;font-size:13px}
+.header a:hover{color:#eee}
+.main{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:20px;max-width:1400px}
+.full{grid-column:1/-1}
+
+/* ── Panels ── */
+.panel{background:var(--bg2);border:1px solid var(--brd);border-radius:8px;overflow:hidden}
+.panel-hd{background:var(--bg3);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--brd)}
+.panel-hd h2{font-size:13px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:#aaa}
+.panel-body{padding:16px}
+
+/* ── Person card ── */
+.person-card{background:var(--bg3);border:1px solid var(--brd);border-radius:6px;margin-bottom:12px;overflow:hidden}
+.person-card.editing{border-color:var(--yel)}
+.pc-head{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer}
+.pc-label{font-weight:600;font-size:15px;flex:1}
+.pc-badge{background:#2a2a2a;border:1px solid #444;border-radius:10px;padding:2px 8px;font-size:11px;color:#aaa}
+.pc-actions{display:flex;gap:6px}
+.pc-body{padding:14px;border-top:1px solid var(--brd);display:none}
+.pc-body.open{display:block}
+.group-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.group-chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:16px;border:1px solid #444;background:#222;cursor:pointer;user-select:none;font-size:12px;transition:all .15s}
+.group-chip:hover{border-color:#666}
+.group-chip.active{background:#1a3a1a;border-color:var(--grn);color:var(--grn)}
+.group-chip input[type=checkbox]{display:none}
+.group-chip .dot{width:8px;height:8px;border-radius:50%;background:#555;transition:background .15s}
+.group-chip.active .dot{background:var(--grn)}
+.pc-label-edit{display:flex;gap:8px;align-items:center;margin-top:10px}
+.pc-label-edit label{font-size:12px;color:#888;white-space:nowrap}
+input[type=text]{background:#1a1a1a;border:1px solid #444;border-radius:4px;color:#eee;padding:5px 9px;font-size:13px;width:100%}
+input[type=text]:focus{outline:none;border-color:var(--yel)}
+
+/* ── Location rows ── */
+.loc-row{display:grid;grid-template-columns:140px 1fr 1fr auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a}
+.loc-row:last-child{border-bottom:none}
+.loc-key{font-weight:500;font-size:13px;color:#ddd}
+.loc-row input{font-size:12px}
+.loc-hd{display:grid;grid-template-columns:140px 1fr 1fr auto auto;gap:8px;padding:0 0 6px;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #2a2a2a;margin-bottom:4px}
+
+/* ── Add row forms ── */
+.add-row{display:flex;gap:8px;margin-top:14px;align-items:center}
+.add-row input{flex:1}
+.add-row .add-row-grid{display:grid;grid-template-columns:130px 1fr 1fr;gap:8px;flex:1}
+
+/* ── Buttons ── */
+btn,button,.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:5px 12px;border-radius:5px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid;transition:all .15s;background:transparent}
+.btn-yel{border-color:var(--yel);color:var(--yel)}
+.btn-yel:hover{background:var(--yel);color:#000}
+.btn-grn{border-color:var(--grn);color:var(--grn)}
+.btn-grn:hover{background:var(--grn);color:#000}
+.btn-red{border-color:var(--red);color:var(--red)}
+.btn-red:hover{background:var(--red);color:#fff}
+.btn-blu{border-color:var(--blu);color:var(--blu)}
+.btn-blu:hover{background:var(--blu);color:#fff}
+.btn-sm{padding:3px 8px;font-size:11px}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;background:#222;border:1px solid #444;border-radius:6px;padding:10px 16px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:999}
+.toast.show{opacity:1}
+.toast.ok{border-color:var(--grn);color:var(--grn)}
+.toast.err{border-color:var(--red);color:var(--red)}
+
+/* ── Test panel ── */
+.test-output{background:#111;border:1px solid #2a2a2a;border-radius:5px;padding:12px;font-family:monospace;font-size:12px;color:#aaa;white-space:pre-wrap;max-height:260px;overflow-y:auto;margin-top:10px}
+.test-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.test-grid label{font-size:11px;color:#888;margin-bottom:2px;display:block}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ Chat Routing Rules</h1>
+  <a href="/webhooks">← Webhooks</a>
+  <a href="/">Agent</a>
+  <div style="flex:1"></div>
+  <button class="btn btn-grn" onclick="saveAll()">💾 Save All</button>
+</div>
+
+<div class="main">
+
+  <!-- ── Person Rules ── -->
+  <div class="panel">
+    <div class="panel-hd">
+      <h2>👤 Person → Group Scope</h2>
+      <button class="btn btn-yel btn-sm" onclick="addPersonModal()">+ Add Person</button>
+    </div>
+    <div class="panel-body">
+      <p style="font-size:12px;color:#666;margin-bottom:14px">
+        When a webhook arrives with a <code>person</code> field, only the ticked groups
+        will be searched in NocoDB. Unticked groups are completely invisible to that person.
+      </p>
+      <div id="persons-list"></div>
+    </div>
+  </div>
+
+  <!-- ── Location Rules ── -->
+  <div class="panel">
+    <div class="panel-hd">
+      <h2>📍 Location → HA Entity</h2>
+      <button class="btn btn-yel btn-sm" onclick="addLocation()">+ Add Location</button>
+    </div>
+    <div class="panel-body">
+      <p style="font-size:12px;color:#666;margin-bottom:14px">
+        Maps the <code>location</code> field to a Home Assistant area and entity hint
+        used when scoring jobs and dispatching HA commands.
+      </p>
+      <div class="loc-hd">
+        <span>Location Key</span><span>HA Area</span><span>HA Entity Hint</span><span></span><span></span>
+      </div>
+      <div id="locations-list"></div>
+      <div class="add-row" id="loc-add-row" style="display:none">
+        <div class="add-row-grid">
+          <input type="text" id="loc-new-key"  placeholder="e.g. garage">
+          <input type="text" id="loc-new-area" placeholder="HA area  e.g. garage">
+          <input type="text" id="loc-new-hint" placeholder="HA entity  e.g. light.garage">
+        </div>
+        <button class="btn btn-grn btn-sm" onclick="confirmAddLocation()">✓ Add</button>
+        <button class="btn btn-sm" style="border-color:#555;color:#888" onclick="document.getElementById('loc-add-row').style.display='none'">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Group Master List ── -->
+  <div class="panel">
+    <div class="panel-hd">
+      <h2>🗂 All Groups (Master List)</h2>
+      <button class="btn btn-yel btn-sm" onclick="addGroupPrompt()">+ Add Group</button>
+    </div>
+    <div class="panel-body">
+      <p style="font-size:12px;color:#666;margin-bottom:14px">
+        These are the groups that appear as tick-boxes in the Person editor above.
+        Add any new NocoDB <code>Group_Name</code> values here.
+      </p>
+      <div id="groups-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+      <div class="add-row" id="grp-add-row" style="display:none">
+        <input type="text" id="grp-new-name" placeholder="Group name (must match NocoDB Group_Name)">
+        <button class="btn btn-grn btn-sm" onclick="confirmAddGroup()">✓ Add</button>
+        <button class="btn btn-sm" style="border-color:#555;color:#888" onclick="document.getElementById('grp-add-row').style.display='none'">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Test Panel ── -->
+  <div class="panel">
+    <div class="panel-hd"><h2>🧪 Test Routing</h2></div>
+    <div class="panel-body">
+      <div class="test-grid">
+        <div>
+          <label>Person</label>
+          <input type="text" id="t-person" value="Sam" placeholder="Sam / GF / Guest / House">
+        </div>
+        <div>
+          <label>Location</label>
+          <input type="text" id="t-location" value="Bedroom" placeholder="Bedroom / Kitchen...">
+        </div>
+        <div>
+          <label>Assigned Staff (optional)</label>
+          <input type="text" id="t-staff" value="20,05" placeholder="20,05">
+        </div>
+        <div>
+          <label>Message</label>
+          <input type="text" id="t-msg" value="Turn on the AC" placeholder="Turn on the AC">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-blu" onclick="runTest()">▶ Run Test</button>
+        <button class="btn btn-sm" style="border-color:#555;color:#888" onclick="document.getElementById('test-out').textContent=''">Clear</button>
+      </div>
+      <div class="test-output" id="test-out">— press Run Test to see routing result —</div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div class="toast" id="toast"></div>
+
+<!-- Add Person Modal (inline) -->
+<div id="add-person-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:900;display:none;align-items:center;justify-content:center">
+  <div style="background:#1e1e1e;border:1px solid #444;border-radius:8px;padding:20px;width:340px">
+    <h3 style="margin-bottom:14px;font-size:14px">Add Person</h3>
+    <label style="font-size:11px;color:#888">Key (used in webhook payload)</label>
+    <input type="text" id="np-key" placeholder="e.g. Admin" style="margin:4px 0 10px;display:block">
+    <label style="font-size:11px;color:#888">Display Label</label>
+    <input type="text" id="np-label" placeholder="e.g. Admin User" style="margin:4px 0 14px;display:block">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-sm" style="border-color:#555;color:#888" onclick="closeAddPerson()">Cancel</button>
+      <button class="btn btn-grn btn-sm" onclick="confirmAddPerson()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let cfg = { persons: {}, locations: {}, all_groups: [] };
+
+// ── Load ────────────────────────────────────────────────────────────────────
+async function load() {
+  const r = await fetch('/webhooks/chat/routing');
+  cfg = await r.json();
+  render();
+}
+
+// ── Render ──────────────────────────────────────────────────────────────────
+function render() {
+  renderPersons();
+  renderLocations();
+  renderGroups();
+}
+
+function renderPersons() {
+  const el = document.getElementById('persons-list');
+  el.innerHTML = '';
+  for (const [key, val] of Object.entries(cfg.persons || {})) {
+    el.appendChild(buildPersonCard(key, val));
+  }
+}
+
+function buildPersonCard(key, val) {
+  const div = document.createElement('div');
+  div.className = 'person-card';
+  div.id = `pc-${key}`;
+
+  const allGroups = cfg.all_groups || [];
+  const activeGroups = new Set(val.groups || []);
+  const chipsHtml = allGroups.map(g => `
+    <label class="group-chip ${activeGroups.has(g) ? 'active' : ''}" data-person="${key}" data-group="${g}" onclick="toggleGroup(this,'${key}','${g}')">
+      <span class="dot"></span>${g}
+    </label>`).join('');
+
+  div.innerHTML = `
+    <div class="pc-head" onclick="toggleCard('${key}')">
+      <span class="pc-label">${val.label || key}</span>
+      <span class="pc-badge">${(val.groups||[]).length} groups</span>
+      <div class="pc-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-sm btn-yel" onclick="toggleCard('${key}')">✏ Edit</button>
+        <button class="btn btn-sm btn-red" onclick="deletePerson('${key}')">✕</button>
+      </div>
+    </div>
+    <div class="pc-body" id="pcb-${key}">
+      <div class="group-grid">${chipsHtml}</div>
+      <div class="pc-label-edit">
+        <label>Display label:</label>
+        <input type="text" id="pc-lbl-${key}" value="${val.label||key}" style="max-width:180px">
+      </div>
+    </div>`;
+  return div;
+}
+
+function toggleCard(key) {
+  const body = document.getElementById(`pcb-${key}`);
+  const card = document.getElementById(`pc-${key}`);
+  const open  = body.classList.toggle('open');
+  card.classList.toggle('editing', open);
+}
+
+function toggleGroup(chip, personKey, group) {
+  const person = cfg.persons[personKey];
+  if (!person) return;
+  const idx = person.groups.indexOf(group);
+  if (idx === -1) {
+    person.groups.push(group);
+    chip.classList.add('active');
+  } else {
+    person.groups.splice(idx, 1);
+    chip.classList.remove('active');
+  }
+  // Update badge count
+  const badge = document.querySelector(`#pc-${personKey} .pc-badge`);
+  if (badge) badge.textContent = `${person.groups.length} groups`;
+}
+
+function renderLocations() {
+  const el = document.getElementById('locations-list');
+  el.innerHTML = '';
+  for (const [key, val] of Object.entries(cfg.locations || {})) {
+    const row = document.createElement('div');
+    row.className = 'loc-row';
+    row.innerHTML = `
+      <span class="loc-key">${key}</span>
+      <input type="text" value="${val.area||''}" placeholder="HA area" id="loc-area-${encodeKey(key)}" oninput="locChanged('${key}')">
+      <input type="text" value="${val.hint||''}" placeholder="HA entity hint" id="loc-hint-${encodeKey(key)}" oninput="locChanged('${key}')">
+      <button class="btn btn-sm btn-red" onclick="deleteLocation('${key}')">✕</button>`;
+    el.appendChild(row);
+  }
+}
+
+function encodeKey(k) { return k.replace(/\s+/g,'_'); }
+
+function locChanged(key) {
+  const area = document.getElementById(`loc-area-${encodeKey(key)}`)?.value || '';
+  const hint = document.getElementById(`loc-hint-${encodeKey(key)}`)?.value || '';
+  if (!cfg.locations[key]) cfg.locations[key] = {};
+  cfg.locations[key].area = area;
+  cfg.locations[key].hint = hint || null;
+}
+
+function renderGroups() {
+  const el = document.getElementById('groups-chips');
+  el.innerHTML = '';
+  for (const g of (cfg.all_groups || [])) {
+    const chip = document.createElement('div');
+    chip.style.cssText = 'display:flex;align-items:center;gap:6px;background:#2a2a2a;border:1px solid #444;border-radius:14px;padding:4px 10px;font-size:12px';
+    chip.innerHTML = `<span>${g}</span><span style="cursor:pointer;color:#888;font-size:10px" onclick="removeGroup('${g}')">✕</span>`;
+    el.appendChild(chip);
+  }
+}
+
+// ── Mutations ────────────────────────────────────────────────────────────────
+function deletePerson(key) {
+  if (!confirm(`Delete person "${key}"?`)) return;
+  delete cfg.persons[key];
+  document.getElementById(`pc-${key}`)?.remove();
+}
+
+function deleteLocation(key) {
+  if (!confirm(`Delete location "${key}"?`)) return;
+  delete cfg.locations[key];
+  renderLocations();
+}
+
+function removeGroup(g) {
+  cfg.all_groups = (cfg.all_groups || []).filter(x => x !== g);
+  // Also remove from all persons that had it
+  for (const p of Object.values(cfg.persons || {})) {
+    p.groups = (p.groups || []).filter(x => x !== g);
+  }
+  render();
+}
+
+function addPersonModal() {
+  document.getElementById('np-key').value = '';
+  document.getElementById('np-label').value = '';
+  document.getElementById('add-person-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('np-key').focus(), 50);
+}
+function closeAddPerson() { document.getElementById('add-person-modal').style.display = 'none'; }
+function confirmAddPerson() {
+  const key   = document.getElementById('np-key').value.trim();
+  const label = document.getElementById('np-label').value.trim() || key;
+  if (!key) return;
+  cfg.persons[key] = { label, groups: [] };
+  closeAddPerson();
+  renderPersons();
+}
+
+function addLocation() {
+  document.getElementById('loc-add-row').style.display = 'flex';
+  document.getElementById('loc-new-key').value = '';
+  document.getElementById('loc-new-area').value = '';
+  document.getElementById('loc-new-hint').value = '';
+  setTimeout(() => document.getElementById('loc-new-key').focus(), 50);
+}
+function confirmAddLocation() {
+  const key  = document.getElementById('loc-new-key').value.trim().toLowerCase();
+  const area = document.getElementById('loc-new-area').value.trim();
+  const hint = document.getElementById('loc-new-hint').value.trim();
+  if (!key) return;
+  cfg.locations[key] = { area: area || key.replace(/\s+/g,'_'), hint: hint || null };
+  document.getElementById('loc-add-row').style.display = 'none';
+  renderLocations();
+}
+
+function addGroupPrompt() {
+  document.getElementById('grp-add-row').style.display = 'flex';
+  document.getElementById('grp-new-name').value = '';
+  setTimeout(() => document.getElementById('grp-new-name').focus(), 50);
+}
+function confirmAddGroup() {
+  const g = document.getElementById('grp-new-name').value.trim();
+  if (!g || (cfg.all_groups||[]).includes(g)) return;
+  cfg.all_groups = [...(cfg.all_groups||[]), g];
+  document.getElementById('grp-add-row').style.display = 'none';
+  renderGroups();
+}
+
+// Sync label edits back to cfg before save
+function syncLabelEdits() {
+  for (const key of Object.keys(cfg.persons || {})) {
+    const inp = document.getElementById(`pc-lbl-${key}`);
+    if (inp) cfg.persons[key].label = inp.value || key;
+  }
+}
+
+// ── Save ─────────────────────────────────────────────────────────────────────
+async function saveAll() {
+  syncLabelEdits();
+  const r = await fetch('/webhooks/chat/routing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cfg),
+  });
+  const d = await r.json();
+  toast(d.ok ? 'Saved ✓' : (d.error || 'Error'), d.ok ? 'ok' : 'err');
+}
+
+// ── Test ─────────────────────────────────────────────────────────────────────
+async function runTest() {
+  const person   = document.getElementById('t-person').value.trim();
+  const location = document.getElementById('t-location').value.trim();
+  const staff    = document.getElementById('t-staff').value.trim();
+  const msg      = document.getElementById('t-msg').value.trim();
+  const out      = document.getElementById('test-out');
+  out.textContent = 'Running…';
+  try {
+    const r = await fetch('/webhooks/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: msg,
+        context: { person, location, assigned_staff: staff }
+      }),
+    });
+    const d = await r.json();
+    out.textContent = JSON.stringify({
+      full_prompt:   d.full_prompt,
+      scope_groups:  d.scope_groups,
+      ha_hint:       d.ha_hint,
+      ha_area:       d.ha_area,
+      candidates:    d.candidates,
+      top_score:     d.top_score,
+      top_job:       d.top_job ? `${d.top_job.Job_Name} (score ${d.top_job.score})` : null,
+      matches:       d.matches,
+      executed:      d.executed,
+    }, null, 2);
+  } catch(e) {
+    out.textContent = 'Error: ' + e.message;
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+load();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS — Webhook Settings</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'JetBrains Mono',monospace,system-ui;font-size:13px;min-height:100vh}
+a{color:#5b9cf6;text-decoration:none}
+.top{background:#0d0f17;border-bottom:1px solid #1e2030;padding:11px 20px;display:flex;align-items:center;gap:10px}
+.logo{font-size:14px;font-weight:700;color:#fff}.logo span{color:#5b9cf6}
+.nav{margin-left:auto;display:flex;gap:14px;font-size:11px}
+.nav a{color:#4a5568}.nav a:hover{color:#dde1f5}
+.wrap{max-width:860px;margin:0 auto;padding:24px 18px}
+h1{font-size:16px;font-weight:700;color:#fff;margin-bottom:3px}
+.sub{color:#4a5568;font-size:11px;margin-bottom:22px}
+
+.sec{background:#0d0f17;border:1px solid #1e2030;border-radius:10px;margin-bottom:16px;overflow:hidden}
+.sec-hd{padding:12px 16px;border-bottom:1px solid #1e2030;display:flex;align-items:center;gap:8px}
+.sec-title{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em;flex:1}
+.sec-body{padding:16px}
+
+.lbl{font-size:10px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;display:block}
+.inp{width:100%;background:#13151f;border:1px solid #1e2030;border-radius:7px;padding:8px 12px;font-size:12px;color:#dde1f5;outline:none;font-family:inherit;transition:border-color .15s}
+.inp:focus{border-color:#5b9cf6}
+.inp::placeholder{color:#3a3e55}
+textarea.inp{resize:vertical;min-height:60px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+
+/* AI restriction checkboxes */
+.ai-grid{display:flex;flex-direction:column;gap:6px}
+.ai-opt{display:flex;align-items:flex-start;gap:10px;background:#13151f;border:1px solid #1e2030;border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .15s}
+.ai-opt:hover{border-color:#2a3a5a}
+.ai-opt.selected{border-color:#5b9cf644;background:#5b9cf608}
+.ai-opt input[type=checkbox]{margin-top:2px;accent-color:#5b9cf6;width:14px;height:14px;flex-shrink:0}
+.ai-opt-body{flex:1}
+.ai-opt-name{font-size:12px;font-weight:700;color:#dde1f5}
+.ai-opt-desc{font-size:10px;color:#4a5568;margin-top:2px;line-height:1.4}
+.model-sel{margin-top:6px;display:none}
+.ai-opt.selected .model-sel{display:block}
+.model-sel select{background:#07080d;border:1px solid #1e2030;border-radius:5px;padding:4px 8px;font-size:11px;color:#a0aec0;width:100%;outline:none}
+.ai-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px}
+
+/* webhook card */
+.wh-card{background:#0d0f17;border:1px solid #1e2030;border-radius:10px;margin-bottom:10px;overflow:hidden}
+.wh-card-hd{padding:12px 14px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.wh-card-hd:hover{background:#0f111a}
+.wh-name{font-size:13px;font-weight:700;color:#dde1f5;flex:1}
+.wh-url{font-size:10px;color:#5b9cf6;font-family:monospace;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px}
+.wh-badges{display:flex;gap:4px;flex-wrap:wrap}
+.badge{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:4px}
+.badge-blue{background:#1a3a5c;color:#5b9cf6}
+.badge-green{background:#1a3a24;color:#3fdc8a}
+.badge-purple{background:rgba(181,122,255,.15);color:#b57aff}
+.badge-grey{background:#1e2030;color:#6b7280}
+.badge-red{background:#3a1c1c;color:#f87171}
+.wh-card-body{display:none;padding:12px 14px;border-top:1px solid #1e2030;background:#07080d}
+.wh-card.open .wh-card-body{display:block}
+.wh-card.open .wh-expand{transform:rotate(90deg)}
+.wh-expand{transition:transform .2s;color:#4a5568;font-size:12px}
+
+/* url display */
+.url-box{background:#07080d;border:1px solid #1e2030;border-radius:7px;padding:8px 12px;font-size:11px;color:#5b9cf6;font-family:monospace;word-break:break-all;display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.url-text{flex:1}
+.copy-btn{background:#1e2030;border:none;border-radius:5px;padding:4px 10px;font-size:10px;color:#7880a0;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.copy-btn:hover{color:#dde1f5}
+
+/* buttons */
+.btn{padding:8px 16px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-primary{background:#5b9cf6;color:#fff}
+.btn-secondary{background:#1e2030;color:#7880a0;border:1px solid #2a2d42}.btn-secondary:hover{color:#dde1f5}
+.btn-danger{background:#3a1c1c;color:#f87171;border:1px solid #4a2c2c}
+.btn-sm{padding:4px 10px;font-size:10px}
+
+/* stat pills */
+.stat-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.stat-pill{background:#13151f;border:1px solid #1e2030;border-radius:7px;padding:8px 14px;text-align:center;min-width:80px}
+.stat-num{font-size:20px;font-weight:800;color:#5b9cf6;line-height:1}
+.stat-lbl{font-size:9px;color:#4a5568;margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
+
+.toast{position:fixed;bottom:18px;right:18px;background:#1e2030;border:1px solid #2a2d42;border-radius:7px;padding:8px 14px;font-size:12px;color:#dde1f5;z-index:9999;opacity:0;transform:translateY(5px);transition:all .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+.divider{height:1px;background:#1e2030;margin:14px 0}
+.help-text{font-size:10px;color:#4a5568;line-height:1.6;margin-top:6px}
+
+/* Context panel */
+.ctx-pill-bar{background:#12100a;border-bottom:1px solid #3a2f0a;padding:6px 18px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+.ctx-pill{display:inline-flex;align-items:center;gap:5px;background:#2a1f0022;border:1px solid #ca8a0455;border-radius:9999px;padding:2px 10px 2px 10px;font-size:11px;color:#fcd34d}
+.ctx-pill-x{background:none;border:none;color:#ca8a04;cursor:pointer;font-size:12px;padding:0;line-height:1;margin-left:2px}
+.ctx-sec{background:#0d0e12;border:1px solid #2a1f00;border-radius:10px;overflow:hidden;margin-bottom:16px}
+.ctx-sec-hd{padding:10px 16px;border-bottom:1px solid #2a1f00;display:flex;align-items:center;gap:8px;cursor:pointer;background:#0f0d08}
+.ctx-box{background:#0a0a0f;border:1px solid #1e1a10;border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.ctx-box:last-child{margin-bottom:0}
+.ctx-lbl{font-size:9px;font-weight:700;color:#ca8a04;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;display:block}
+.ctx-qbtn{padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .12s;background:transparent;border:1px solid #334155;color:#64748b}
+.ctx-qbtn.on{background:#ca8a0422;border-color:#ca8a04;color:#fcd34d;font-weight:700}
+.ctx-toggle{width:44px;height:24px;border-radius:12px;cursor:pointer;position:relative;transition:background .2s;border:none;padding:0;flex-shrink:0}
+.ctx-toggle-knob{position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+.ctx-json{background:#060810;border:1px solid #1e1a10;border-radius:8px;overflow:hidden}
+.ctx-json-hd{padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;color:#64748b;font-size:11px;background:none;border:none;width:100%;font-family:inherit}
+.ctx-json-body{padding:0 12px 12px;display:none}
+.ctx-json.open .ctx-json-body{display:block}
+</style>
+</head>
+<body>
+<!-- Context pill bar (hidden until context is active) -->
+<div class="ctx-pill-bar" id="ctx-pill-bar" style="display:none">
+  <span style="font-size:9px;font-weight:700;color:#ca8a04;letter-spacing:2px;margin-right:4px">CTX</span>
+  <div id="ctx-pills" style="display:flex;gap:5px;flex-wrap:wrap;flex:1"></div>
+  <button onclick="ctxClear()" style="font-size:10px;background:none;border:1px solid #3a2f0a;color:#ca8a04;border-radius:5px;padding:2px 8px;cursor:pointer;font-family:inherit">Clear All</button>
+</div>
+<div class="top">
+  <div class="logo">JARVIS<span>.</span></div>
+  <span style="font-size:11px;color:#4a5568">Webhook Settings</span>
+  <div class="nav">
+    <a href="/">Agent</a>
+    <a href="/setup">Setup</a>
+    <a href="/about">About</a>
+    <a href="/links">Links</a>
+    <a href="/tools-page">Tools</a>
+    <a href="/overlay/rc">RC</a>
+    <a href="/manual" style="color:#ff9a4a">Manual</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Webhook Settings</h1>
+  <div class="sub">Generate webhooks, manage tools, and see what JARVIS can do — for n8n, CLI, Composio, and more.</div>
+
+  <!-- ── JARVIS CONTEXT PANEL ── -->
+  <div class="sec" style="margin-bottom:20px;border-color:#2a2d42">
+    <div class="sec-hd" style="background:#0f1120;cursor:pointer" onclick="toggleCtx()">
+      <div class="sec-title" style="color:#6b8cff">🧠 What JARVIS Can Do — Tools, CLI & Composio</div>
+      <span id="ctx-arrow" style="color:#4a5568;font-size:12px">▼</span>
+    </div>
+    <div id="ctx-body" class="sec-body" style="display:none">
+
+      <!-- Quick phrases -->
+      <div style="margin-bottom:16px">
+        <div class="lbl">Say these in chat to use tools directly</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px" id="phrase-chips">
+          <div class="url-box" style="cursor:pointer;flex:none" onclick="copyPhrase(this,'use Google Calendar')"><span class="url-text">use Google Calendar</span><button class="copy-btn">Copy</button></div>
+          <div class="url-box" style="cursor:pointer;flex:none" onclick="copyPhrase(this,'use Gmail')"><span class="url-text">use Gmail</span><button class="copy-btn">Copy</button></div>
+          <div class="url-box" style="cursor:pointer;flex:none" onclick="copyPhrase(this,'use Slack')"><span class="url-text">use Slack</span><button class="copy-btn">Copy</button></div>
+          <div class="url-box" style="cursor:pointer;flex:none" onclick="copyPhrase(this,'list cli tools')"><span class="url-text">list cli tools</span><button class="copy-btn">Copy</button></div>
+          <div class="url-box" style="cursor:pointer;flex:none" onclick="copyPhrase(this,'what can you do?')"><span class="url-text">what can you do?</span><button class="copy-btn">Copy</button></div>
+          <div class="url-box" style="cursor:pointer;flex:none" onclick="copyPhrase(this,'run cli [command]')"><span class="url-text">run cli [command]</span><button class="copy-btn">Copy</button></div>
+        </div>
+      </div>
+
+      <!-- Active tools -->
+      <div style="margin-bottom:16px">
+        <div class="lbl">Active Tools / Integrations <span id="tools-count" style="color:#5b9cf6"></span></div>
+        <div id="tools-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+          <span style="color:#4a5568;font-size:11px">Loading…</span>
+        </div>
+        <a href="/tools-page" style="font-size:10px;color:#5b9cf6;margin-top:6px;display:inline-block">Manage tools →</a>
+      </div>
+
+      <!-- CLI tools -->
+      <div style="margin-bottom:16px">
+        <div class="lbl">CLI Tools <span id="cli-count" style="color:#5b9cf6"></span></div>
+        <div id="cli-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+          <span style="color:#4a5568;font-size:11px">Loading…</span>
+        </div>
+        <a href="/links#cli" style="font-size:10px;color:#5b9cf6;margin-top:6px;display:inline-block">Browse all CLI tools →</a>
+      </div>
+
+      <!-- Webhook endpoints -->
+      <div>
+        <div class="lbl">Key API Endpoints for n8n</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+          <div class="url-box" style="border-color:rgba(63,220,138,.3)">
+            <span class="url-text">POST http://192.168.0.8:8080/webhook/<b>JARVIS-Search</b>  {message,site}</span>
+            <button class="copy-btn" onclick="cp('http://192.168.0.8:8080/webhook/JARVIS-Search')">Copy</button>
+          </div>
+          <div class="url-box"><span class="url-text">POST http://192.168.0.8:8080/webhook/search  {type,message}</span><button class="copy-btn" onclick="cp('http://192.168.0.8:8080/webhook/search')">Copy</button></div>
+          <div class="url-box"><span class="url-text">POST http://192.168.0.8:8080/overlay/rc/push</span><button class="copy-btn" onclick="cp('http://192.168.0.8:8080/overlay/rc/push')">Copy</button></div>
+          <div class="url-box"><span class="url-text">POST http://192.168.0.8:8080/overlay/rc/update</span><button class="copy-btn" onclick="cp('http://192.168.0.8:8080/overlay/rc/update')">Copy</button></div>
+          <div class="url-box"><span class="url-text">POST http://192.168.0.8:8080/run</span><button class="copy-btn" onclick="cp('http://192.168.0.8:8080/run')">Copy</button></div>
+          <div class="url-box"><span class="url-text">POST http://192.168.0.8:8080/webhook/receive</span><button class="copy-btn" onclick="cp('http://192.168.0.8:8080/webhook/receive')">Copy</button></div>
+          <div class="url-box"><span class="url-text">GET  http://192.168.0.8:8080/health</span><button class="copy-btn" onclick="cp('http://192.168.0.8:8080/health')">Copy</button></div>
+        </div>
+        <a href="/manual" style="font-size:10px;color:#5b9cf6;margin-top:6px;display:inline-block">Full API docs →</a>
+      </div>
+
+    </div><!-- end ctx-body -->
+  </div>
+
+  <!-- ── JARVIS CONTEXT PANEL ── -->
+  <div class="ctx-sec" id="jarvis-ctx-panel">
+    <div class="ctx-sec-hd" onclick="ctxTogglePanel()">
+      <div style="font-size:11px;font-weight:700;color:#fcd34d;letter-spacing:.05em;flex:1">🟡 CONTEXT PANEL — Inject context into every webhook payload</div>
+      <span id="ctx-live-badge" style="display:none;font-size:9px;padding:2px 8px;border-radius:9999px;background:#ca8a0422;color:#fcd34d;border:1px solid #ca8a0455;font-weight:700;margin-right:8px">● LIVE</span>
+      <span id="ctx-panel-arrow" style="color:#4a5568;font-size:12px">▼</span>
+    </div>
+    <div id="ctx-panel-body" style="padding:14px;display:none">
+
+      <!-- Box 1: Person -->
+      <div class="ctx-box">
+        <span class="ctx-lbl">1 · PERSON — routes to staff group</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="ctx-person-btns">
+          <button class="ctx-qbtn" onclick="ctxQuick('person','Sam',this)">Sam</button>
+          <button class="ctx-qbtn" onclick="ctxQuick('person','GF',this)">GF</button>
+          <button class="ctx-qbtn" onclick="ctxQuick('person','Guest',this)">Guest</button>
+          <button class="ctx-qbtn" onclick="ctxQuick('person','House',this)">House</button>
+        </div>
+        <input class="inp" id="ctx-person" placeholder="Or type a custom name…" oninput="ctxSave()" style="font-size:12px">
+        <div id="ctx-person-route" style="font-size:10px;color:#ca8a04;margin-top:5px;display:none"></div>
+      </div>
+
+      <!-- Box 2: Location -->
+      <div class="ctx-box">
+        <span class="ctx-lbl">2 · LOCATION</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <button class="ctx-qbtn" onclick="ctxQuick('location','Living Room',this)">Living Room</button>
+          <button class="ctx-qbtn" onclick="ctxQuick('location','Kitchen',this)">Kitchen</button>
+          <button class="ctx-qbtn" onclick="ctxQuick('location','Office',this)">Office</button>
+          <button class="ctx-qbtn" onclick="ctxQuick('location','Bedroom',this)">Bedroom</button>
+        </div>
+        <input class="inp" id="ctx-location" placeholder="Or type a custom location…" oninput="ctxSave()" style="font-size:12px">
+      </div>
+
+      <!-- Box 3: Assigned Staff -->
+      <div class="ctx-box">
+        <span class="ctx-lbl">3 · ASSIGNED STAFF</span>
+        <input class="inp" id="ctx-staff" placeholder="e.g.  20,05,  or  Jarvis Staff 1" oninput="ctxSave()" style="font-size:12px">
+      </div>
+
+      <!-- Box 4: Remember Last -->
+      <div class="ctx-box">
+        <span class="ctx-lbl">4 · REMEMBER LAST RESPONSE</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="ctx-toggle" id="ctx-remember-btn" onclick="ctxToggleRemember()"
+            style="background:#334155">
+            <div class="ctx-toggle-knob" id="ctx-remember-knob" style="left:3px"></div>
+          </button>
+          <span id="ctx-remember-lbl" style="font-size:12px;color:#64748b">OFF</span>
+        </div>
+        <div id="ctx-last-preview" style="display:none;margin-top:8px;font-size:10px;color:#4a5568;background:#0a0a0f;border:1px solid #1e1a10;border-radius:5px;padding:6px 10px;font-family:monospace;max-height:60px;overflow:hidden;text-overflow:ellipsis"></div>
+      </div>
+
+      <!-- Box 5: Notes -->
+      <div class="ctx-box">
+        <span class="ctx-lbl">5 · NOTES — brain dump for the AI</span>
+        <textarea class="inp" id="ctx-notes" rows="3" placeholder="Anything the AI should keep in mind right now…" oninput="ctxSave()" style="font-size:12px;resize:vertical"></textarea>
+      </div>
+
+      <!-- Boxes 6-8: Custom fields -->
+      <div class="ctx-box">
+        <span class="ctx-lbl">6-8 · CUSTOM FIELDS (key : value)</span>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <input class="inp" id="ctx-c1k" placeholder="Key (e.g. Mood)" oninput="ctxSave()" style="font-size:12px">
+            <input class="inp" id="ctx-c1v" placeholder="Value (e.g. Relaxed)" oninput="ctxSave()" style="font-size:12px">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <input class="inp" id="ctx-c2k" placeholder="Key (e.g. Urgency)" oninput="ctxSave()" style="font-size:12px">
+            <input class="inp" id="ctx-c2v" placeholder="Value (e.g. High)" oninput="ctxSave()" style="font-size:12px">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <input class="inp" id="ctx-c3k" placeholder="Key" oninput="ctxSave()" style="font-size:12px">
+            <input class="inp" id="ctx-c3v" placeholder="Value" oninput="ctxSave()" style="font-size:12px">
+          </div>
+        </div>
+      </div>
+
+      <!-- JSON Preview -->
+      <div class="ctx-json" id="ctx-json-block">
+        <button class="ctx-json-hd" onclick="document.getElementById('ctx-json-block').classList.toggle('open');this.querySelector('.arr').textContent=document.getElementById('ctx-json-block').classList.contains('open')?'▼':'▶'">
+          <span class="arr" style="color:#ca8a04">▶</span>
+          <span style="font-weight:700;letter-spacing:1px">JSON PREVIEW</span>
+          <span id="ctx-json-count" style="margin-left:auto;font-size:10px;color:#fcd34d"></span>
+        </button>
+        <div class="ctx-json-body">
+          <div style="font-size:9px;color:#ca8a04;letter-spacing:1px;margin-bottom:6px">OUTGOING PAYLOAD</div>
+          <pre id="ctx-json-pre" style="margin:0;font-size:11px;color:#86efac;background:#030408;border-radius:6px;padding:10px 12px;overflow-x:auto;line-height:1.6"></pre>
+          <div id="ctx-prefix-wrap" style="display:none;margin-top:10px">
+            <div style="font-size:9px;color:#ca8a04;letter-spacing:1px;margin-bottom:5px">TEXT INJECTION PREFIX</div>
+            <div id="ctx-prefix-pre" style="font-size:11px;color:#67e8f9;background:#030408;border-radius:6px;padding:8px 12px;font-family:monospace"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end ctx-panel-body -->
+  </div>
+
+  <!-- Search Webhooks — main feature block -->
+  <div class="sec" id="search-sec" style="border-color:#2a3a5a">
+    <div class="sec-hd" style="background:#0a0e1a">
+      <div class="sec-title" style="color:#5b9cf6;font-size:12px">🔗 Search Webhook Sites</div>
+      <span style="font-size:10px;color:#4a5568">Each site = one URL to POST to</span>
+    </div>
+    <div class="sec-body">
+
+      <!-- How it works -->
+      <div style="background:rgba(91,156,246,.07);border:1px solid rgba(91,156,246,.18);border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+        <div style="font-weight:700;color:#5b9cf6;margin-bottom:6px;font-size:12px">⚡ How to use</div>
+        <div style="font-size:11px;color:#c8d2e6;line-height:1.8">
+          1. Pick a site below (e.g. <b>Gemini</b>)<br>
+          2. Copy its <b>Webhook URL</b><br>
+          3. POST to it with just: <code style="background:rgba(255,255,255,.07);padding:2px 7px;border-radius:3px;color:#3fdc8a">{"message":"Find cheapest flights to Amsterdam"}</code><br>
+          4. JARVIS opens that site, searches, and sends result to <b>Telegram + overlay</b>
+        </div>
+        <div style="margin-top:10px;padding:8px 10px;background:#07080d;border-radius:6px;font-size:11px;color:#4a5568">
+          <span style="color:#5b9cf6">Example:</span>
+          <span style="color:#3fdc8a;font-family:monospace"> curl -X POST http://192.168.0.8:8080/webhook/gemini-search -H "Content-Type: application/json" -d '{"message":"Best flights London to Amsterdam this weekend"}'</span>
+        </div>
+      </div>
+
+      <!-- ── ADD SITE FORM (always visible at top) ── -->
+      <div style="background:#0a0e1a;border:1px solid rgba(63,220,138,.25);border-radius:10px;padding:14px;margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:#3fdc8a;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <span>➕ Add Custom Site</span>
+          <span style="font-size:9px;font-weight:400;color:#4a5568">— creates a new webhook URL for any site</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 2fr 1fr 90px 60px;gap:8px;margin-bottom:10px;">
+          <div>
+            <div class="lbl">Name</div>
+            <input class="inp" id="ss-name" placeholder="e.g. LinkedIn"/>
+          </div>
+          <div>
+            <div class="lbl">Site URL</div>
+            <input class="inp" id="ss-url" placeholder="https://linkedin.com"/>
+          </div>
+          <div>
+            <div class="lbl">ID (webhook URL)</div>
+            <input class="inp" id="ss-id" placeholder="linkedin" oninput="updateWhPreview()"/>
+          </div>
+          <div>
+            <div class="lbl">Chrome Profile</div>
+            <select class="inp" id="ss-profile" onchange="updateWhPreview()" style="padding:7px 8px">
+              <option value="default">Default (0)</option>
+              <option value="profile-1">Profile 1</option>
+              <option value="profile-2">Profile 2</option>
+              <option value="profile-3">Profile 3</option>
+              <option value="profile-4">Profile 4</option>
+              <option value="all">⭐ ALL profiles</option>
+            </select>
+          </div>
+          <div>
+            <div class="lbl">Icon</div>
+            <input class="inp" id="ss-icon" placeholder="💼" style="text-align:center"/>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#4a5568;margin-bottom:8px;">
+          Webhook URL: <span id="wh-preview" style="color:#5b9cf6;font-family:monospace">http://192.168.0.8:8080/webhook/<b style="color:#3fdc8a">[id]</b>-search</span>
+        </div>
+        <button onclick="addSearchSite()" style="background:#3fdc8a;border:none;color:#0a1a10;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:700;font-size:11px;font-family:inherit">➕ Add Site</button>
+      </div>
+
+      <!-- Site cards grid -->
+      <div style="font-size:10px;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Your Sites &amp; Webhook URLs</div>
+      <div id="search-sites-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px"></div>
+
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-row" id="wh-stats">
+    <div class="stat-pill"><div class="stat-num" id="s-total">—</div><div class="stat-lbl">Total webhooks</div></div>
+    <div class="stat-pill"><div class="stat-num" id="s-active">—</div><div class="stat-lbl">Active</div></div>
+    <div class="stat-pill"><div class="stat-num" id="s-calls">—</div><div class="stat-lbl">Total calls</div></div>
+    <div class="stat-pill"><div class="stat-num" id="s-today">—</div><div class="stat-lbl">Calls today</div></div>
+  </div>
+
+  <!-- Create new webhook -->
+  <div class="sec">
+    <div class="sec-hd">
+      <div class="sec-title">+ Create Webhook</div>
+    </div>
+    <div class="sec-body">
+      <div class="row2" style="margin-bottom:12px">
+        <div class="field">
+          <label class="lbl">Webhook Name</label>
+          <input class="inp" id="new-name" placeholder="e.g. n8n Flight Search"/>
+        </div>
+        <div class="field">
+          <label class="lbl">Description (optional)</label>
+          <input class="inp" id="new-desc" placeholder="What this webhook is for…"/>
+        </div>
+      </div>
+
+      <!-- AI restrictions -->
+      <label class="lbl" style="margin-bottom:8px">Allowed AI Engines</label>
+      <div class="help-text" style="margin-bottom:10px">Tick which AI engines this webhook is allowed to use. For example, only allow Gemini so Ollama is never used for this route.</div>
+      <div class="ai-grid" id="new-ai-grid">
+
+        <label class="ai-opt selected" id="opt-gemini-browser" style="border-color:#3fdc8a">
+          <input type="checkbox" id="ck-gemini-browser" checked onchange="toggleAiOpt('gemini-browser')">
+          <div class="ai-opt-body">
+            <div class="ai-opt-name">🌐 Gemini Browser <span class="ai-badge" style="background:rgba(63,220,138,.15);color:#3fdc8a">Real-time</span></div>
+            <div class="ai-opt-desc">Opens gemini.google.com/app in a real Chrome browser, types your query, and returns the full AI response. Gets live data, flight prices, news. No API quota limits.</div>
+            <div class="model-sel">
+              <select id="sel-gemini-browser">
+                <option value="gemini Search">Gemini Web (with search)</option>
+              </select>
+            </div>
+          </div>
+        </label>
+
+        <label class="ai-opt" id="opt-gemini">
+          <input type="checkbox" id="ck-gemini" onchange="toggleAiOpt('gemini')">
+          <div class="ai-opt-body">
+            <div class="ai-opt-name">✦ Gemini Fleet API <span class="ai-badge badge-blue">API</span></div>
+            <div class="ai-opt-desc">LiteLLM proxy at 192.168.0.3:3080 — Gemini 2.5 Flash / Pro / Lite. Best for browser tasks, research, planning.</div>
+            <div class="model-sel">
+              <select id="sel-gemini">
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (default)</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="gemini-2.5-flash-lite">Flash-Lite (fastest)</option>
+              </select>
+            </div>
+          </div>
+        </label>
+
+        <label class="ai-opt" id="opt-ollama">
+          <input type="checkbox" id="ck-ollama" onchange="toggleAiOpt('ollama')">
+          <div class="ai-opt-body">
+            <div class="ai-opt-name">🦙 Ollama (local) <span class="ai-badge badge-green">Private</span></div>
+            <div class="ai-opt-desc">Local model on this machine — no data leaves the server. Slower, uses CPU RAM. Good for proofreading, private tasks.</div>
+            <div class="model-sel">
+              <select id="sel-ollama">
+                <option value="gemma3:4b">gemma3:4b (recommended)</option>
+                <option value="gemma3:1b">gemma3:1b (fastest)</option>
+                <option value="llama3.2:3b">llama3.2:3b</option>
+              </select>
+            </div>
+          </div>
+        </label>
+
+        <label class="ai-opt" id="opt-claude">
+          <input type="checkbox" id="ck-claude" onchange="toggleAiOpt('claude')">
+          <div class="ai-opt-body">
+            <div class="ai-opt-name">◆ Claude Code CLI <span class="ai-badge badge-purple">Agentic</span></div>
+            <div class="ai-opt-desc">Run Claude Code locally for coding jobs, file editing, SSH tasks. Uses the CLI installed on this machine.</div>
+            <div class="model-sel">
+              <select id="sel-claude">
+                <option value="claude-code">Claude Code (default)</option>
+              </select>
+            </div>
+          </div>
+        </label>
+
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Extra options -->
+      <div class="row3" style="margin-bottom:14px">
+        <div class="field">
+          <label class="lbl">Rate limit (calls/min)</label>
+          <input class="inp" id="new-rate" type="number" placeholder="0 = unlimited" value="0" min="0"/>
+        </div>
+        <div class="field">
+          <label class="lbl">Reply-to URL (optional)</label>
+          <input class="inp" id="new-reply-url" placeholder="https://n8n.example.com/webhook/reply"/>
+        </div>
+        <div class="field">
+          <label class="lbl">Secret / Auth token</label>
+          <input class="inp" id="new-secret" placeholder="Leave blank to auto-generate"/>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="lbl">System prompt override (optional)</label>
+        <textarea class="inp" id="new-prompt" placeholder="Custom system prompt for tasks sent via this webhook. Leave blank to use the default agent prompt."></textarea>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-primary" onclick="createWebhook()">🔗 Generate Webhook</button>
+        <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+      </div>
+      <div id="create-result" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- Existing webhooks -->
+  <div class="sec">
+    <div class="sec-hd">
+      <div class="sec-title">Configured Webhooks</div>
+      <button class="btn btn-secondary btn-sm" onclick="loadWebhooks()">↺ Refresh</button>
+    </div>
+    <div class="sec-body" style="padding:12px">
+      <div id="webhook-list">
+        <div style="text-align:center;padding:20px;color:#4a5568;font-size:12px">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- n8n integration guide -->
+  <div class="sec">
+    <div class="sec-hd"><div class="sec-title">How to use in n8n</div></div>
+    <div class="sec-body">
+      <div style="display:flex;flex-direction:column;gap:10px">
+
+        <div style="background:#13151f;border-radius:8px;padding:12px">
+          <div style="font-size:11px;font-weight:700;color:#dde1f5;margin-bottom:6px">1. HTTP Request node → this webhook</div>
+          <div style="font-size:10px;color:#4a5568;line-height:1.6">Set method to <strong style="color:#a0aec0">POST</strong>, URL to your generated webhook URL.<br>Body (JSON):</div>
+          <div style="background:#07080d;border:1px solid #1e2030;border-radius:6px;padding:8px;margin-top:6px;font-size:10.5px;color:#a0aec0;font-family:monospace;line-height:1.6">
+{<br>
+&nbsp;&nbsp;"message": "Find flights from London to Rome this weekend",<br>
+&nbsp;&nbsp;"source": "n8n",<br>
+&nbsp;&nbsp;"reply_url": "https://your-n8n.com/webhook/result"<br>
+}
+          </div>
+        </div>
+
+        <div style="background:#13151f;border-radius:8px;padding:12px">
+          <div style="font-size:11px;font-weight:700;color:#dde1f5;margin-bottom:6px">2. Auth header (if you set a secret)</div>
+          <div style="font-size:10px;color:#4a5568;line-height:1.6">Add header: <strong style="color:#a0aec0">X-Webhook-Secret: your-token</strong></div>
+        </div>
+
+        <div style="background:#13151f;border-radius:8px;padding:12px">
+          <div style="font-size:11px;font-weight:700;color:#dde1f5;margin-bottom:6px">3. Receive result in n8n</div>
+          <div style="font-size:10px;color:#4a5568;line-height:1.6">JARVIS sends the result back to your <strong style="color:#a0aec0">reply_url</strong> as a POST with:<br></div>
+          <div style="background:#07080d;border:1px solid #1e2030;border-radius:6px;padding:8px;margin-top:6px;font-size:10.5px;color:#a0aec0;font-family:monospace;line-height:1.6">
+{"ok":true,"result":"Flight found: LHR→FCO £87…","source":"jarvis"}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+
+function toast(msg, dur=2500){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);
+}
+function copy(s){ navigator.clipboard.writeText(s).then(()=>toast('Copied!')).catch(()=>{}); }
+
+// ── AI option toggle ──
+function toggleAiOpt(engine){
+  const ck=document.getElementById(`ck-${engine}`);
+  const opt=document.getElementById(`opt-${engine}`);
+  opt.classList.toggle('selected', ck.checked);
+}
+
+// ── Create webhook ──
+async function createWebhook(){
+  const name = document.getElementById('new-name').value.trim();
+  if(!name){ toast('Enter a webhook name'); return; }
+
+  const engines = [];
+  ['gemini-browser','gemini','ollama','claude'].forEach(e=>{
+    if(document.getElementById(`ck-${e}`)?.checked){
+      engines.push({engine:e, model:document.getElementById(`sel-${e}`)?.value||''});
+    }
+  });
+  if(!engines.length){ toast('Select at least one AI engine'); return; }
+
+  const payload = {
+    name,
+    description: document.getElementById('new-desc').value.trim(),
+    allowed_engines: engines,
+    rate_limit: parseInt(document.getElementById('new-rate').value)||0,
+    reply_url: document.getElementById('new-reply-url').value.trim(),
+    secret: document.getElementById('new-secret').value.trim(),
+    system_prompt: document.getElementById('new-prompt').value.trim(),
+  };
+
+  try{
+    const r=await fetch(API+'/webhooks/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(!d.ok) throw new Error(d.error||'Failed');
+    const out=document.getElementById('create-result');
+    out.style.display='block';
+    out.innerHTML=`
+      <div style="background:#1a3a24;border:1px solid rgba(63,220,138,.25);border-radius:8px;padding:12px">
+        <div style="font-size:12px;font-weight:700;color:#3fdc8a;margin-bottom:8px">✓ Webhook created: ${esc(d.webhook.name)}</div>
+        <div style="font-size:10px;color:#4a5568;margin-bottom:4px">Webhook URL (POST here from n8n):</div>
+        <div style="display:flex;gap:6px;align-items:center;background:#07080d;border:1px solid #1e2030;border-radius:6px;padding:7px 10px;margin-bottom:8px">
+          <span style="font-size:11px;color:#5b9cf6;font-family:monospace;flex:1;word-break:break-all">${esc(d.webhook.url)}</span>
+          <button class="copy-btn" onclick="copy('${d.webhook.url}')">Copy</button>
+        </div>
+        ${d.webhook.secret?`<div style="font-size:10px;color:#4a5568;margin-bottom:4px">Auth secret (add as X-Webhook-Secret header):</div>
+        <div style="display:flex;gap:6px;align-items:center;background:#07080d;border:1px solid #1e2030;border-radius:6px;padding:7px 10px;">
+          <span style="font-size:11px;color:#facc15;font-family:monospace;flex:1">${esc(d.webhook.secret)}</span>
+          <button class="copy-btn" onclick="copy('${d.webhook.secret}')">Copy</button>
+        </div>`:''}
+      </div>`;
+    loadWebhooks();
+    loadStats();
+  }catch(e){ toast('Error: '+e.message); }
+}
+
+function clearForm(){
+  ['new-name','new-desc','new-reply-url','new-secret','new-prompt'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('new-rate').value='0';
+  document.getElementById('create-result').style.display='none';
+  ['gemini-browser','gemini','ollama','claude'].forEach(e=>{ document.getElementById(`ck-${e}`).checked=e==='gemini-browser'; toggleAiOpt(e); });
+}
+
+// ── Load existing webhooks ──
+async function loadWebhooks(){
+  try{
+    const d=await fetch(API+'/webhooks/list').then(r=>r.json());
+    const el=document.getElementById('webhook-list');
+    if(!d.webhooks?.length){ el.innerHTML='<div style="text-align:center;padding:20px;color:#4a5568;font-size:12px">No webhooks yet. Create one above.</div>'; return; }
+    el.innerHTML=d.webhooks.map((w,i)=>renderWebhookCard(w,i)).join('');
+  }catch(e){ document.getElementById('webhook-list').innerHTML='<div style="color:#f87171;font-size:11px;padding:10px">'+e.message+'</div>'; }
+}
+
+function renderWebhookCard(w, i){
+  const engines = (w.allowed_engines||[]).map(e=>{
+    const colors={gemini:'badge-blue',ollama:'badge-green',claude:'badge-purple'};
+    const icons={gemini:'✦',ollama:'🦙',claude:'◆'};
+    return `<span class="badge ${colors[e.engine]||'badge-grey'}">${icons[e.engine]||''} ${e.engine} ${e.model?'· '+e.model.split(':')[0]:''}</span>`;
+  }).join('');
+  const callsToday = w.calls_today||0;
+  const callsTotal = w.calls_total||0;
+  return `<div class="wh-card" id="whc-${i}">
+    <div class="wh-card-hd" onclick="toggleWh(${i})">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+          <span class="wh-name">${esc(w.name)}</span>
+          <span class="badge ${w.active!==false?'badge-green':'badge-grey'}">${w.active!==false?'active':'paused'}</span>
+        </div>
+        <div class="wh-url">${esc(w.url||'')}</div>
+      </div>
+      <div class="wh-badges" style="margin:0 10px">${engines}</div>
+      <div style="font-size:10px;color:#4a5568;white-space:nowrap;margin-right:8px">${callsTotal} calls</div>
+      <div class="wh-expand">›</div>
+    </div>
+    <div class="wh-card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <div class="lbl">Webhook URL</div>
+          <div class="url-box"><span class="url-text">${esc(w.url||'')}</span><button class="copy-btn" onclick="copy('${w.url||''}')">Copy</button></div>
+        </div>
+        <div>
+          <div class="lbl">Auth Secret</div>
+          <div class="url-box"><span class="url-text" style="color:#facc15">${w.secret?esc(w.secret):'— none —'}</span>${w.secret?`<button class="copy-btn" onclick="copy('${w.secret}')">Copy</button>`:''}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <div style="background:#13151f;border:1px solid #1e2030;border-radius:6px;padding:6px 12px;text-align:center">
+          <div style="font-size:16px;font-weight:800;color:#5b9cf6">${callsTotal}</div>
+          <div style="font-size:9px;color:#4a5568;margin-top:1px">Total calls</div>
+        </div>
+        <div style="background:#13151f;border:1px solid #1e2030;border-radius:6px;padding:6px 12px;text-align:center">
+          <div style="font-size:16px;font-weight:800;color:#3fdc8a">${callsToday}</div>
+          <div style="font-size:9px;color:#4a5568;margin-top:1px">Today</div>
+        </div>
+        ${w.rate_limit?`<div style="background:#13151f;border:1px solid #1e2030;border-radius:6px;padding:6px 12px;text-align:center"><div style="font-size:16px;font-weight:800;color:#facc15">${w.rate_limit}</div><div style="font-size:9px;color:#4a5568;margin-top:1px">Max/min</div></div>`:''}
+        ${w.reply_url?`<div style="background:#13151f;border:1px solid #1e2030;border-radius:6px;padding:6px 12px;flex:1"><div style="font-size:9px;color:#4a5568;margin-bottom:2px">Reply URL</div><div style="font-size:10px;color:#5b9cf6;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(w.reply_url)}</div></div>`:''}
+      </div>
+      ${w.description?`<div style="font-size:11px;color:#7880a0;margin-bottom:10px">${esc(w.description)}</div>`:''}
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-secondary btn-sm" onclick="testWebhook('${w.id}')">Test</button>
+        <button class="btn btn-secondary btn-sm" onclick="toggleActive('${w.id}',${w.active!==false})">${w.active!==false?'Pause':'Resume'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteWebhook('${w.id}')">Delete</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleWh(i){
+  const c=document.getElementById(`whc-${i}`);
+  c.classList.toggle('open');
+}
+
+async function testWebhook(id){
+  try{
+    const r=await fetch(API+'/webhooks/'+id+'/trigger',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Test message from webhook settings page',source:'settings-test'})});
+    const d=await r.json();
+    toast(d.ok?'Test sent — check MITOS2 for result':'Error: '+(d.error||'?'));
+  }catch(e){ toast('Error: '+e.message); }
+}
+
+async function toggleActive(id, currentlyActive){
+  await fetch(API+'/webhooks/'+id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:!currentlyActive})});
+  loadWebhooks();
+}
+
+async function deleteWebhook(id){
+  if(!confirm('Delete this webhook? This cannot be undone.')) return;
+  await fetch(API+'/webhooks/'+id, {method:'DELETE'});
+  loadWebhooks();
+  loadStats();
+}
+
+async function loadStats(){
+  try{
+    const [ws, js] = await Promise.all([
+      fetch(API+'/webhooks/list').then(r=>r.json()),
+      fetch(API+'/stats').then(r=>r.json()),
+    ]);
+    const whs = ws.webhooks||[];
+    document.getElementById('s-total').textContent = whs.length;
+    document.getElementById('s-active').textContent = whs.filter(w=>w.active!==false).length;
+    const totalCalls = whs.reduce((a,w)=>a+(w.calls_total||0),0);
+    const todayCalls = whs.reduce((a,w)=>a+(w.calls_today||0),0);
+    document.getElementById('s-calls').textContent = totalCalls;
+    document.getElementById('s-today').textContent = todayCalls;
+  }catch(e){}
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Context panel ──
+function toggleCtx(){
+  const b = document.getElementById('ctx-body');
+  const a = document.getElementById('ctx-arrow');
+  const open = b.style.display !== 'none';
+  b.style.display = open ? 'none' : 'block';
+  a.textContent = open ? '▼' : '▲';
+  if(!open) loadContext();
+}
+
+function cp(text){
+  navigator.clipboard.writeText(text).catch(()=>{});
+  toast('Copied: '+text.slice(0,40));
+}
+
+function copyPhrase(el, phrase){
+  navigator.clipboard.writeText(phrase).catch(()=>{});
+  const btn = el.querySelector('.copy-btn');
+  if(btn){ btn.textContent='✓'; setTimeout(()=>btn.textContent='Copy',1500); }
+}
+
+async function loadContext(){
+  // Load active tools
+  try{
+    const d = await fetch(API+'/tools').then(r=>r.json());
+    const tools = (d.tools||[]).filter(t=>t.enabled);
+    const el = document.getElementById('tools-list');
+    document.getElementById('tools-count').textContent = `(${tools.length} active)`;
+    if(tools.length === 0){
+      el.innerHTML = '<span style="color:#4a5568;font-size:11px">No tools enabled — <a href="/tools-page" style="color:#5b9cf6">add some</a></span>';
+    } else {
+      el.innerHTML = tools.map(t=>`
+        <div style="background:#13151f;border:1px solid #1e2030;border-radius:7px;padding:6px 10px;font-size:11px">
+          <span style="font-weight:700;color:#dde1f5">${esc(t.name)}</span>
+          <span style="color:#4a5568;margin-left:6px">${t.type}</span>
+          <span style="margin-left:6px;font-size:9px;padding:1px 5px;border-radius:3px;${t.permission==='auto'?'background:rgba(63,220,138,.1);color:#3fdc8a;border:1px solid rgba(63,220,138,.2)':'background:rgba(107,140,255,.1);color:#6b8cff;border:1px solid rgba(107,140,255,.2)'}">${t.permission==='auto'?'⚡ Auto':'🔒 Ask'}</span>
+          <div style="font-size:9px;color:#4a5568;margin-top:2px">Say: "use ${esc(t.name)}"</div>
+        </div>`).join('');
+    }
+  }catch(e){}
+
+  // Load CLI tools
+  try{
+    const d = await fetch(API+'/cli-tools').then(r=>r.json());
+    const tools = d.tools||[];
+    const el = document.getElementById('cli-list');
+    document.getElementById('cli-count').textContent = `(${tools.length} total)`;
+    const show = tools.slice(0,12);
+    el.innerHTML = show.map(t=>`
+      <div style="background:#13151f;border:1px solid #1e2030;border-radius:7px;padding:5px 10px;font-size:11px;cursor:pointer" onclick="cp('${esc(t.command||t.name)}')">
+        <span style="font-weight:700;color:#dde1f5">${esc(t.name)}</span>
+        <span style="color:#4a5568;font-size:9px;margin-left:6px">${esc(t.category||'')}</span>
+        <div style="font-family:monospace;font-size:9px;color:#5b9cf6;margin-top:2px">${esc(t.command||'')}</div>
+      </div>`).join('') +
+      (tools.length>12?`<div style="font-size:10px;color:#4a5568;align-self:center">+${tools.length-12} more</div>`:'');
+  }catch(e){}
+}
+
+loadWebhooks();
+loadStats();
+loadSearchSites();
+ctxInit();
+
+// ══════════════════════════════════════════════════════════
+//  JARVIS CONTEXT PANEL
+// ══════════════════════════════════════════════════════════
+
+// Person → NocoDB Assigned_Staff group prefix & group name
+const PERSON_GROUPS = {
+  'sam':    { prefix:'20', group:'SAM',      label:'SAM group (prefix 20,xx,)' },
+  'gf':     { prefix:'30', group:'PTNR',     label:'PTNR group (prefix 30,xx,)' },
+  'guest':  { prefix:'90', group:'PIA',      label:'PIA / Guest group (prefix 90,xx,)' },
+  'house':  { prefix:'40', group:'HOUSE',    label:'HOUSE group (prefix 40,xx,)' },
+  'jarvis': { prefix:'10', group:'Jarvis',   label:'Jarvis group (prefix 10,xx,)' },
+  'ai':     { prefix:'50', group:'AI',       label:'AI group (prefix 50,xx,)' },
+};
+
+// LocalStorage persistence
+const CTX_KEY = 'jarvisCtx';
+let _ctx = {};
+let _ctxRemember = false;
+let _ctxLastResp = '';
+
+function ctxLoad() {
+  try { _ctx = { ...(JSON.parse(localStorage.getItem(CTX_KEY)||'{}')||{}) }; } catch { _ctx = {}; }
+  _ctxRemember = !!_ctx.__remember;
+  delete _ctx.__remember;
+}
+
+function ctxPersist() {
+  const save = { ..._ctx, __remember: _ctxRemember };
+  localStorage.setItem(CTX_KEY, JSON.stringify(save));
+}
+
+function ctxInit() {
+  ctxLoad();
+  // Restore field values
+  const fields = ['person','location','staff','notes','c1k','c1v','c2k','c2v','c3k','c3v'];
+  fields.forEach(f => {
+    const el = document.getElementById('ctx-'+f);
+    if (el) el.value = _ctx[f] || '';
+  });
+  // Restore quick-buttons active state
+  ctxSyncQbtns('person', _ctx.person);
+  ctxSyncQbtns('location', _ctx.location);
+  // Restore remember toggle
+  ctxSetRemember(_ctxRemember, false);
+  ctxRefreshUI();
+}
+
+function ctxSave() {
+  const fields = ['person','location','staff','notes','c1k','c1v','c2k','c2v','c3k','c3v'];
+  fields.forEach(f => {
+    const el = document.getElementById('ctx-'+f);
+    if (el) _ctx[f] = el.value.trim();
+    else delete _ctx[f];
+  });
+  ctxPersist();
+  ctxRefreshUI();
+}
+
+function ctxQuick(field, val, btn) {
+  const el = document.getElementById('ctx-'+field);
+  const already = el && el.value === val;
+  if (el) el.value = already ? '' : val;
+  _ctx[field] = already ? '' : val;
+  ctxSyncQbtns(field, _ctx[field]);
+  ctxPersist();
+  ctxRefreshUI();
+}
+
+function ctxSyncQbtns(field, val) {
+  document.querySelectorAll(`[onclick*="ctxQuick('${field}'"]`).forEach(btn => {
+    const btnVal = btn.getAttribute('onclick').match(/ctxQuick\('\w+','([^']+)'/)?.[1];
+    btn.classList.toggle('on', !!val && val === btnVal);
+  });
+}
+
+function ctxToggleRemember() {
+  ctxSetRemember(!_ctxRemember, true);
+}
+
+function ctxSetRemember(val, persist) {
+  _ctxRemember = val;
+  const btn = document.getElementById('ctx-remember-btn');
+  const knob = document.getElementById('ctx-remember-knob');
+  const lbl = document.getElementById('ctx-remember-lbl');
+  if (btn)  btn.style.background  = val ? '#ca8a04' : '#334155';
+  if (knob) knob.style.left       = val ? '23px' : '3px';
+  if (lbl)  { lbl.textContent = val ? 'ON — last AI response will be included' : 'OFF'; lbl.style.color = val ? '#fcd34d' : '#64748b'; }
+  const prev = document.getElementById('ctx-last-preview');
+  if (prev) { prev.style.display = (val && _ctxLastResp) ? 'block' : 'none'; prev.textContent = _ctxLastResp; }
+  if (persist) ctxPersist();
+}
+
+// Called by the agent page when a response arrives (can be hooked from other pages via BroadcastChannel)
+const _ctxBC = new BroadcastChannel('jarvis_ctx');
+_ctxBC.onmessage = e => {
+  if (e.data?.type === 'last_response') {
+    _ctxLastResp = e.data.text || '';
+    const prev = document.getElementById('ctx-last-preview');
+    if (prev && _ctxRemember) { prev.style.display='block'; prev.textContent=_ctxLastResp; }
+  }
+};
+
+function ctxRefreshUI() {
+  const payload = ctxBuildPayload();
+  const keys = Object.keys(payload);
+  const hasCtx = keys.length > 0;
+
+  // Pill bar
+  const bar = document.getElementById('ctx-pill-bar');
+  const pillsEl = document.getElementById('ctx-pills');
+  if (bar) bar.style.display = hasCtx ? 'flex' : 'none';
+
+  // Live badge on panel header
+  const badge = document.getElementById('ctx-live-badge');
+  if (badge) badge.style.display = hasCtx ? 'inline-block' : 'none';
+
+  // Pill bar pills
+  const pills = [];
+  if (_ctx.person)   pills.push({ label:`👤 ${_ctx.person}`, clear:()=>{ _ctx.person=''; document.getElementById('ctx-person').value=''; ctxSyncQbtns('person',''); ctxPersist(); ctxRefreshUI(); } });
+  if (_ctx.location) pills.push({ label:`📍 ${_ctx.location}`, clear:()=>{ _ctx.location=''; document.getElementById('ctx-location').value=''; ctxSyncQbtns('location',''); ctxPersist(); ctxRefreshUI(); } });
+  if (_ctx.staff)    pills.push({ label:`🤖 ${_ctx.staff}`,   clear:()=>{ _ctx.staff=''; document.getElementById('ctx-staff').value=''; ctxPersist(); ctxRefreshUI(); } });
+  if (_ctx.notes)    pills.push({ label:`📝 Notes`,            clear:()=>{ _ctx.notes=''; document.getElementById('ctx-notes').value=''; ctxPersist(); ctxRefreshUI(); } });
+  if (_ctx.c1k && _ctx.c1v) pills.push({ label:`${_ctx.c1k}: ${_ctx.c1v}`, clear:()=>{ _ctx.c1k=_ctx.c1v=''; document.getElementById('ctx-c1k').value=document.getElementById('ctx-c1v').value=''; ctxPersist(); ctxRefreshUI(); } });
+  if (_ctx.c2k && _ctx.c2v) pills.push({ label:`${_ctx.c2k}: ${_ctx.c2v}`, clear:()=>{ _ctx.c2k=_ctx.c2v=''; document.getElementById('ctx-c2k').value=document.getElementById('ctx-c2v').value=''; ctxPersist(); ctxRefreshUI(); } });
+  if (_ctx.c3k && _ctx.c3v) pills.push({ label:`${_ctx.c3k}: ${_ctx.c3v}`, clear:()=>{ _ctx.c3k=_ctx.c3v=''; document.getElementById('ctx-c3k').value=document.getElementById('ctx-c3v').value=''; ctxPersist(); ctxRefreshUI(); } });
+  if (pillsEl) pillsEl.innerHTML = pills.map((_,i) =>
+    `<span class="ctx-pill" id="cpill-${i}">${_.label}<button class="ctx-pill-x" onclick="_ctxPillClear(${i})">✕</button></span>`
+  ).join('');
+  window._ctxPillFns = pills.map(p => p.clear);
+
+  // Person routing hint
+  const routeEl = document.getElementById('ctx-person-route');
+  if (routeEl) {
+    const key = (_ctx.person||'').toLowerCase().trim();
+    const grp = PERSON_GROUPS[key];
+    if (grp) { routeEl.style.display='block'; routeEl.textContent=`→ Routes to ${grp.label}`; }
+    else { routeEl.style.display='none'; }
+  }
+
+  // JSON preview
+  const pre = document.getElementById('ctx-json-pre');
+  const cnt = document.getElementById('ctx-json-count');
+  const pfxWrap = document.getElementById('ctx-prefix-wrap');
+  const pfxPre  = document.getElementById('ctx-prefix-pre');
+  if (pre) pre.textContent = JSON.stringify({ message:'<your message>', context: payload }, null, 2);
+  if (cnt) cnt.textContent = keys.length ? `${keys.length} field(s) active` : '';
+  const prefix = ctxBuildPrefix();
+  if (pfxWrap) pfxWrap.style.display = prefix ? 'block' : 'none';
+  if (pfxPre)  pfxPre.textContent  = prefix + '<message>';
+}
+
+window._ctxPillClear = function(i) {
+  if (window._ctxPillFns?.[i]) window._ctxPillFns[i]();
+};
+
+function ctxBuildPayload() {
+  const c = {};
+  if (_ctx.person)         c.person          = _ctx.person;
+  if (_ctx.location)       c.location        = _ctx.location;
+  // Assigned staff: explicit input OR derived from person
+  const staffVal = _ctx.staff || ctxPersonToStaff(_ctx.person);
+  if (staffVal)            c.assigned_staff  = staffVal;
+  if (_ctxRemember && _ctxLastResp) c.last_message = _ctxLastResp;
+  if (_ctx.notes)          c.notes           = _ctx.notes;
+  if (_ctx.c1k && _ctx.c1v) c[_ctx.c1k]    = _ctx.c1v;
+  if (_ctx.c2k && _ctx.c2v) c[_ctx.c2k]    = _ctx.c2v;
+  if (_ctx.c3k && _ctx.c3v) c[_ctx.c3k]    = _ctx.c3v;
+  return c;
+}
+
+function ctxBuildPrefix() {
+  const parts = [];
+  if (_ctx.person)   parts.push(`Person=${_ctx.person}`);
+  if (_ctx.location) parts.push(`Location=${_ctx.location}`);
+  if (_ctx.notes)    parts.push(`Notes=${_ctx.notes}`);
+  if (_ctx.c1k && _ctx.c1v) parts.push(`${_ctx.c1k}=${_ctx.c1v}`);
+  if (_ctx.c2k && _ctx.c2v) parts.push(`${_ctx.c2k}=${_ctx.c2v}`);
+  if (_ctx.c3k && _ctx.c3v) parts.push(`${_ctx.c3k}=${_ctx.c3v}`);
+  return parts.length ? `[Context: ${parts.join(' | ')}] ` : '';
+}
+
+// Derive assigned_staff prefix from person name
+function ctxPersonToStaff(person) {
+  if (!person) return '';
+  const key = person.toLowerCase().trim();
+  const grp = PERSON_GROUPS[key];
+  return grp ? grp.prefix + ',01,' : '';
+}
+
+function ctxClear() {
+  const fields = ['person','location','staff','notes','c1k','c1v','c2k','c2v','c3k','c3v'];
+  fields.forEach(f => { _ctx[f] = ''; const el=document.getElementById('ctx-'+f); if(el) el.value=''; });
+  ['person','location'].forEach(f => ctxSyncQbtns(f,''));
+  ctxSetRemember(false, false);
+  ctxPersist();
+  ctxRefreshUI();
+}
+
+function ctxTogglePanel() {
+  const body = document.getElementById('ctx-panel-body');
+  const arr  = document.getElementById('ctx-panel-arrow');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (arr) arr.textContent = open ? '▼' : '▲';
+}
+
+// ── Patch testWebhook to include context ──
+const _origTestWebhook = testWebhook;
+testWebhook = async function(id) {
+  const ctx = ctxBuildPayload();
+  const prefix = ctxBuildPrefix();
+  const hasCtx = Object.keys(ctx).length > 0;
+  try {
+    const body = { message: 'Test message from webhook settings page', source:'settings-test' };
+    if (hasCtx) { body.context = ctx; if (prefix) body.message = prefix + body.message; }
+    const r = await fetch(API+'/webhooks/'+id+'/trigger', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    toast(d.ok ? 'Test sent'+(hasCtx?' (with context)':'') + ' — check MITOS2' : 'Error: '+(d.error||'?'));
+  } catch(e) { toast('Error: '+e.message); }
+};
+
+const HOST='http://192.168.0.8:8080';
+
+const PROFILE_SLUGS={
+  'default':'profile0','profile-1':'profile1','profile-2':'profile2',
+  'profile-3':'profile3','profile-4':'profile4'
+};
+const PROFILE_LABELS={
+  'default':'Default (0)','profile-1':'Profile 1','profile-2':'Profile 2',
+  'profile-3':'Profile 3','profile-4':'Profile 4'
+};
+
+function updateWhPreview(){
+  const id=(document.getElementById('ss-id').value.trim()||'[id]');
+  const prof=document.getElementById('ss-profile').value;
+  let url;
+  if(prof==='default'||prof==='all'){
+    url=`${HOST}/webhook/<b style="color:#3fdc8a">${id}</b>-search`;
+  } else {
+    const slug=PROFILE_SLUGS[prof]||prof.replace('-','');
+    url=`${HOST}/webhook/<b style="color:#ff9a4a">${slug}</b>/<b style="color:#3fdc8a">${id}</b>-search`;
+  }
+  document.getElementById('wh-preview').innerHTML=url;
+}
+
+async function loadSearchSites(){
+  const el=document.getElementById('search-sites-list');
+  if(!el) return;
+  try{
+    const d=await fetch('/api/search-sites').then(r=>r.json());
+    const sites=d.sites||[];
+    el.innerHTML=sites.map((s,i)=>{
+      const baseUrl=`${HOST}/webhook/${s.id}-search`;
+      const profileUrls=[
+        {label:'Default (0)',slug:'profile0',url:`${HOST}/webhook/profile0/${s.id}-search`},
+        {label:'Profile 1',slug:'profile1',url:`${HOST}/webhook/profile1/${s.id}-search`},
+        {label:'Profile 2',slug:'profile2',url:`${HOST}/webhook/profile2/${s.id}-search`},
+        {label:'Profile 3',slug:'profile3',url:`${HOST}/webhook/profile3/${s.id}-search`},
+        {label:'Profile 4',slug:'profile4',url:`${HOST}/webhook/profile4/${s.id}-search`},
+      ];
+      const curlEx=`curl -X POST "${baseUrl}" -H "Content-Type: application/json" -d '{"message":"your question"}'`;
+      const isBuiltin=['gemini','google','web','amazon','rightmove','skyscanner','youtube'].includes(s.id);
+      const siteProfile=s.profile||'';
+      const profLabel=PROFILE_LABELS[siteProfile]||siteProfile||'—';
+      return `<div style="background:#0d0f17;border:1px solid #1e2030;border-radius:10px;overflow:hidden;">
+        <!-- Header row -->
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #1e2030;">
+          <span style="font-size:22px;width:32px;text-align:center;flex-shrink:0">${esc(s.icon||'🌐')}</span>
+          <div style="flex:1">
+            <div style="font-weight:700;color:#dde1f5;font-size:13px;margin-bottom:1px">${esc(s.name)}</div>
+            <div style="font-size:10px;color:#4a5568;font-family:monospace">${esc(s.url||'Web search')}</div>
+          </div>
+          <span style="font-size:9px;color:#ff9a4a;background:rgba(255,154,74,.1);border:1px solid rgba(255,154,74,.2);padding:2px 7px;border-radius:4px;">Profile: ${esc(profLabel)}</span>
+          <span style="font-size:9px;background:${isBuiltin?'rgba(63,220,138,.12)':'rgba(91,156,246,.1)'};color:${isBuiltin?'#3fdc8a':'#5b9cf6'};border:1px solid ${isBuiltin?'rgba(63,220,138,.2)':'rgba(91,156,246,.2)'};padding:2px 8px;border-radius:4px;font-weight:700;">${isBuiltin?'BUILT-IN':'CUSTOM'}</span>
+          ${!isBuiltin?`<button onclick="delSearchSite('${esc(s.id)}')" style="background:none;border:none;color:rgba(248,113,113,.4);cursor:pointer;font-size:14px;padding:2px 4px;" title="Delete">✕</button>`:''}
+        </div>
+
+        <!-- Default Webhook URL -->
+        <div style="padding:10px 14px;background:rgba(91,156,246,.04);border-bottom:1px solid rgba(91,156,246,.1);">
+          <div style="font-size:9px;font-weight:700;color:#5b9cf6;letter-spacing:.8px;margin-bottom:5px;text-transform:uppercase">📬 Default Webhook (any profile)</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <code style="flex:1;font-size:12px;color:#3fdc8a;font-family:monospace;background:#07080d;padding:7px 10px;border-radius:6px;border:1px solid rgba(63,220,138,.2);word-break:break-all;">${baseUrl}</code>
+            <button onclick="cp('${baseUrl}')" style="flex-shrink:0;background:rgba(91,156,246,.15);border:1px solid rgba(91,156,246,.25);color:#5b9cf6;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;font-family:inherit;white-space:nowrap">📋 Copy</button>
+          </div>
+        </div>
+
+        <!-- Profile-specific URLs (expandable) -->
+        <div style="padding:8px 14px;border-bottom:1px solid #1e2030;background:rgba(255,154,74,.03);">
+          <div style="font-size:9px;font-weight:700;color:#ff9a4a;letter-spacing:.8px;margin-bottom:6px;text-transform:uppercase;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+            🔀 Profile-Specific URLs (click to expand) ▼
+          </div>
+          <div style="display:none">
+            ${profileUrls.map(p=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+              <span style="font-size:9px;color:#ff9a4a;width:68px;flex-shrink:0;font-weight:700;">${p.label}</span>
+              <code style="flex:1;font-size:10px;color:#b57aff;font-family:monospace;background:#07080d;padding:4px 8px;border-radius:5px;border:1px solid rgba(181,122,255,.2);word-break:break-all;">${p.url}</code>
+              <button onclick="cp('${p.url}')" style="flex-shrink:0;background:rgba(181,122,255,.1);border:1px solid rgba(181,122,255,.2);color:#b57aff;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:9px;font-weight:700;font-family:inherit;white-space:nowrap">Copy</button>
+              <button onclick="testSearch('${p.url}')" style="flex-shrink:0;background:rgba(63,220,138,.1);border:1px solid rgba(63,220,138,.2);color:#3fdc8a;padding:3px 8px;border-radius:5px;cursor:pointer;font-size:9px;font-weight:700;font-family:inherit;white-space:nowrap">Test</button>
+            </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- POST body -->
+        <div style="padding:10px 14px;border-bottom:1px solid #1e2030;">
+          <div style="font-size:9px;font-weight:700;color:#4a5568;letter-spacing:.8px;margin-bottom:5px;text-transform:uppercase">Request Body (JSON)</div>
+          <code style="display:block;font-size:11px;color:#a0aec0;font-family:monospace;background:#07080d;padding:7px 10px;border-radius:6px;border:1px solid #1e2030;">{"message": "your question here"}</code>
+        </div>
+
+        <!-- cURL example -->
+        <div style="padding:10px 14px;border-bottom:1px solid #1e2030;background:rgba(0,0,0,.3);">
+          <div style="font-size:9px;font-weight:700;color:#4a5568;letter-spacing:.8px;margin-bottom:5px;text-transform:uppercase">cURL Example</div>
+          <code style="display:block;font-size:10px;color:#7880a0;font-family:monospace;word-break:break-all;">${esc(curlEx)}</code>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:6px;padding:10px 14px;">
+          <button onclick="testSearch('${baseUrl}')" style="background:#3fdc8a;border:none;color:#0a1a10;padding:7px 16px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">▶ Test Now</button>
+          <button onclick="cp('${esc(curlEx)}')" style="background:rgba(255,255,255,.05);border:1px solid #1e2030;color:#7880a0;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;font-family:inherit">📋 Copy cURL</button>
+          <a href="/search" style="margin-left:auto;font-size:10px;color:#4a5568;text-decoration:none;padding:7px 12px;border:1px solid #1e2030;border-radius:6px;display:flex;align-items:center;">Search UI ↗</a>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){el.innerHTML='<div style="color:#f87171;font-size:11px;padding:10px">Failed to load search sites: '+e.message+'</div>';}
+}
+
+async function testSearch(url){
+  const q=prompt('Test query:','Find cheapest flights London to Amsterdam next weekend');
+  if(!q) return;
+  toast('⏳ Sending to '+url.split('/').pop()+'…',5000);
+  try{
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:q})});
+    const d=await r.json();
+    toast(d.ok?'✓ Started — check Telegram + overlay in ~30s':'✗ Error: '+(d.error||'?'),4000);
+  }catch(e){toast('✗ '+e.message);}
+}
+
+async function addSearchSite(){
+  const name=document.getElementById('ss-name').value.trim();
+  const url=document.getElementById('ss-url').value.trim();
+  const id=(document.getElementById('ss-id').value.trim()||name.toLowerCase().replace(/\s+/g,'-'));
+  const icon=document.getElementById('ss-icon').value.trim()||'🌐';
+  const profile=document.getElementById('ss-profile').value;
+  if(!name||!url){toast('Name and URL required');return;}
+  const r=await fetch('/api/search-sites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,name,url,icon,engine:'gemini-browser',profile})});
+  const d=await r.json();
+  if(d.ok){
+    toast('✓ Added: '+name+(profile==='all'?' → all profiles':''));
+    ['ss-name','ss-url','ss-id','ss-icon'].forEach(x=>{const el=document.getElementById(x);if(el)el.value='';});
+    loadSearchSites();
+  }
+}
+async function delSearchSite(id){
+  if(!confirm('Delete this site?')) return;
+  await fetch('/api/search-sites/'+id,{method:'DELETE'});
+  loadSearchSites();
+  toast('Deleted');
+}
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

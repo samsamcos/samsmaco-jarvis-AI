@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JARVIS — Groq Keys</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'Segoe UI',sans-serif;font-size:13px}
+:root{--grn:#22c55e;--red:#ef4444;--yel:#f5c518;--blu:#60a5fa;--pur:#a855f7;--org:#f97316;--bg2:#0f0f18;--brd:#1e1e2e}
+.hdr{background:#0f0f18;border-bottom:1px solid var(--brd);padding:10px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.hdr-title{font-size:15px;font-weight:700;color:var(--yel);display:flex;align-items:center;gap:8px}
+.hdr-sub{font-size:11px;color:#475569}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;background:transparent}
+.btn-grn{border-color:var(--grn);color:var(--grn)}.btn-grn:hover{background:var(--grn);color:#000}
+.btn-red{border-color:var(--red);color:var(--red)}.btn-red:hover{background:var(--red);color:#fff}
+.btn-blu{border-color:var(--blu);color:var(--blu)}.btn-blu:hover{background:var(--blu);color:#000}
+.btn-ghost{border-color:#2a2a3a;color:#64748b}.btn-ghost:hover{border-color:#444;color:#ccc}
+.btn-sm{padding:3px 9px;font-size:11px}
+
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:14px 20px;border-bottom:1px solid var(--brd)}
+.stat{background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:10px 14px;text-align:center}
+.stat-val{font-size:22px;font-weight:800}
+.stat-lbl{font-size:10px;color:#475569;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+.body{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 165px)}
+.add-panel{background:#09090e;border-right:1px solid var(--brd);padding:16px;overflow-y:auto}
+.panel-title{font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.form-row{margin-bottom:9px}
+.form-row label{font-size:11px;color:#64748b;display:block;margin-bottom:3px}
+.form-row input,.form-row select{width:100%;background:#0f0f18;border:1px solid #1e1e2e;border-radius:5px;color:#dde1f5;padding:6px 9px;font-size:12px;font-family:monospace;outline:none;transition:border .15s}
+.form-row input:focus,.form-row select:focus{border-color:var(--blu)}
+.divider{border:none;border-top:1px solid var(--brd);margin:14px 0}
+
+.keys-panel{padding:16px;overflow-y:auto}
+.section-hdr{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.6px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.section-hdr .cnt{background:#1e1e2e;border-radius:10px;padding:1px 7px;font-size:10px;color:#7eb8f7}
+
+.key-grid{display:flex;flex-direction:column;gap:6px;margin-bottom:20px}
+.key-card{background:#0f0f18;border:1px solid var(--brd);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.key-card.disabled{opacity:.45}
+.key-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.dot-ok{background:var(--grn);box-shadow:0 0 6px var(--grn)}
+.dot-cooldown{background:var(--yel);box-shadow:0 0 6px var(--yel)}
+.dot-exhausted{background:var(--red);box-shadow:0 0 6px var(--red)}
+.dot-off{background:#334155}
+.key-label{font-size:12px;font-weight:600;color:#e2e8f0;min-width:100px}
+.key-masked{font-size:11px;color:#475569;font-family:monospace;flex:1}
+.key-pc{font-size:10px;color:#7eb8f7;font-family:monospace;background:#0a0a18;border:1px solid #1e1e2e;border-radius:4px;padding:1px 6px}
+.key-usage{font-size:10px;color:#64748b;min-width:90px;text-align:right}
+.key-bar-wrap{width:80px;height:4px;background:#1e1e2e;border-radius:2px;overflow:hidden}
+.key-bar{height:100%;border-radius:2px;background:var(--grn);transition:width .3s}
+.key-actions{display:flex;gap:5px;margin-left:auto}
+
+.info-box{background:#0f0f18;border:1px solid var(--brd);border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:11px;color:#64748b;line-height:1.6}
+.info-box b{color:#94a3b8}
+.info-box code{color:var(--yel);font-family:monospace;font-size:10px}
+
+.badge{font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px}
+.badge-shared{background:#1e3a5f;color:#60a5fa}
+.badge-pc{background:#1a1000;color:#f59e0b}
+.badge-pia{background:#1a001a;color:#a855f7}
+
+.toast{position:fixed;bottom:18px;right:18px;background:#1e2030;border:1px solid #2a2d42;border-radius:7px;padding:8px 14px;font-size:12px;color:#dde1f5;z-index:9999;opacity:0;transform:translateY(5px);transition:all .2s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-title">⚡ Groq Keys</div>
+    <div class="hdr-sub">Free tier · 14,400 req/day per key · ~1s response</div>
+  </div>
+  <div class="spacer"></div>
+  <a href="/links" class="btn btn-ghost btn-sm">← Links</a>
+  <a href="/gemini-keys" class="btn btn-ghost btn-sm">Gemini Keys</a>
+  <button class="btn btn-ghost btn-sm" onclick="seedFromEnv()">Sync from .env</button>
+  <button class="btn btn-blu btn-sm" onclick="load()">Refresh</button>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-val" id="s-total" style="color:var(--blu)">—</div><div class="stat-lbl">Total Keys</div></div>
+  <div class="stat"><div class="stat-val" id="s-ok" style="color:var(--grn)">—</div><div class="stat-lbl">Active</div></div>
+  <div class="stat"><div class="stat-val" id="s-used" style="color:var(--yel)">—</div><div class="stat-lbl">Req Today</div></div>
+  <div class="stat"><div class="stat-val" id="s-cap" style="color:var(--pur)">—</div><div class="stat-lbl">Daily Capacity</div></div>
+  <div class="stat"><div class="stat-val" id="s-pct" style="color:var(--org)">—</div><div class="stat-lbl">Used %</div></div>
+</div>
+
+<div class="body">
+  <!-- Left: Add panel -->
+  <div class="add-panel">
+    <div class="panel-title">Add Groq Key</div>
+
+    <div class="form-row">
+      <label>API Key (starts gsk_…)</label>
+      <input type="password" id="new-key" placeholder="gsk_…">
+    </div>
+    <div class="form-row">
+      <label>Assign to PC / Pool</label>
+      <select id="new-pc">
+        <option value="shared">Shared Pool (0.3–0.6 clone group)</option>
+        <option value="192.168.0.3">192.168.0.3 (this PC — master)</option>
+        <option value="192.168.0.4">192.168.0.4 (clone)</option>
+        <option value="192.168.0.5">192.168.0.5 (clone)</option>
+        <option value="192.168.0.6">192.168.0.6 (clone)</option>
+        <option value="192.168.0.15">192.168.0.15 (PIA-1)</option>
+        <option value="192.168.0.16">192.168.0.16 (PIA-2)</option>
+        <option value="192.168.0.17">192.168.0.17 (PIA-3)</option>
+        <option value="192.168.0.18">192.168.0.18 (PIA-4)</option>
+        <option value="192.168.0.19">192.168.0.19 (PIA-5)</option>
+        <option value="192.168.0.20">192.168.0.20 (PIA-6)</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Label (optional)</label>
+      <input type="text" id="new-label" placeholder="e.g. personal-key-1">
+    </div>
+    <button class="btn btn-grn" style="width:100%;justify-content:center;margin-top:4px" onclick="addKey()">+ Add Key</button>
+
+    <div class="divider"></div>
+
+    <div class="info-box">
+      <b>How it works:</b><br>
+      <b>Shared pool</b> — used by clone PCs 0.3–0.6. Round-robin, auto-rotates on 429.<br>
+      <b>PC-specific</b> — that PC tries its own key first, then falls back to shared pool.<br>
+      <b>PIA PCs</b> — each gets their own key, also used on their LiteLLM proxy.<br>
+      <br>
+      <b>Get free keys:</b><br>
+      <code>console.groq.com</code> → 14,400 req/day free
+    </div>
+
+    <div class="info-box" style="margin-top:8px">
+      <b>LiteLLM proxy usage:</b><br>
+      Add to each VM's <code>litellm_config.yaml</code>:
+      <br><br>
+      <code>model_list:<br>
+      - model_name: groq/llama-3.3-70b<br>
+      &nbsp;&nbsp;litellm_params:<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;model: groq/llama-3.3-70b-versatile<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;api_key: gsk_YOUR_KEY</code>
+    </div>
+  </div>
+
+  <!-- Right: Keys list -->
+  <div class="keys-panel">
+
+    <div class="section-hdr">
+      Shared Pool (Clone PCs 0.3–0.6)
+      <span class="cnt" id="cnt-shared">0</span>
+    </div>
+    <div class="key-grid" id="grid-shared"></div>
+
+    <div class="section-hdr">
+      PC-Specific Keys (used first on that machine)
+      <span class="cnt" id="cnt-pc">0</span>
+    </div>
+    <div class="key-grid" id="grid-pc"></div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/fix-widget.js"></script>
+<script>
+var _data = {};
+
+function load() {
+  fetch('/api/ai-router/groq-keys')
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      _data = d;
+      renderStats(d);
+      renderKeys(d);
+    })
+    .catch(function(e){ toast('Load failed: ' + e.message, true); });
+}
+
+function renderStats(d) {
+  document.getElementById('s-total').textContent = d.total || 0;
+  document.getElementById('s-ok').textContent    = d.ok_count || 0;
+  document.getElementById('s-used').textContent  = (d.daily_used || 0).toLocaleString();
+  document.getElementById('s-cap').textContent   = (d.daily_capacity || 0).toLocaleString();
+  var pct = d.daily_capacity > 0 ? Math.round((d.daily_used / d.daily_capacity) * 100) : 0;
+  document.getElementById('s-pct').textContent   = pct + '%';
+}
+
+function renderKeys(d) {
+  var keys   = d.keys || [];
+  var shared = keys.filter(function(k){ return k.pc_ip === 'shared'; });
+  var pc     = keys.filter(function(k){ return k.pc_ip !== 'shared'; });
+
+  document.getElementById('cnt-shared').textContent = shared.length;
+  document.getElementById('cnt-pc').textContent     = pc.length;
+
+  document.getElementById('grid-shared').innerHTML = shared.length
+    ? shared.map(keyCard).join('') : '<div style="color:#334155;font-size:11px;padding:8px">No shared keys yet — add one on the left.</div>';
+
+  document.getElementById('grid-pc').innerHTML = pc.length
+    ? pc.map(keyCard).join('') : '<div style="color:#334155;font-size:11px;padding:8px">No PC-specific keys yet.</div>';
+}
+
+function keyCard(k) {
+  var dotCls = k.enabled ? {'ok':'dot-ok','cooldown':'dot-cooldown','exhausted':'dot-exhausted'}[k.status] || 'dot-ok' : 'dot-off';
+  var pct    = k.daily_limit > 0 ? Math.min(100, Math.round(k.daily_used / k.daily_limit * 100)) : 0;
+  var barClr = pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : '#22c55e';
+  var pcBadge = k.pc_ip === 'shared'
+    ? '<span class="badge badge-shared">shared</span>'
+    : '<span class="badge badge-pc">' + k.pc_ip + '</span>';
+
+  return '<div class="key-card' + (k.enabled ? '' : ' disabled') + '" id="kc-' + k.id + '">'
+    + '<div class="key-dot ' + dotCls + '"></div>'
+    + '<div class="key-label">' + esc(k.label || 'key-' + k.id) + '</div>'
+    + pcBadge
+    + '<div class="key-masked">' + esc(k.api_key_masked || '***') + '</div>'
+    + '<div class="key-usage">' + k.daily_used + ' / ' + k.daily_limit + '</div>'
+    + '<div class="key-bar-wrap"><div class="key-bar" style="width:' + pct + '%;background:' + barClr + '"></div></div>'
+    + '<div style="font-size:10px;color:#475569;min-width:60px">' + (k.status === 'ok' ? 'OK' : k.status) + ' · ' + k.err_count + ' err</div>'
+    + '<div class="key-actions">'
+    + '<button class="btn btn-ghost btn-sm" onclick="resetKey(' + k.id + ')">Reset</button>'
+    + '<button class="btn btn-ghost btn-sm" onclick="toggleKey(' + k.id + ')">' + (k.enabled ? 'Disable' : 'Enable') + '</button>'
+    + '<button class="btn btn-red btn-sm" onclick="deleteKey(' + k.id + ')">Del</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function addKey() {
+  var key   = document.getElementById('new-key').value.trim();
+  var pc    = document.getElementById('new-pc').value;
+  var label = document.getElementById('new-label').value.trim();
+  if (!key) { toast('Paste your gsk_… key first', true); return; }
+  fetch('/api/ai-router/groq-keys', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({api_key: key, pc_ip: pc, label: label})
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    if (d.ok) {
+      toast('Key added!');
+      document.getElementById('new-key').value = '';
+      document.getElementById('new-label').value = '';
+      load();
+    } else {
+      toast(d.error || 'Error', true);
+    }
+  });
+}
+
+function deleteKey(id) {
+  if (!confirm('Delete this key?')) return;
+  fetch('/api/ai-router/groq-keys/' + id, {method:'DELETE'})
+    .then(function(r){ return r.json(); }).then(function(){ load(); });
+}
+
+function toggleKey(id) {
+  fetch('/api/ai-router/groq-keys/' + id + '/toggle', {method:'POST'})
+    .then(function(r){ return r.json(); }).then(function(){ load(); });
+}
+
+function resetKey(id) {
+  fetch('/api/ai-router/groq-keys/' + id + '/reset', {method:'POST'})
+    .then(function(r){ return r.json(); }).then(function(d){
+      toast(d.ok ? 'Key reset' : (d.error || 'Error'));
+      load();
+    });
+}
+
+function seedFromEnv() {
+  fetch('/api/ai-router/groq-keys/seed', {method:'POST'})
+    .then(function(r){ return r.json(); }).then(function(d){
+      toast('Seeded ' + d.seeded + ' key(s) from .env');
+      load();
+    });
+}
+
+function toast(msg, err) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = err ? '#ef4444' : '#22c55e';
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>

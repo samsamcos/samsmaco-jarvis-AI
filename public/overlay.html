@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS Overlay</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#07080dcc;--border:#2a2d42;--accent:#6b8cff;
+  --green:#3fdc8a;--red:#ff5f6d;--text:#dde1f5;--dim:#7880a0;
+}
+body{background:transparent;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);overflow:hidden;user-select:none;}
+#shell{
+  position:fixed;top:60px;right:20px;width:340px;
+  background:var(--bg);border:1px solid var(--border);border-radius:12px;
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  box-shadow:0 8px 40px rgba(0,0,0,.6);
+  display:flex;flex-direction:column;overflow:hidden;z-index:2147483647;
+}
+#titlebar{
+  padding:10px 14px;background:#0d0f17ee;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;cursor:grab;
+}
+#titlebar:active{cursor:grabbing;}
+.tb-icon{font-size:15px;}
+.tb-title{font-weight:700;color:#fff;letter-spacing:.04em;font-size:11px;flex:1;}
+.tb-badge{font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(107,140,255,.15);color:var(--accent);border:1px solid rgba(107,140,255,.3);}
+.tb-btn{background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;transition:color .15s;}
+.tb-btn:hover{color:#fff;}
+
+#tabs{display:flex;border-bottom:1px solid var(--border);background:#0a0b11;}
+.tab{flex:1;padding:7px 0;text-align:center;font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab:hover:not(.active){color:#fff;}
+
+#panels{overflow-y:auto;flex:1;max-height:460px;}
+.panel{display:none;padding:14px;}
+.panel.show{display:block;}
+
+/* chat */
+#chatlog{height:200px;overflow-y:auto;background:#0a0b11;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px;}
+.msg{padding:6px 9px;border-radius:7px;font-size:11px;line-height:1.5;max-width:90%;}
+.msg.user{background:rgba(107,140,255,.15);border:1px solid rgba(107,140,255,.2);align-self:flex-end;color:#aab8ff;}
+.msg.ai{background:#13151f;border:1px solid var(--border);align-self:flex-start;color:var(--text);}
+.msg.sys{background:rgba(63,220,138,.08);border:1px solid rgba(63,220,138,.15);align-self:center;color:var(--green);font-size:10px;text-align:center;}
+#chat-inp-row{display:flex;gap:6px;align-items:center;}
+#chat-inp{flex:1;background:#13151f;border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:inherit;font-size:11px;outline:none;transition:border-color .15s;}
+#chat-inp:focus{border-color:var(--accent);}
+.mic-btn{background:#13151f;border:1px solid var(--border);border-radius:7px;padding:6px 9px;cursor:pointer;font-size:14px;color:var(--dim);transition:all .15s;}
+.mic-btn:hover{border-color:var(--accent);color:var(--accent);}
+.mic-btn.recording{background:rgba(255,95,109,.15);border-color:var(--red);color:var(--red);animation:pulse 1s infinite;}
+.send-btn{background:var(--accent);border:none;border-radius:7px;padding:7px 12px;color:#fff;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;transition:opacity .15s;}
+.send-btn:hover{opacity:.85;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* highlight */
+#hl-box{background:#0a0b11;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;color:var(--dim);min-height:60px;margin-bottom:10px;white-space:pre-wrap;line-height:1.5;}
+.hl-action-row{display:flex;gap:6px;flex-wrap:wrap;}
+.hl-btn{padding:6px 10px;border-radius:6px;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:#13151f;color:var(--dim);transition:all .15s;}
+.hl-btn:hover{border-color:var(--accent);color:var(--accent);}
+#hl-result{margin-top:10px;background:#0a0b11;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;color:var(--text);white-space:pre-wrap;line-height:1.5;display:none;}
+
+/* ocr */
+#ocr-drop{border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;color:var(--dim);font-size:11px;cursor:pointer;transition:border-color .15s;margin-bottom:10px;}
+#ocr-drop:hover,#ocr-drop.dragover{border-color:var(--accent);color:var(--accent);}
+#ocr-out{background:#0a0b11;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;color:var(--text);white-space:pre-wrap;min-height:80px;line-height:1.5;display:none;}
+
+/* research */
+#res-inp{width:100%;background:#13151f;border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-family:inherit;font-size:11px;outline:none;margin-bottom:8px;transition:border-color .15s;}
+#res-inp:focus{border-color:var(--accent);}
+#res-go{width:100%;background:var(--accent);border:none;border-radius:7px;padding:8px;color:#fff;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-bottom:10px;}
+#res-go:hover{opacity:.85;}
+#res-out{background:#0a0b11;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;color:var(--text);white-space:pre-wrap;max-height:200px;overflow-y:auto;line-height:1.5;display:none;}
+#res-sources{margin-top:8px;font-size:10px;color:var(--dim);display:none;}
+.src-link{display:block;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px;}
+
+/* genspark */
+#gs-status{padding:8px 12px;border-radius:8px;font-size:11px;margin-bottom:10px;background:rgba(255,154,74,.08);border:1px solid rgba(255,154,74,.2);color:#ff9a4a;display:flex;align-items:center;gap:8px;}
+#gs-status.enabled{background:rgba(63,220,138,.08);border-color:rgba(63,220,138,.2);color:var(--green);}
+#gs-task{width:100%;background:#13151f;border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-family:inherit;font-size:11px;outline:none;margin-bottom:8px;transition:border-color .15s;resize:vertical;min-height:60px;}
+#gs-task:focus{border-color:var(--accent);}
+.gs-mode-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.gs-mode{padding:5px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:#13151f;color:var(--dim);transition:all .15s;}
+.gs-mode.sel{border-color:var(--accent);color:var(--accent);background:rgba(107,140,255,.1);}
+#gs-run{width:100%;background:var(--accent);border:none;border-radius:7px;padding:8px;color:#fff;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-bottom:10px;}
+#gs-run:hover{opacity:.85;}
+#gs-run:disabled{opacity:.4;cursor:default;}
+#gs-out{background:#0a0b11;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:11px;color:var(--text);white-space:pre-wrap;max-height:180px;overflow-y:auto;line-height:1.5;display:none;}
+
+#statusbar{padding:6px 14px;border-top:1px solid var(--border);background:#0a0b11;font-size:10px;color:var(--dim);display:flex;align-items:center;gap:8px;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);}
+.dot.off{background:var(--red);box-shadow:0 0 5px var(--red);}
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <div id="titlebar">
+    <span class="tb-icon">🧠</span>
+    <span class="tb-title">JARVIS</span>
+    <span class="tb-badge" id="brain-badge">Brain 1</span>
+    <button class="tb-btn" id="btn-pin" title="Pin">📌</button>
+    <button class="tb-btn" id="btn-min" title="Minimise">−</button>
+  </div>
+
+  <div id="tabs">
+    <div class="tab active" data-tab="chat">Chat</div>
+    <div class="tab" data-tab="highlight">Highlight</div>
+    <div class="tab" data-tab="ocr">OCR</div>
+    <div class="tab" data-tab="research">Research</div>
+    <div class="tab" data-tab="genspark">Genspark</div>
+  </div>
+
+  <div id="panels">
+
+    <!-- CHAT -->
+    <div class="panel show" id="tab-chat">
+      <div id="chatlog"></div>
+      <div id="chat-inp-row">
+        <button class="mic-btn" id="mic-btn" title="Voice">🎤</button>
+        <input id="chat-inp" placeholder="Ask anything…" autocomplete="off"/>
+        <button class="send-btn" id="send-btn">→</button>
+      </div>
+    </div>
+
+    <!-- HIGHLIGHT -->
+    <div class="panel" id="tab-highlight">
+      <div style="font-size:10px;color:var(--dim);margin-bottom:6px;">Select text on any page — it appears below.</div>
+      <div id="hl-box">No text selected yet. Highlight something on the page.</div>
+      <div class="hl-action-row">
+        <button class="hl-btn" data-action="summarise">Summarise</button>
+        <button class="hl-btn" data-action="explain">Explain</button>
+        <button class="hl-btn" data-action="translate">Translate</button>
+        <button class="hl-btn" data-action="factcheck">Fact-check</button>
+        <button class="hl-btn" data-action="research">Research</button>
+      </div>
+      <div id="hl-result"></div>
+    </div>
+
+    <!-- OCR -->
+    <div class="panel" id="tab-ocr">
+      <div id="ocr-drop">📷 Drop image or click to upload<br/><small style="color:var(--dim)">PNG · JPG · screenshot</small></div>
+      <input type="file" id="ocr-file" accept="image/*" style="display:none"/>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button class="hl-btn" id="ocr-screen-btn" style="flex:1">📸 Capture Screen</button>
+        <button class="hl-btn" id="ocr-copy" style="flex:1;display:none">📋 Copy</button>
+      </div>
+      <div id="ocr-out"></div>
+    </div>
+
+    <!-- RESEARCH -->
+    <div class="panel" id="tab-research">
+      <input id="res-inp" placeholder="Research query…"/>
+      <button id="res-go">🔍 Deep Research</button>
+      <div id="res-out"></div>
+      <div id="res-sources"></div>
+    </div>
+
+    <!-- GENSPARK -->
+    <div class="panel" id="tab-genspark">
+      <div id="gs-status">
+        <span id="gs-lock-icon">🔒</span>
+        <span id="gs-status-txt">Genspark access not enabled</span>
+      </div>
+      <div style="font-size:10px;color:var(--dim);margin-bottom:8px;">
+        Enable via: Sites page toggle · webhook · or typing <b>genspark on</b> in chat
+      </div>
+      <textarea id="gs-task" placeholder="Describe the task…&#10;e.g. Search Genspark for 'AI image tools' and summarise the top results"></textarea>
+      <div class="gs-mode-row">
+        <div class="gs-mode sel" data-mode="search">🔍 Search</div>
+        <div class="gs-mode" data-mode="research">📖 Research</div>
+        <div class="gs-mode" data-mode="pdf">📄 PDF</div>
+        <div class="gs-mode" data-mode="image">🖼 Image</div>
+        <div class="gs-mode" data-mode="call">📞 Call</div>
+      </div>
+      <button id="gs-run" disabled>Run on Genspark →</button>
+      <div id="gs-out"></div>
+    </div>
+
+  </div><!-- /panels -->
+
+  <div id="statusbar">
+    <div class="dot" id="srv-dot"></div>
+    <span id="srv-txt">Connecting…</span>
+    <span style="margin-left:auto" id="model-lbl"></span>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+const SERVER = 'http://192.168.0.8:8080';
+let _gsEnabled = false, _gsMode = 'search';
+let _hlText = '', _recording = false, _mediaRec = null;
+let _minimised = false;
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('show'));
+    t.classList.add('active');
+    document.getElementById('tab-'+t.dataset.tab).classList.add('show');
+    if (t.dataset.tab === 'genspark') checkGenspark();
+  };
+});
+
+// ── Drag ─────────────────────────────────────────────────────────────────
+const shell = document.getElementById('shell');
+const tb    = document.getElementById('titlebar');
+let dragX=0,dragY=0,dragging=false;
+tb.addEventListener('mousedown',e=>{
+  if(e.target.closest('.tb-btn'))return;
+  dragging=true;dragX=e.clientX-shell.offsetLeft;dragY=e.clientY-shell.offsetTop;
+});
+document.addEventListener('mousemove',e=>{
+  if(!dragging)return;
+  shell.style.left=(e.clientX-dragX)+'px';shell.style.top=(e.clientY-dragY)+'px';shell.style.right='unset';
+});
+document.addEventListener('mouseup',()=>dragging=false);
+
+// ── Min ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-min').onclick=()=>{
+  _minimised=!_minimised;
+  ['tabs','panels','statusbar'].forEach(id=>document.getElementById(id).style.display=_minimised?'none':'');
+};
+
+// ── Health ────────────────────────────────────────────────────────────────
+async function checkHealth(){
+  try{
+    const r=await fetch(`${SERVER}/api/status`,{signal:AbortSignal.timeout(3000)});
+    const d=await r.json();
+    document.getElementById('srv-dot').classList.remove('off');
+    document.getElementById('srv-txt').textContent='JARVIS online';
+    document.getElementById('model-lbl').textContent=d.model||'gemini-flash';
+  }catch{
+    document.getElementById('srv-dot').classList.add('off');
+    document.getElementById('srv-txt').textContent='offline';
+  }
+}
+checkHealth();setInterval(checkHealth,15000);
+
+// ── Genspark permission ────────────────────────────────────────────────────
+async function checkGenspark(){
+  try{
+    const r=await fetch(`${SERVER}/api/genspark/status`);
+    const d=await r.json();
+    _gsEnabled=d.enabled;
+    const st=document.getElementById('gs-status');
+    document.getElementById('gs-status-txt').textContent=
+      _gsEnabled?'Genspark enabled — ready to run':'Genspark locked — enable to use';
+    document.getElementById('gs-lock-icon').textContent=_gsEnabled?'✅':'🔒';
+    st.classList.toggle('enabled',_gsEnabled);
+    document.getElementById('gs-run').disabled=!_gsEnabled;
+  }catch{}
+}
+checkGenspark();
+
+// Genspark modes
+document.querySelectorAll('.gs-mode').forEach(m=>{
+  m.onclick=()=>{
+    document.querySelectorAll('.gs-mode').forEach(x=>x.classList.remove('sel'));
+    m.classList.add('sel');_gsMode=m.dataset.mode;
+  };
+});
+
+// Genspark run
+document.getElementById('gs-run').onclick=async()=>{
+  if(!_gsEnabled){checkGenspark();return;}
+  const task=document.getElementById('gs-task').value.trim();
+  if(!task)return;
+  const out=document.getElementById('gs-out');
+  const btn=document.getElementById('gs-run');
+  out.style.display='block';out.textContent='⏳ Running on Genspark…';btn.disabled=true;
+  try{
+    const r=await fetch(`${SERVER}/api/genspark/run`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({task,mode:_gsMode})
+    });
+    const d=await r.json();
+    out.textContent=d.result||d.error||JSON.stringify(d);
+  }catch(e){out.textContent='Error: '+e.message;}
+  finally{btn.disabled=false;}
+};
+
+// ── Chat ──────────────────────────────────────────────────────────────────
+const chatlog=document.getElementById('chatlog');
+function addMsg(role,text){
+  const m=document.createElement('div');m.className='msg '+role;m.textContent=text;
+  chatlog.appendChild(m);chatlog.scrollTop=chatlog.scrollHeight;return m;
+}
+
+async function sendChat(){
+  const inp=document.getElementById('chat-inp');
+  const q=inp.value.trim();if(!q)return;inp.value='';
+  addMsg('user',q);
+  // shortcut: "genspark on/off" from chat
+  if(/^genspark\s+on$/i.test(q)){
+    await fetch(`${SERVER}/api/genspark/enable`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{"enabled":true}'});
+    checkGenspark();addMsg('sys','Genspark enabled');return;
+  }
+  if(/^genspark\s+off$/i.test(q)){
+    await fetch(`${SERVER}/api/genspark/enable`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{"enabled":false}'});
+    checkGenspark();addMsg('sys','Genspark disabled');return;
+  }
+  const placeholder=addMsg('ai','⏳ Thinking…');
+  try{
+    const r=await fetch(`${SERVER}/api/chat`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:q,source:'overlay'})
+    });
+    const d=await r.json();
+    placeholder.textContent=d.reply||d.text||d.error||'No reply';
+    if(d.brain!==undefined)document.getElementById('brain-badge').textContent='Brain '+d.brain;
+  }catch(e){placeholder.textContent='Error: '+e.message;}
+}
+
+document.getElementById('send-btn').onclick=sendChat;
+document.getElementById('chat-inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}});
+
+// ── Mic / Whisper ─────────────────────────────────────────────────────────
+document.getElementById('mic-btn').onclick=async()=>{
+  const btn=document.getElementById('mic-btn');
+  if(_recording){_recording=false;btn.classList.remove('recording');if(_mediaRec)_mediaRec.stop();return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const chunks=[];
+    _mediaRec=new MediaRecorder(stream);
+    _mediaRec.ondataavailable=e=>chunks.push(e.data);
+    _mediaRec.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(chunks,{type:'audio/webm'});
+      const fd=new FormData();fd.append('file',blob,'voice.webm');
+      btn.textContent='⏳';
+      try{const r=await fetch(`${SERVER}/api/transcribe`,{method:'POST',body:fd});const d=await r.json();if(d.text)document.getElementById('chat-inp').value=d.text;}catch{}
+      btn.textContent='🎤';btn.classList.remove('recording');
+    };
+    _mediaRec.start();_recording=true;btn.classList.add('recording');
+  }catch(e){alert('Mic denied: '+e.message);}
+};
+
+// ── Highlight ─────────────────────────────────────────────────────────────
+document.addEventListener('selectionchange',()=>{
+  const sel=window.getSelection().toString().trim();
+  if(sel){_hlText=sel;document.getElementById('hl-box').textContent=sel;}
+});
+window.addEventListener('message',e=>{
+  if(e.data&&e.data.type==='JARVIS_SELECTION'){_hlText=e.data.text;document.getElementById('hl-box').textContent=e.data.text;}
+});
+document.querySelectorAll('.hl-btn').forEach(btn=>{
+  btn.onclick=async()=>{
+    if(!_hlText)return;
+    const out=document.getElementById('hl-result');
+    out.style.display='block';out.textContent='⏳…';
+    const instructions={summarise:'Summarise concisely',explain:'Explain simply',
+      translate:'Translate to English',factcheck:'Fact-check and give a verdict for each claim',
+      research:'Research this and give key findings'};
+    try{
+      const r=await fetch(`${SERVER}/api/summarise`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text:_hlText,instruction:instructions[btn.dataset.action]})
+      });
+      const d=await r.json();out.textContent=d.summary||d.result||d.error||'Done';
+    }catch(e){out.textContent='Error: '+e.message;}
+  };
+});
+
+// ── OCR ───────────────────────────────────────────────────────────────────
+const ocrDrop=document.getElementById('ocr-drop');
+const ocrFile=document.getElementById('ocr-file');
+const ocrOut=document.getElementById('ocr-out');
+ocrDrop.onclick=()=>ocrFile.click();
+ocrFile.onchange=()=>runOcr(ocrFile.files[0]);
+ocrDrop.addEventListener('dragover',e=>{e.preventDefault();ocrDrop.classList.add('dragover');});
+ocrDrop.addEventListener('dragleave',()=>ocrDrop.classList.remove('dragover'));
+ocrDrop.addEventListener('drop',e=>{e.preventDefault();ocrDrop.classList.remove('dragover');if(e.dataTransfer.files[0])runOcr(e.dataTransfer.files[0]);});
+
+document.getElementById('ocr-screen-btn').onclick=async()=>{
+  ocrOut.style.display='block';ocrOut.textContent='📸 Capturing…';
+  try{
+    const r=await fetch(`${SERVER}/api/vision/screen`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:'Extract all visible text. Return only the raw text.'})});
+    const d=await r.json();ocrOut.textContent=d.text||d.result||d.error;
+    document.getElementById('ocr-copy').style.display='block';
+  }catch(e){ocrOut.textContent='Error: '+e.message;}
+};
+
+async function runOcr(file){
+  if(!file)return;ocrOut.style.display='block';ocrOut.textContent='🔍 Extracting…';
+  const fd=new FormData();fd.append('file',file);
+  try{const r=await fetch(`${SERVER}/api/ocr`,{method:'POST',body:fd});const d=await r.json();ocrOut.textContent=d.text||d.error;document.getElementById('ocr-copy').style.display='block';}
+  catch(e){ocrOut.textContent='Error: '+e.message;}
+}
+
+document.getElementById('ocr-copy').onclick=()=>{
+  navigator.clipboard.writeText(ocrOut.textContent).then(()=>{
+    document.getElementById('ocr-copy').textContent='✓ Copied';
+    setTimeout(()=>document.getElementById('ocr-copy').textContent='📋 Copy',1500);
+  });
+};
+
+// ── Research ──────────────────────────────────────────────────────────────
+document.getElementById('res-go').onclick=async()=>{
+  const q=document.getElementById('res-inp').value.trim();if(!q)return;
+  const out=document.getElementById('res-out');const srcs=document.getElementById('res-sources');
+  out.style.display='block';srcs.style.display='none';out.textContent='🔍 Researching…';
+  document.getElementById('res-go').textContent='⏳ Working…';
+  try{
+    const r=await fetch(`${SERVER}/api/deep_research`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+    const d=await r.json();out.textContent=d.answer||d.error;
+    if(d.sources&&d.sources.length){
+      srcs.style.display='block';
+      srcs.innerHTML='<div style="color:var(--dim);margin-bottom:4px;">Sources:</div>'+
+        d.sources.slice(0,5).map(s=>`<a class="src-link" href="${s.url}" target="_blank">${s.title||s.url}</a>`).join('');
+    }
+  }catch(e){out.textContent='Error: '+e.message;}
+  finally{document.getElementById('res-go').textContent='🔍 Deep Research';}
+};
+document.getElementById('res-inp').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('res-go').click();});
+
+// ── SSE ───────────────────────────────────────────────────────────────────
+function connectSSE(){
+  const es=new EventSource(`${SERVER}/api/stream`);
+  es.onmessage=e=>{
+    try{
+      const d=JSON.parse(e.data);
+      if(d.type==='chat')addMsg('sys',d.text);
+      if(d.type==='alert')addMsg('sys','⚠️ '+d.text);
+      if(d.type==='genspark_enabled'){_gsEnabled=true;checkGenspark();}
+      if(d.type==='genspark_disabled'){_gsEnabled=false;checkGenspark();}
+    }catch{}
+  };
+  es.onerror=()=>setTimeout(connectSSE,5000);
+}
+connectSSE();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

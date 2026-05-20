@@ -1,0 +1,2156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>J.A.R.V.I.S. — Setup</title>
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap"></noscript>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cyan:#00d4ff;--cyan2:rgba(0,212,255,.6);--cyan3:rgba(0,212,255,.15);
+  --green:#22d87a;--amber:#f59e0b;--red:#f43f5e;--purple:#a855f7;
+  --bg:#000b14;--bg2:rgba(0,10,22,0.85);--bg3:rgba(0,20,40,0.6);
+  --border:rgba(0,212,255,.18);--border2:rgba(0,212,255,.08);
+  --mono:'Share Tech Mono',monospace;--raj:'Rajdhani',sans-serif;
+}
+html,body{min-height:100%;background:var(--bg);color:rgba(0,212,255,.85);font-family:var(--raj)}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,180,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,180,255,.03) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+/* scanline */
+body::after{content:'';position:fixed;left:0;right:0;height:2px;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.4) 50%,transparent);
+  animation:scan 8s linear infinite;opacity:.18;top:-2px}
+@keyframes scan{to{top:100%}}
+
+/* ─── Layout ─── */
+.page{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+
+/* ─── Header ─── */
+.hdr{display:flex;align-items:center;gap:16px;padding:18px 0 22px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.hdr-logo{font-family:var(--mono);font-size:22px;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 16px rgba(0,212,255,.5)}
+.hdr-sub{font-size:12px;color:rgba(0,212,255,.4);letter-spacing:2px;margin-top:2px}
+.hdr-nav{margin-left:auto;display:flex;gap:8px}
+.hdr-nav a{font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);text-decoration:none;
+  padding:4px 10px;border:1px solid var(--border);border-radius:3px;
+  transition:all .2s}
+.hdr-nav a:hover{color:var(--cyan);border-color:var(--cyan);background:var(--cyan3)}
+
+/* ─── Status Banner ─── */
+#status-banner{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:12px 16px;margin-bottom:24px;font-family:var(--mono);font-size:11px;
+}
+.sb-item{display:flex;flex-direction:column;gap:2px}
+.sb-label{font-size:9px;color:rgba(0,212,255,.4);letter-spacing:1px}
+.sb-val{color:var(--cyan);font-size:13px}
+.sb-sep{width:1px;height:30px;background:var(--border);flex-shrink:0}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.dot.green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot.amber{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.dot.red{background:var(--red)}
+
+/* ─── Grid ─── */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:700px){.grid-3{grid-template-columns:1fr}}
+
+/* ─── Card ─── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:16px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.3}
+.card-title{font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);letter-spacing:2px;margin-bottom:12px;text-transform:uppercase}
+.card-title .badge{display:inline-block;font-size:8px;padding:1px 5px;border-radius:2px;margin-left:6px;vertical-align:middle}
+.badge.get{background:rgba(34,216,122,.15);color:var(--green);border:1px solid rgba(34,216,122,.3)}
+.badge.post{background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.badge.live{background:rgba(0,212,255,.12);color:var(--cyan);border:1px solid var(--border)}
+
+/* ─── Webhook row ─── */
+.wh-row{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border2)}
+.wh-row:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.wh-method{display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:2px;margin-right:6px}
+.wh-method.get{background:rgba(34,216,122,.12);color:var(--green);border:1px solid rgba(34,216,122,.25)}
+.wh-method.post{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.25)}
+.wh-url{font-family:var(--mono);font-size:11px;color:var(--cyan);word-break:break-all}
+.wh-desc{font-size:12px;color:rgba(0,212,255,.5);margin-top:2px}
+.wh-params{font-family:var(--mono);font-size:9px;color:rgba(0,212,255,.35);margin-top:3px}
+.copy-btn{display:inline-flex;align-items:center;font-family:var(--mono);font-size:8px;
+  padding:2px 7px;border-radius:2px;border:1px solid var(--border);
+  background:transparent;color:rgba(0,212,255,.4);cursor:pointer;margin-top:3px;
+  transition:all .15s}
+.copy-btn:hover{color:var(--cyan);border-color:var(--cyan)}
+.copy-btn.copied{color:var(--green);border-color:var(--green)}
+
+/* ─── Room grid ─── */
+.room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+.room-tile{
+  border:1px solid var(--border);border-radius:5px;padding:10px 8px;text-align:center;
+  cursor:pointer;transition:all .2s;background:rgba(0,10,22,.6);position:relative;
+}
+.room-tile:hover{border-color:var(--cyan);background:var(--cyan3)}
+.room-tile.active{border-color:var(--cyan);background:rgba(0,212,255,.08);
+  box-shadow:0 0 12px rgba(0,212,255,.2)}
+.room-tile .rt-num{font-family:var(--mono);font-size:16px;color:var(--cyan)}
+.room-tile .rt-ip{font-family:var(--mono);font-size:8px;color:rgba(0,212,255,.4);margin-top:2px}
+.room-tile .rt-link{font-size:8px;color:rgba(0,212,255,.3);margin-top:3px;text-decoration:none}
+.room-tile .rt-ping{position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:rgba(0,212,255,.2)}
+.room-tile .rt-ping.ok{background:var(--green);box-shadow:0 0 4px var(--green)}
+.room-tile .rt-ping.fail{background:var(--red)}
+.room-tile .rt-label{font-size:9px;color:rgba(0,212,255,.45);margin-top:1px}
+
+/* ─── Staff state ─── */
+.staff-slot{display:flex;align-items:center;gap:10px;padding:8px 10px;
+  background:rgba(0,10,22,.6);border:1px solid var(--border2);border-radius:4px;margin-bottom:6px}
+.ss-num{font-family:var(--mono);font-size:11px;color:rgba(0,212,255,.4);width:24px}
+.ss-name{font-size:14px;color:var(--cyan);flex:1}
+.ss-badge{font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:2px;
+  background:rgba(0,212,255,.08);border:1px solid var(--border);color:rgba(0,212,255,.5)}
+.ss-fire{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:3px;
+  border:1px solid rgba(0,212,255,.2);background:transparent;color:rgba(0,212,255,.5);
+  cursor:pointer;transition:all .15s}
+.ss-fire:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan3)}
+
+/* ─── Input / button ─── */
+.inp{width:100%;padding:7px 10px;background:rgba(0,4,14,.9);border:1px solid var(--border);
+  border-radius:4px;color:var(--cyan);font-family:var(--mono);font-size:12px;outline:none;
+  transition:border .2s}
+.inp:focus{border-color:var(--cyan)}
+.btn{padding:7px 18px;border-radius:4px;border:1px solid var(--border);
+  background:transparent;color:var(--cyan);font-family:var(--mono);font-size:11px;
+  cursor:pointer;transition:all .2s;letter-spacing:1px}
+.btn:hover{border-color:var(--cyan);background:var(--cyan3)}
+.btn.primary{background:rgba(0,212,255,.1);border-color:var(--cyan)}
+.btn.danger{border-color:rgba(244,63,94,.4);color:var(--red)}
+.btn.danger:hover{background:rgba(244,63,94,.1)}
+.btn.success{border-color:rgba(34,216,122,.4);color:var(--green)}
+label{font-size:11px;color:rgba(0,212,255,.5);display:block;margin-bottom:4px;margin-top:10px}
+
+/* ─── Log ─── */
+#log{font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);
+  background:rgba(0,4,14,.8);border:1px solid var(--border2);border-radius:4px;
+  padding:8px;max-height:120px;overflow-y:auto;margin-top:8px}
+.log-line{margin-bottom:2px}
+.log-line.ok{color:var(--green)}
+.log-line.err{color:var(--red)}
+.log-line.info{color:rgba(0,212,255,.4)}
+
+/* ─── Code block ─── */
+pre{font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.55);
+  background:rgba(0,4,14,.8);border:1px solid var(--border2);border-radius:4px;
+  padding:10px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin-top:6px}
+code{color:var(--green)}
+
+/* ─── Section heading ─── */
+.section-title{font-family:var(--mono);font-size:11px;letter-spacing:3px;
+  color:rgba(0,212,255,.4);margin:28px 0 12px;text-transform:uppercase;
+  border-bottom:1px solid var(--border2);padding-bottom:6px}
+
+/* tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:7px 14px;
+  cursor:pointer;color:rgba(0,212,255,.4);border-bottom:2px solid transparent;
+  transition:all .2s;background:none;border-top:none;border-left:none;border-right:none}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* spinner */
+.spin-sm{display:inline-block;width:10px;height:10px;border:2px solid rgba(0,212,255,.2);
+  border-top-color:var(--cyan);border-radius:50%;animation:cw .6s linear infinite;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-logo">J·A·R·V·I·S</div>
+      <div class="hdr-sub">SYSTEM SETUP &amp; API REFERENCE</div>
+    </div>
+    <div class="hdr-nav">
+      <a href="/jarvis">◀ JARVIS</a>
+      <a href="/jarvis/setup" onclick="location.reload();return false">↺ REFRESH</a>
+    </div>
+  </div>
+
+  <!-- Live Status Banner -->
+  <div id="status-banner">
+    <div class="sb-item">
+      <div class="sb-label">ACTIVE ROOM</div>
+      <div class="sb-val" id="sb-room">—</div>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">
+      <div class="sb-label">VOICE BOX IP</div>
+      <div class="sb-val" id="sb-ip">—</div>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">
+      <div class="sb-label">ACTIVE STAFF</div>
+      <div class="sb-val" id="sb-staff">—</div>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">
+      <div class="sb-label">SLOT</div>
+      <div class="sb-val" id="sb-slot">—</div>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">
+      <div class="sb-label">TTS</div>
+      <div class="sb-val" id="sb-tts">—</div>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">
+      <div class="sb-label">SESSION</div>
+      <div class="sb-val" id="sb-session">—</div>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">
+      <div class="sb-label">HUB</div>
+      <div class="sb-val"><span class="dot green"></span>192.168.0.3:8080</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn primary" onclick="newTask(this)">NEW TASK</button>
+      <button class="btn" onclick="refreshAll()">REFRESH</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('guide',this);loadGuide()">SETUP GUIDE</button>
+    <button class="tab" style="color:#f59e0b;border-color:#78350f" onclick="showTab('keys',this);loadKeysTab()">&#128273; KEYS &amp; FIX</button>
+    <button class="tab" onclick="showTab('rooms',this)">ROOMS</button>
+    <button class="tab" onclick="showTab('webhooks',this)">WEBHOOKS</button>
+    <button class="tab" onclick="showTab('api',this)">API REFERENCE</button>
+    <button class="tab" onclick="showTab('staff',this)">STAFF SWITCH</button>
+    <button class="tab" onclick="showTab('n8n',this)">n8n / HA</button>
+    <button class="tab" onclick="showTab('memory',this)">MEMORY</button>
+    <button class="tab" onclick="showTab('access',this);loadAccessSettings()">ACCESS</button>
+  </div>
+
+  <!-- TAB: SETUP GUIDE -->
+  <div class="tab-content active" id="tab-guide">
+
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+      <div>
+        <div style="font-family:var(--mono);font-size:11px;color:rgba(0,212,255,.4);letter-spacing:2px">JARVIS CONFIGURATION CHECKLIST</div>
+        <div style="font-size:12px;color:rgba(0,212,255,.5);margin-top:3px">Tick every step green before using JARVIS chat. Click CHECK to test live.</div>
+      </div>
+      <button class="btn primary" onclick="loadGuide()" style="margin-left:auto">RECHECK ALL</button>
+    </div>
+
+    <!-- Overall health bar -->
+    <div id="guide-overall" style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(0,10,22,.7);border:1px solid var(--border);border-radius:6px;margin-bottom:20px;font-family:var(--mono);font-size:11px">
+      <div class="spin-sm" id="guide-spin"></div>
+      <span id="guide-overall-text" style="color:rgba(0,212,255,.5)">Checking…</span>
+    </div>
+
+    <!-- Steps -->
+    <div id="guide-steps" style="display:flex;flex-direction:column;gap:12px"></div>
+
+    <!-- AI conversation check -->
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">STEP 8 — TEST JARVIS BRAIN</div>
+      <div style="font-size:12px;color:rgba(0,212,255,.5);margin-bottom:10px">Send a test message to the JARVIS agent and see how it responds. This proves the whole pipeline works.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input class="inp" id="test-msg" value="What tools do you have available?" style="flex:1;min-width:200px">
+        <button class="btn primary" onclick="testJarvis(this)">SEND TO JARVIS</button>
+      </div>
+      <div id="test-reply" style="font-family:var(--mono);font-size:11px;color:rgba(0,212,255,.6);margin-top:10px;white-space:pre-wrap;display:none;background:rgba(0,4,14,.8);border:1px solid var(--border2);padding:10px;border-radius:4px"></div>
+    </div>
+
+    <!-- How much can it think -->
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">HOW MUCH CAN JARVIS THINK?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="think-grid">
+        <div style="padding:10px;background:rgba(0,10,22,.6);border:1px solid var(--border2);border-radius:4px">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:1px;margin-bottom:6px">WITHOUT GROQ KEY</div>
+          <div style="font-size:12px;color:rgba(0,212,255,.6);line-height:1.7">
+            ✓ Gemini Flash function calling (5 keys rotate)<br>
+            ✓ 19 tools available<br>
+            ✓ Memory search &amp; store<br>
+            ✓ Multi-step planner<br>
+            ✗ Slower (~3-8s per response)<br>
+            ✗ Hits daily quota from NocoDB sync<br>
+            ✗ Falls back to router (Pollinations via workers)
+          </div>
+        </div>
+        <div style="padding:10px;background:rgba(34,216,122,.04);border:1px solid rgba(34,216,122,.2);border-radius:4px">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--green);letter-spacing:1px;margin-bottom:6px">WITH GROQ KEY ← GET THIS FIRST</div>
+          <div style="font-size:12px;color:rgba(0,212,255,.6);line-height:1.7">
+            ✓ Llama-3.3-70b function calling (~1s)<br>
+            ✓ 14,400 free requests/day<br>
+            ✓ Reliable tool use (OpenAI-compatible)<br>
+            ✓ Full 19-tool JARVIS brain<br>
+            ✓ find_job → execute_job pipeline live<br>
+            ✓ Holds long conversations with memory<br>
+            ✓ Speaks with TTS voice assigned to each staff
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:10px;background:rgba(0,10,22,.6);border:1px solid var(--border2);border-radius:4px">
+        <div style="font-family:var(--mono);font-size:9px;color:rgba(0,212,255,.4);letter-spacing:1px;margin-bottom:6px">WHAT IT CAN DO RIGHT NOW (BOTH MODES)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;color:rgba(0,212,255,.6)">
+          <div>✓ Control Home Assistant<br>✓ Run SSH on any PC<br>✓ Search 6,751+ jobs</div>
+          <div>✓ Remember conversations<br>✓ Search the web<br>✓ Trigger n8n workflows</div>
+          <div>✓ Query NocoDB tables<br>✓ Get weather anywhere<br>✓ Execute jobs by ID</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB: ROOMS -->
+  <div class="tab-content active" id="tab-rooms">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">VOICE BOX ROOMS <span class="badge live">LIVE</span></div>
+        <div class="room-grid" id="room-grid">
+          <!-- populated by JS -->
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">ROOM LABELS</div>
+        <div id="room-labels-form">
+          <!-- populated by JS -->
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn primary" onclick="saveRoomLabels()">SAVE LABELS</button>
+          <button class="btn" onclick="pingAllRooms()">PING ALL</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">QUICK SET ACTIVE ROOM</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div>
+          <label>ROOM NUMBER (38–48)</label>
+          <input class="inp" id="set-room-inp" type="number" min="38" max="48" value="38" style="width:120px">
+        </div>
+        <button class="btn primary" onclick="setRoom()">SET ROOM</button>
+        <div id="set-room-status" style="font-family:var(--mono);font-size:11px;color:var(--green);align-self:center"></div>
+      </div>
+      <div style="margin-top:10px;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.4)">
+        Webhook: <span style="color:var(--cyan)">POST http://192.168.0.3:8080/webhook/{38-48}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: WEBHOOKS -->
+  <div class="tab-content" id="tab-webhooks">
+    <div class="grid">
+
+      <!-- PERSON INBOUND WEBHOOKS -->
+      <div class="card" style="grid-column:1/-1">
+        <div class="card-title">PERSON INBOUND WEBHOOKS <span class="badge live">n8n / HA / scripts</span></div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:12px">
+          POST a message to get a JARVIS reply for that person. Body: <code style="color:#b57aff">{"text":"your message"}</code> — returns <code style="color:#b57aff">{"ok":true,"reply":"..."}</code>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px">
+          <!-- SAM -->
+          <div style="background:#020305;border:1px solid #3b82f633;border-radius:6px;padding:10px">
+            <div style="font-size:11px;font-weight:700;color:#3b82f6;margin-bottom:6px">👤 Sam</div>
+            <div class="wh-url" style="word-break:break-all">http://192.168.0.3:8080/pipeline/webhook/sam</div>
+            <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+              <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/pipeline/webhook/sam')">COPY URL</button>
+              <button class="copy-btn" onclick="cp(this,'curl -s -X POST http://192.168.0.3:8080/pipeline/webhook/sam -H \"Content-Type: application/json\" -d \'{\"text\":\"hello\"}\'')">COPY CURL</button>
+              <button class="copy-btn" onclick="tryWebhook(this,'POST','http://192.168.0.3:8080/pipeline/webhook/sam',{text:'hello'})">TEST</button>
+            </div>
+          </div>
+          <!-- GF -->
+          <div style="background:#020305;border:1px solid #ec489933;border-radius:6px;padding:10px">
+            <div style="font-size:11px;font-weight:700;color:#ec4899;margin-bottom:6px">💕 GF (Partner)</div>
+            <div class="wh-url" style="word-break:break-all">http://192.168.0.3:8080/pipeline/webhook/gf</div>
+            <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+              <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/pipeline/webhook/gf')">COPY URL</button>
+              <button class="copy-btn" onclick="cp(this,'curl -s -X POST http://192.168.0.3:8080/pipeline/webhook/gf -H \"Content-Type: application/json\" -d \'{\"text\":\"hello\"}\'')">COPY CURL</button>
+              <button class="copy-btn" onclick="tryWebhook(this,'POST','http://192.168.0.3:8080/pipeline/webhook/gf',{text:'hello'})">TEST</button>
+            </div>
+          </div>
+          <!-- HOUSE -->
+          <div style="background:#020305;border:1px solid #22c55e33;border-radius:6px;padding:10px">
+            <div style="font-size:11px;font-weight:700;color:#22c55e;margin-bottom:6px">🏠 House</div>
+            <div class="wh-url" style="word-break:break-all">http://192.168.0.3:8080/pipeline/webhook/house</div>
+            <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+              <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/pipeline/webhook/house')">COPY URL</button>
+              <button class="copy-btn" onclick="cp(this,'curl -s -X POST http://192.168.0.3:8080/pipeline/webhook/house -H \"Content-Type: application/json\" -d \'{\"text\":\"hello\"}\'')">COPY CURL</button>
+              <button class="copy-btn" onclick="tryWebhook(this,'POST','http://192.168.0.3:8080/pipeline/webhook/house',{text:'hello'})">TEST</button>
+            </div>
+          </div>
+          <!-- WORK -->
+          <div style="background:#020305;border:1px solid #f59e0b33;border-radius:6px;padding:10px">
+            <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:6px">💼 Work</div>
+            <div class="wh-url" style="word-break:break-all">http://192.168.0.3:8080/pipeline/webhook/work</div>
+            <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+              <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/pipeline/webhook/work')">COPY URL</button>
+              <button class="copy-btn" onclick="cp(this,'curl -s -X POST http://192.168.0.3:8080/pipeline/webhook/work -H \"Content-Type: application/json\" -d \'{\"text\":\"hello\"}\'')">COPY CURL</button>
+              <button class="copy-btn" onclick="tryWebhook(this,'POST','http://192.168.0.3:8080/pipeline/webhook/work',{text:'hello'})">TEST</button>
+            </div>
+          </div>
+          <!-- ALL -->
+          <div style="background:#020305;border:1px solid #a78bfa33;border-radius:6px;padding:10px">
+            <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:6px">🌐 All persons</div>
+            <div class="wh-url" style="word-break:break-all">http://192.168.0.3:8080/pipeline/webhook/all</div>
+            <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+              <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/pipeline/webhook/all')">COPY URL</button>
+              <button class="copy-btn" onclick="tryWebhook(this,'POST','http://192.168.0.3:8080/pipeline/webhook/all',{text:'hello'})">TEST ALL</button>
+            </div>
+          </div>
+        </div>
+        <div id="wh-person-test-out" style="margin-top:8px;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.6);display:none;background:#020305;border:1px solid rgba(0,212,255,.1);border-radius:4px;padding:6px 8px;white-space:pre-wrap;word-break:break-word"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">STAFF SWITCH</div>
+
+        <div class="wh-row">
+          <div><span class="wh-method post">POST</span><span class="wh-url">http://192.168.0.3:8080/jarvis/webhook/{group}/{staff}</span></div>
+          <div class="wh-desc">Switch to group tab number + staff slot. Updates active voice box TTS + wake word.</div>
+          <div class="wh-params">{group} = 1–15 (tab number) &nbsp;|&nbsp; {staff} = 1–30 (slot number)</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+            <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/jarvis/webhook/1/1')">COPY</button>
+            <button class="copy-btn" onclick="tryWebhook(this,'POST','http://192.168.0.3:8080/jarvis/webhook/1/1',null)">TEST G1/S1</button>
+          </div>
+        </div>
+
+        <div class="wh-row">
+          <div><span class="wh-method post">POST</span><span class="wh-url">http://192.168.0.3:8080/webhook/{room}</span></div>
+          <div class="wh-desc">Set active voice box room. Room 38 = .38, room 40 = .40, etc.</div>
+          <div class="wh-params">{room} = 38–48</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+            <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/webhook/38')">COPY</button>
+            <button class="copy-btn" onclick="tryWebhook(this,'POST','http://192.168.0.3:8080/webhook/38',null)">TEST → .38</button>
+          </div>
+        </div>
+
+        <div class="wh-row">
+          <div><span class="wh-method post">POST</span><span class="wh-url">http://192.168.0.3:8080/webhook/persona-switch</span></div>
+          <div class="wh-desc">Switch by tab + persona slot number (used by jarvis screen).</div>
+          <div class="wh-params">Body: {"tab":1,"persona":1}</div>
+          <div><button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/webhook/persona-switch')">COPY</button></div>
+        </div>
+
+        <div class="wh-row">
+          <div><span class="wh-method post">POST</span><span class="wh-url">http://192.168.0.3:8080/webhook/staff-switch</span></div>
+          <div class="wh-desc">Legacy: switch by person name. Routes to linked voice box.</div>
+          <div class="wh-params">Body: {"person_name":"Sam","tts":"edge","voice":"...","ww_model":"..."}</div>
+          <div><button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/webhook/staff-switch')">COPY</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">SYSTEM ACTIONS</div>
+
+        <div class="wh-row">
+          <div><span class="wh-method post">POST</span><span class="wh-url">http://192.168.0.3:8080/api/jarvis-new-task</span></div>
+          <div class="wh-desc">NEW TASK — reset session, ping active voice box, send "READY FOR COMMAND" to Mitos HUD.</div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/api/jarvis-new-task')">COPY</button>
+            <button class="copy-btn" onclick="tryWebhook(this,'POST','http://192.168.0.3:8080/api/jarvis-new-task',null)">TEST</button>
+          </div>
+        </div>
+
+        <div class="wh-row">
+          <div><span class="wh-method post">POST</span><span class="wh-url">http://192.168.0.3:8080/api/update-jarvis-screen</span></div>
+          <div class="wh-desc">Re-download screen.html from .38 and patch MG_GROUPS (15 groups + correct labels).</div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/api/update-jarvis-screen')">COPY</button>
+            <button class="copy-btn" onclick="tryWebhook(this,'POST','http://192.168.0.3:8080/api/update-jarvis-screen',null)">REFRESH SCREEN</button>
+          </div>
+        </div>
+
+        <div class="wh-row">
+          <div><span class="wh-method post">POST</span><span class="wh-url">http://192.168.0.3:8080/jarvis/active-persona</span></div>
+          <div class="wh-desc">Notify .38 of the current active persona.</div>
+          <div class="wh-params">Body: {"id":"10_01","label":"Jarvis_1-Staff"}</div>
+          <div><button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/jarvis/active-persona')">COPY</button></div>
+        </div>
+
+        <div class="wh-row">
+          <div><span class="wh-method post">POST</span><span class="wh-url">http://192.168.0.3:8080/api/set_assistant</span></div>
+          <div class="wh-desc">Switch assistant by tab_slot ID string (e.g. "1_3" = tab 1, slot 3).</div>
+          <div class="wh-params">Body: {"id":"1_3"}</div>
+          <div><button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/api/set_assistant')">COPY</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test console -->
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">WEBHOOK TEST CONSOLE</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:0 0 70px">
+          <label>METHOD</label>
+          <select id="tc-method" class="inp" style="width:70px">
+            <option>POST</option><option>GET</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <label>URL</label>
+          <input class="inp" id="tc-url" value="http://192.168.0.3:8080/api/active-staff">
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label>BODY (JSON)</label>
+          <input class="inp" id="tc-body" placeholder='{"key":"val"}'>
+        </div>
+        <button class="btn primary" onclick="runConsole()">FIRE</button>
+      </div>
+      <pre id="tc-out" style="min-height:48px;margin-top:8px">— ready —</pre>
+    </div>
+  </div>
+
+  <!-- TAB: API REFERENCE -->
+  <div class="tab-content" id="tab-api">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">STATE QUERIES <span class="badge get">GET</span></div>
+
+        <div class="wh-row">
+          <div><span class="wh-method get">GET</span><span class="wh-url">/api/active-staff</span></div>
+          <div class="wh-desc">Current active staff member + TTS config + linked room. Use from n8n/HA.</div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/api/active-staff')">COPY</button>
+            <button class="copy-btn" onclick="fetchAndShow(this,'/api/active-staff','api-out-staff')">FETCH</button>
+          </div>
+          <pre id="api-out-staff" style="display:none"></pre>
+        </div>
+
+        <div class="wh-row">
+          <div><span class="wh-method get">GET</span><span class="wh-url">/api/active-room</span></div>
+          <div class="wh-desc">Currently linked voice box room number + IP.</div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/api/active-room')">COPY</button>
+            <button class="copy-btn" onclick="fetchAndShow(this,'/api/active-room','api-out-room')">FETCH</button>
+          </div>
+          <pre id="api-out-room" style="display:none"></pre>
+        </div>
+
+        <div class="wh-row">
+          <div><span class="wh-method get">GET</span><span class="wh-url">/webhook/staff-switch/state</span></div>
+          <div class="wh-desc">Returns full staff-switch state dict.</div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/webhook/staff-switch/state')">COPY</button>
+            <button class="copy-btn" onclick="fetchAndShow(this,'/webhook/staff-switch/state','api-out-sw')">FETCH</button>
+          </div>
+          <pre id="api-out-sw" style="display:none"></pre>
+        </div>
+
+        <div class="wh-row">
+          <div><span class="wh-method get">GET</span><span class="wh-url">/api/people-names?tab=N</span></div>
+          <div class="wh-desc">30 staff names for tab N (reads NocoDB, falls back to defaults). Used by jarvis screen.</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+            <button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/api/people-names?tab=1')">COPY</button>
+            <button class="copy-btn" onclick="fetchAndShow(this,'/api/people-names?tab=1','api-out-names')">TAB 1</button>
+            <button class="copy-btn" onclick="fetchAndShow(this,'/api/people-names?tab=2','api-out-names')">TAB 2</button>
+          </div>
+          <pre id="api-out-names" style="display:none"></pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">GROUP / TAB MAP</div>
+        <div style="font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.4);margin-bottom:8px">Tab → Group number → Label</div>
+        <div id="tab-map" style="font-family:var(--mono);font-size:10px;display:grid;grid-template-columns:auto auto 1fr;gap:3px 12px">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">RESPONSE EXAMPLES</div>
+      <div class="grid">
+        <div>
+          <div style="font-size:11px;color:rgba(0,212,255,.5);margin-bottom:4px">GET /api/active-staff</div>
+          <pre>{
+  "person":    "Jarvis_1-Staff",
+  "slot_id":   "10_01",
+  "group_num": 1,
+  "staff_num": 1,
+  "tts":       "edge",
+  "voice":     "en-GB-Neural2-A",
+  "ww_model":  "hey_jarvis",
+  "room": {
+    "room_num": 38,
+    "ip":       "192.168.0.38"
+  }
+}</pre>
+        </div>
+        <div>
+          <div style="font-size:11px;color:rgba(0,212,255,.5);margin-bottom:4px">POST /jarvis/webhook/1/1 → response</div>
+          <pre>{
+  "ok":       true,
+  "name":     "Jarvis_1-Staff",
+  "slot_id":  "10_01",
+  "room": {
+    "room_num": 38,
+    "ip":       "192.168.0.38"
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: STAFF SWITCH -->
+  <div class="tab-content" id="tab-staff">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">MANUAL STAFF SWITCH</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+          <div>
+            <label>GROUP (TAB 1–15)</label>
+            <input class="inp" id="sw-group" type="number" min="1" max="15" value="1" style="width:90px" oninput="loadStaffPreview()">
+          </div>
+          <div>
+            <label>STAFF SLOT (1–30)</label>
+            <input class="inp" id="sw-slot" type="number" min="1" max="30" value="1" style="width:90px">
+          </div>
+          <button class="btn primary" onclick="fireSwitch(this)">SWITCH NOW</button>
+          <div id="sw-status" style="font-family:var(--mono);font-size:11px;align-self:center"></div>
+        </div>
+        <div id="sw-preview" style="font-family:var(--mono);font-size:11px;color:rgba(0,212,255,.45);margin-bottom:10px"></div>
+        <div id="staff-list" style="max-height:340px;overflow-y:auto"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">ACTIVE STATE</div>
+        <div id="active-state-box" style="font-family:var(--mono);font-size:11px;line-height:1.8">—</div>
+        <div style="margin-top:14px">
+          <div class="card-title" style="margin-bottom:8px">LINKED VOICE BOX</div>
+          <div id="vb-status" style="font-family:var(--mono);font-size:11px;color:rgba(0,212,255,.5)">—</div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button class="btn" onclick="pingVoiceBox(this)">PING VOICE BOX</button>
+            <a id="vb-link" href="#" target="_blank" class="btn">OPEN /simple ↗</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: n8n / HA -->
+  <div class="tab-content" id="tab-n8n">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">n8n INTEGRATION</div>
+
+        <div class="wh-row">
+          <div style="font-size:12px;color:rgba(0,212,255,.6);margin-bottom:6px;font-weight:600">Get active staff (HTTP Request node)</div>
+          <div><span class="wh-method get">GET</span><span class="wh-url">http://192.168.0.3:8080/api/active-staff</span></div>
+          <div class="wh-desc">Returns JSON with current person, slot_id, tts, voice, ww_model, room.</div>
+          <div><button class="copy-btn" onclick="cp(this,'http://192.168.0.3:8080/api/active-staff')">COPY URL</button></div>
+        </div>
+
+        <div class="wh-row">
+          <div style="font-size:12px;color:rgba(0,212,255,.6);margin-bottom:6px;font-weight:600">Switch staff from n8n</div>
+          <div><span class="wh-method post">POST</span><span class="wh-url">http://192.168.0.3:8080/jarvis/webhook/{{group}}/{{staff}}</span></div>
+          <div class="wh-desc">Use n8n expressions to fill group and staff from your workflow data.</div>
+          <pre>// n8n HTTP Request
+Method: POST
+URL: http://192.168.0.3:8080/jarvis/webhook/{{ $json.group }}/{{ $json.staff_num }}
+// No body needed</pre>
+        </div>
+
+        <div class="wh-row">
+          <div style="font-size:12px;color:rgba(0,212,255,.6);margin-bottom:6px;font-weight:600">Set room from n8n</div>
+          <div><span class="wh-method post">POST</span><span class="wh-url">http://192.168.0.3:8080/webhook/{{room_number}}</span></div>
+          <pre>// n8n HTTP Request
+Method: POST
+URL: http://192.168.0.3:8080/webhook/{{ $json.room }}</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">HOME ASSISTANT</div>
+
+        <div class="wh-row">
+          <div style="font-size:12px;color:rgba(0,212,255,.6);margin-bottom:6px;font-weight:600">REST Command (configuration.yaml)</div>
+          <pre>rest_command:
+  jarvis_switch_staff:
+    url: "http://192.168.0.3:8080/jarvis/webhook/{{ group }}/{{ staff }}"
+    method: POST
+
+  jarvis_set_room:
+    url: "http://192.168.0.3:8080/webhook/{{ room }}"
+    method: POST
+
+  jarvis_new_task:
+    url: "http://192.168.0.3:8080/api/jarvis-new-task"
+    method: POST</pre>
+          <button class="copy-btn" onclick="cp(this,`rest_command:\n  jarvis_switch_staff:\n    url: \"http://192.168.0.3:8080/jarvis/webhook/{{ group }}/{{ staff }}\"\n    method: POST\n\n  jarvis_set_room:\n    url: \"http://192.168.0.3:8080/webhook/{{ room }}\"\n    method: POST\n\n  jarvis_new_task:\n    url: \"http://192.168.0.3:8080/api/jarvis-new-task\"\n    method: POST`)">COPY YAML</button>
+        </div>
+
+        <div class="wh-row">
+          <div style="font-size:12px;color:rgba(0,212,255,.6);margin-bottom:6px;font-weight:600">HA Automation example</div>
+          <pre>automation:
+  - alias: "Person enters living room"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.living_room_motion
+        to: 'on'
+    action:
+      - service: rest_command.jarvis_set_room
+        data:
+          room: 38   # .38 = living room voice box</pre>
+        </div>
+
+        <div class="wh-row">
+          <div style="font-size:12px;color:rgba(0,212,255,.6);margin-bottom:6px;font-weight:600">Rooms &amp; IPs</div>
+          <div id="ha-room-list" style="font-family:var(--mono);font-size:10px;line-height:1.8;color:rgba(0,212,255,.5)">
+            <!-- populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: MEMORY -->
+  <div class="tab-content" id="tab-memory">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">MEMORY SETTINGS</div>
+        <div style="font-size:12px;color:rgba(0,212,255,.5);margin-bottom:12px">
+          Per-group staff is remembered for this many minutes. After that, the group resets to its default slot.
+        </div>
+        <label>REVERT TIMEOUT (minutes)</label>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+          <input class="inp" id="mem-revert" type="number" min="1" max="1440" style="width:100px">
+          <button class="btn primary" onclick="saveMemSettings()">SAVE</button>
+          <span id="mem-save-status" style="font-family:var(--mono);font-size:10px;color:var(--green)"></span>
+        </div>
+        <div class="card-title" style="margin-bottom:8px">DEFAULT SLOT PER GROUP</div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:8px">Which staff slot to use when memory expires or group hasn't been visited yet.</div>
+        <div id="group-defaults-form" style="display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center">
+          <!-- populated by JS -->
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn primary" onclick="saveMemSettings()">SAVE DEFAULTS</button>
+          <button class="btn danger" onclick="clearAllMemory()">CLEAR ALL MEMORY</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">GROUP MEMORY STATE <span class="badge live">LIVE</span></div>
+        <div style="font-size:10px;color:rgba(0,212,255,.35);margin-bottom:10px;font-family:var(--mono)">
+          Each row shows which staff slot was last active and when.
+        </div>
+        <div id="group-memory-list" style="font-family:var(--mono);font-size:10px">
+          <!-- populated by JS -->
+        </div>
+        <button class="btn" style="margin-top:10px;font-size:9px" onclick="loadGroupMemory()">REFRESH</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: KEYS & FIX -->
+  <div class="tab-content" id="tab-keys">
+    <style>
+      .kf-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+      .kf-label{font-size:11px;color:rgba(0,212,255,.6);width:180px;flex-shrink:0}
+      .kf-status{font-size:10px;font-weight:700;width:60px;flex-shrink:0}
+      .kf-ok{color:#22d87a} .kf-miss{color:#ef4444}
+      .kf-inp{flex:1;background:rgba(0,4,14,.9);border:1px solid rgba(0,212,255,.2);
+        border-radius:6px;padding:8px 12px;color:#e2e8f0;font-family:var(--mono);
+        font-size:12px;outline:none}
+      .kf-inp:focus{border-color:var(--cyan)}
+      .kf-show{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);
+        border-radius:4px;padding:4px 8px;color:rgba(0,212,255,.6);font-size:10px;
+        cursor:pointer;flex-shrink:0;font-family:var(--mono)}
+      .kf-show:hover{background:rgba(0,212,255,.15);color:var(--cyan)}
+    </style>
+    <div class="grid">
+
+      <!-- GROQ -->
+      <div class="card" style="grid-column:1/-1;border-color:#78350f">
+        <div class="card-title" style="color:#fb923c">&#9889; GROQ API KEYS
+          <span class="badge" style="background:#78350f;color:#fed7aa">FREE — 14,400 req/day</span>
+          <span id="groq-status-badge" style="margin-left:8px;font-size:11px"></span>
+        </div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:16px">
+          Get free keys at <a href="https://console.groq.com/keys" target="_blank" style="color:#fb923c">console.groq.com/keys</a>
+          → Create API Key → paste below. Up to 3 keys multiplies your daily quota.
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">Groq Key 1 (PRIMARY)</span>
+          <span class="kf-status kf-miss" id="s-GROQ_API_KEY_1">✗ MISSING</span>
+          <input class="kf-inp" id="key-GROQ_API_KEY_1" type="password" placeholder="gsk_…  ← paste here">
+          <button class="kf-show" onclick="toggleVis('key-GROQ_API_KEY_1',this)">SHOW</button>
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">Groq Key 2 (backup)</span>
+          <span class="kf-status kf-miss" id="s-GROQ_API_KEY_2">✗ MISSING</span>
+          <input class="kf-inp" id="key-GROQ_API_KEY_2" type="password" placeholder="gsk_…  (optional)">
+          <button class="kf-show" onclick="toggleVis('key-GROQ_API_KEY_2',this)">SHOW</button>
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">Groq Key 3 (backup)</span>
+          <span class="kf-status kf-miss" id="s-GROQ_API_KEY_3">✗ MISSING</span>
+          <input class="kf-inp" id="key-GROQ_API_KEY_3" type="password" placeholder="gsk_…  (optional)">
+          <button class="kf-show" onclick="toggleVis('key-GROQ_API_KEY_3',this)">SHOW</button>
+        </div>
+      </div>
+
+      <!-- GEMINI -->
+      <div class="card" style="grid-column:1/-1">
+        <div class="card-title">&#128161; GEMINI API KEYS
+          <span class="badge" style="background:#0f2744;color:#7dd3fc">FREE — 1,500 req/day each</span>
+          <span id="gemini-status-badge" style="margin-left:8px;font-size:11px"></span>
+        </div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:16px">
+          Get keys at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#60a5fa">aistudio.google.com</a>.
+          5 different Google accounts = 7,500 free requests/day combined.
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">Gemini Key 1</span>
+          <span class="kf-status kf-miss" id="s-GEMINI_API_KEY_1">✗ MISSING</span>
+          <input class="kf-inp" id="key-GEMINI_API_KEY_1" type="password" placeholder="AIza…">
+          <button class="kf-show" onclick="toggleVis('key-GEMINI_API_KEY_1',this)">SHOW</button>
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">Gemini Key 2</span>
+          <span class="kf-status kf-miss" id="s-GEMINI_API_KEY_2">✗ MISSING</span>
+          <input class="kf-inp" id="key-GEMINI_API_KEY_2" type="password" placeholder="AIza…">
+          <button class="kf-show" onclick="toggleVis('key-GEMINI_API_KEY_2',this)">SHOW</button>
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">Gemini Key 3</span>
+          <span class="kf-status kf-miss" id="s-GEMINI_API_KEY_3">✗ MISSING</span>
+          <input class="kf-inp" id="key-GEMINI_API_KEY_3" type="password" placeholder="AIza…">
+          <button class="kf-show" onclick="toggleVis('key-GEMINI_API_KEY_3',this)">SHOW</button>
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">Gemini Key 4</span>
+          <span class="kf-status kf-miss" id="s-GEMINI_API_KEY_4">✗ MISSING</span>
+          <input class="kf-inp" id="key-GEMINI_API_KEY_4" type="password" placeholder="AIza…">
+          <button class="kf-show" onclick="toggleVis('key-GEMINI_API_KEY_4',this)">SHOW</button>
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">Gemini Key 5</span>
+          <span class="kf-status kf-miss" id="s-GEMINI_API_KEY_5">✗ MISSING</span>
+          <input class="kf-inp" id="key-GEMINI_API_KEY_5" type="password" placeholder="AIza…">
+          <button class="kf-show" onclick="toggleVis('key-GEMINI_API_KEY_5',this)">SHOW</button>
+        </div>
+      </div>
+
+      <!-- HOME ASSISTANT -->
+      <div class="card">
+        <div class="card-title">&#127968; HOME ASSISTANT</div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:16px">
+          HA → Profile → Security → Long-Lived Access Tokens → Create Token.
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">HA URL</span>
+          <span class="kf-status kf-miss" id="s-HA_URL">–</span>
+          <input class="kf-inp" id="key-HA_URL" type="text" placeholder="http://192.168.0.x:8123">
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">HA Token</span>
+          <span class="kf-status kf-miss" id="s-HA_TOKEN">✗ MISSING</span>
+          <input class="kf-inp" id="key-HA_TOKEN" type="password" placeholder="eyJ…">
+          <button class="kf-show" onclick="toggleVis('key-HA_TOKEN',this)">SHOW</button>
+        </div>
+      </div>
+
+      <!-- NOCODB -->
+      <div class="card">
+        <div class="card-title">&#128202; NocoDB</div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:16px">
+          NocoDB → Team &amp; Settings → API Tokens → Add Token.
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">NocoDB URL</span>
+          <span class="kf-status" id="s-NOCODB_URL">–</span>
+          <input class="kf-inp" id="key-NOCODB_URL" type="text" placeholder="http://192.168.0.3:8090">
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">NocoDB Token</span>
+          <span class="kf-status kf-miss" id="s-NOCODB_API_TOKEN">✗ MISSING</span>
+          <input class="kf-inp" id="key-NOCODB_API_TOKEN" type="password" placeholder="paste token…">
+          <button class="kf-show" onclick="toggleVis('key-NOCODB_API_TOKEN',this)">SHOW</button>
+        </div>
+      </div>
+
+      <!-- TELEGRAM -->
+      <div class="card">
+        <div class="card-title">&#128241; TELEGRAM <span class="badge" style="background:#1f2937;color:#94a3b8">optional</span></div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:16px">
+          Message <a href="https://t.me/BotFather" target="_blank" style="color:#60a5fa">@BotFather</a> on Telegram → /newbot → copy token.
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">Bot Token</span>
+          <span class="kf-status kf-miss" id="s-TELEGRAM_BOT_TOKEN">✗ MISSING</span>
+          <input class="kf-inp" id="key-TELEGRAM_BOT_TOKEN" type="password" placeholder="123456:ABC…">
+          <button class="kf-show" onclick="toggleVis('key-TELEGRAM_BOT_TOKEN',this)">SHOW</button>
+        </div>
+        <div class="kf-row">
+          <span class="kf-label">Chat ID</span>
+          <span class="kf-status kf-miss" id="s-TELEGRAM_CHAT_ID">✗ MISSING</span>
+          <input class="kf-inp" id="key-TELEGRAM_CHAT_ID" type="text" placeholder="-100123456789">
+        </div>
+      </div>
+
+      <!-- SAVE -->
+      <div class="card" style="grid-column:1/-1;background:#030d03;border-color:#22d87a">
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <button onclick="saveKeys()" style="background:#22d87a;color:#000;border:none;border-radius:8px;padding:12px 32px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Segoe UI',system-ui,sans-serif;letter-spacing:.5px">
+            ✓ SAVE KEYS
+          </button>
+          <span id="keys-save-status" style="font-family:var(--mono);font-size:13px;color:#22d87a"></span>
+          <span style="margin-left:auto;font-size:11px;color:rgba(0,212,255,.3)">
+            Writes to <code style="color:rgba(0,212,255,.5)">config/.env</code> — live, no restart needed
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB: ACCESS -->
+  <div class="tab-content" id="tab-access">
+    <div class="grid">
+
+      <!-- PERSON ACCESS OVERVIEW -->
+      <div class="card" style="grid-column:1/-1" id="person-access-card">
+        <div class="card-title">PERSON ACCESS <span class="badge live">INBOUND WEBHOOKS</span></div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:14px">
+          Each person has an inbound webhook — POST a message, get a JARVIS reply. Supports JSON <code style="color:#b57aff">{"text":"..."}</code> or plain text body.
+          n8n, HA, scripts can all use these. The reply is also posted to that person's configured outbound webhook.
+        </div>
+        <div id="person-access-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:10px">
+          <div style="color:rgba(0,212,255,.3);font-size:11px">Loading…</div>
+        </div>
+        <!-- Live send test -->
+        <div style="border-top:1px solid rgba(0,212,255,.1);padding-top:12px;margin-top:4px">
+          <div style="font-size:10px;color:rgba(0,212,255,.5);margin-bottom:8px;letter-spacing:1px">LIVE TEST — send a message as any person</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <select id="pa-person-sel" style="background:#0a0c14;border:1px solid rgba(0,212,255,.2);color:#e2e8f0;border-radius:5px;padding:5px 10px;font-size:11px;font-family:var(--mono)">
+              <option value="sam">👤 Sam</option>
+              <option value="gf">💕 GF</option>
+              <option value="house">🏠 House</option>
+              <option value="work">💼 Work</option>
+              <option value="all">🌐 All</option>
+            </select>
+            <input id="pa-test-inp" class="inp" placeholder='Message text…' style="flex:1;min-width:200px"
+              onkeydown="if(event.key==='Enter')paTestSend()">
+            <button class="btn primary" onclick="paTestSend()">SEND</button>
+          </div>
+          <div id="pa-test-result" style="margin-top:8px;font-family:var(--mono);font-size:11px;color:rgba(0,212,255,.7);display:none;background:#020305;border:1px solid rgba(0,212,255,.1);border-radius:5px;padding:8px;white-space:pre-wrap;word-break:break-word"></div>
+        </div>
+
+        <!-- Live activity log -->
+        <div style="border-top:1px solid rgba(0,212,255,.1);padding-top:12px;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="font-size:10px;color:rgba(0,212,255,.5);letter-spacing:1px">LIVE ACTIVITY LOG</div>
+            <select id="pa-log-filter" onchange="refreshActivityLog()" style="background:#0a0c14;border:1px solid rgba(0,212,255,.15);color:#94a3b8;border-radius:4px;padding:2px 8px;font-size:10px;font-family:var(--mono)">
+              <option value="">All persons</option>
+              <option value="sam">👤 Sam</option>
+              <option value="gf">💕 GF</option>
+              <option value="house">🏠 House</option>
+              <option value="work">💼 Work</option>
+            </select>
+            <button class="btn" style="padding:2px 10px;font-size:10px" onclick="refreshActivityLog()">↺ Refresh</button>
+            <span id="pa-log-live" style="font-size:9px;color:#22c55e;margin-left:auto">● live</span>
+          </div>
+          <div id="pa-activity-log" style="font-family:var(--mono);font-size:10px;background:#020305;border:1px solid rgba(0,212,255,.08);border-radius:5px;padding:8px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:2px">
+            <span style="color:#334155">Waiting for activity…</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GLOBAL GROUP ENABLE/DISABLE -->
+      <div class="card" style="grid-column:1/-1">
+        <div class="card-title">GROUP VISIBILITY <span class="badge live">GLOBAL</span></div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:12px">
+          Untick a group to hide it everywhere — on all tablets and in all screens. Useful for groups you haven't set up yet.
+        </div>
+        <div id="global-group-toggles" style="display:flex;flex-wrap:wrap;gap:8px 16px">
+          <span style="color:rgba(0,212,255,.3);font-size:11px">Loading…</span>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn primary" onclick="saveAccessSettings()">SAVE CHANGES</button>
+          <span id="access-save-status" style="font-family:var(--mono);font-size:10px;color:var(--green);align-self:center"></span>
+        </div>
+      </div>
+
+      <!-- EXPOSURE MATRIX -->
+      <div class="card" style="grid-column:1/-1">
+        <div class="card-title">EXPOSURE MATRIX <span class="badge live">PER IP</span></div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:12px">
+          Tick which groups each tablet IP can see. IPs not listed see Jarvis-only by default. Row = Group, Column = Tablet IP.
+        </div>
+        <div id="matrix-wrap" style="overflow-x:auto">
+          <span style="color:rgba(0,212,255,.3);font-size:11px">Loading…</span>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn primary" onclick="saveAccessSettings()">SAVE MATRIX</button>
+          <button class="btn" onclick="addMatrixIP()">+ ADD IP</button>
+          <button class="btn danger" id="del-ip-btn" style="display:none" onclick="removeSelectedIP()">REMOVE SELECTED IP</button>
+        </div>
+      </div>
+
+      <!-- NOCO ACCESS -->
+      <div class="card">
+        <div class="card-title">NocoDB CLONE ACCESS</div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:12px">
+          Only IPs in this list can export the clone profile (GET /api/jarvis/clone-profile).
+        </div>
+        <div id="noco-ips-list" style="margin-bottom:10px;font-family:var(--mono);font-size:11px"></div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input class="inp" id="noco-ip-input" placeholder="192.168.0.x" style="width:160px">
+          <button class="btn primary" onclick="addNocoIP()">ADD</button>
+        </div>
+        <button class="btn primary" onclick="saveAccessSettings()" style="margin-top:4px">SAVE</button>
+      </div>
+
+      <!-- CLONE PROFILE -->
+      <div class="card">
+        <div class="card-title">CLONE PROFILE</div>
+        <div style="font-size:11px;color:rgba(0,212,255,.4);margin-bottom:12px">
+          Export the full access config as JSON. Import it on a new PC to replicate settings instantly. Only available if your IP is in the NocoDB allowed list.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn primary" onclick="exportCloneProfile()">EXPORT PROFILE</button>
+          <button class="btn" onclick="document.getElementById('import-file').click()">IMPORT PROFILE</button>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importCloneProfile(this)">
+        </div>
+        <div id="clone-status" style="font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5)"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Activity Log -->
+  <div class="section-title">ACTIVITY LOG</div>
+  <div id="log"><span class="log-line info">// System ready</span></div>
+
+</div><!-- /page -->
+
+<script>
+var HUB = 'http://192.168.0.3:8080';
+
+var TAB_MAP = [
+  {tab:1,  group:10,  label:'Jarvis',       color:'#00d4ff'},
+  {tab:2,  group:20,  label:'SAM',           color:'#22d87a'},
+  {tab:3,  group:30,  label:'Parter',        color:'#f59e0b'},
+  {tab:4,  group:40,  label:'House',         color:'#a855f7'},
+  {tab:5,  group:50,  label:'Personal',      color:'#06b6d4'},
+  {tab:6,  group:60,  label:'Personal-2',    color:'#84cc16'},
+  {tab:7,  group:70,  label:'Sole-Trader',   color:'#a3e635'},
+  {tab:8,  group:80,  label:'Sole-Trader-2', color:'#fb923c'},
+  {tab:9,  group:90,  label:'LTD',           color:'#fdba74'},
+  {tab:10, group:100, label:'LTD-2',         color:'#e879f9'},
+  {tab:11, group:110, label:'PIA',           color:'#d946ef'},
+  {tab:12, group:120, label:'PIA-2',         color:'#f43f5e'},
+  {tab:13, group:130, label:'Spare-A',       color:'#8b5cf6'},
+  {tab:14, group:150, label:'Spare-B',       color:'#06b6d4'},
+  {tab:15, group:140, label:'Spare-C',       color:'#10b981'},
+];
+
+var ROOM_LABELS_KEY = 'jarvis_room_labels';
+var _roomLabels = {};
+try { _roomLabels = JSON.parse(localStorage.getItem(ROOM_LABELS_KEY)||'{}'); } catch(e){}
+
+// ── Logging ───────────────────────────────────────────────────────────────────
+function lg(msg, cls){
+  var d = document.getElementById('log');
+  var line = document.createElement('div');
+  line.className = 'log-line '+(cls||'info');
+  var ts = new Date().toTimeString().slice(0,8);
+  line.textContent = '['+ts+'] '+msg;
+  d.insertBefore(line, d.firstChild);
+  if(d.children.length > 40) d.removeChild(d.lastChild);
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function showTab(id, btn){
+  document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active')});
+  document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active')});
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='staff') loadStaffPreview();
+  if(id==='n8n') buildHaRoomList();
+  if(id==='memory'){ loadMemSettings(); loadGroupMemory(); }
+  if(id==='guide') loadGuide();
+  if(id==='keys') loadKeysTab();
+  if(id==='access') startActivityLogPoll(); else stopActivityLogPoll();
+}
+
+// ── Keys & Fix Tab ────────────────────────────────────────────────────────────
+function loadKeysTab() {
+  // Update status badges from live config
+  fetch(HUB + '/api/jarvis/config-check')
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      function setStatus(id, ok) {
+        var el = document.getElementById('s-' + id);
+        if (!el) return;
+        el.textContent = ok ? '✓ SET' : '✗ MISSING';
+        el.className = 'kf-status ' + (ok ? 'kf-ok' : 'kf-miss');
+      }
+      var g = d.groq || {}, gem = d.gemini || {}, ha = d.ha || {}, noco = d.nocodb || {}, tg = d.telegram || {};
+      setStatus('GROQ_API_KEY_1', g.count >= 1);
+      setStatus('GROQ_API_KEY_2', g.count >= 2);
+      setStatus('GROQ_API_KEY_3', g.count >= 3);
+      setStatus('GEMINI_API_KEY_1', gem.count >= 1);
+      setStatus('GEMINI_API_KEY_2', gem.count >= 2);
+      setStatus('GEMINI_API_KEY_3', gem.count >= 3);
+      setStatus('GEMINI_API_KEY_4', gem.count >= 4);
+      setStatus('GEMINI_API_KEY_5', gem.count >= 5);
+      setStatus('HA_TOKEN', ha.token_set);
+      setStatus('NOCODB_API_TOKEN', noco.ok);
+      setStatus('TELEGRAM_BOT_TOKEN', tg.ok);
+      if (ha.url) { var u = document.getElementById('key-HA_URL'); if(u&&!u.value) u.value = ha.url; }
+      if (noco.url) { var n = document.getElementById('key-NOCODB_URL'); if(n&&!n.value) n.value = noco.url; }
+      var gb = document.getElementById('groq-status-badge');
+      if (gb) gb.innerHTML = g.count ? '<span style="color:#22d87a">✓ '+g.count+' key(s) active</span>' : '<span style="color:#ef4444">✗ No keys — JARVIS will be slow</span>';
+      var gemb = document.getElementById('gemini-status-badge');
+      if (gemb) gemb.innerHTML = gem.count ? '<span style="color:#22d87a">✓ '+gem.count+'/5 set</span>' : '';
+    })
+    .catch(function(){});
+}
+
+function toggleVis(id, btn) {
+  var inp = document.getElementById(id);
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? 'SHOW' : 'HIDE';
+}
+
+function saveKeys() {
+  var keys = {};
+  ['GROQ_API_KEY_1','GROQ_API_KEY_2','GROQ_API_KEY_3',
+   'GEMINI_API_KEY_1','GEMINI_API_KEY_2','GEMINI_API_KEY_3','GEMINI_API_KEY_4','GEMINI_API_KEY_5',
+   'HA_URL','HA_TOKEN','NOCODB_URL','NOCODB_API_TOKEN','TELEGRAM_BOT_TOKEN','TELEGRAM_CHAT_ID'
+  ].forEach(function(k) {
+    var el = document.getElementById('key-' + k);
+    if (el && el.value.trim()) keys[k] = el.value.trim();
+  });
+  if (!Object.keys(keys).length) {
+    document.getElementById('keys-save-status').textContent = '⚠ Paste at least one key first';
+    return;
+  }
+  var st = document.getElementById('keys-save-status');
+  st.textContent = 'Saving…'; st.style.color = '#64748b';
+  fetch(HUB + '/api/jarvis/save-keys', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({keys: keys})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      st.textContent = '✓ Saved ' + d.saved + ' key(s)!'; st.style.color = '#22d87a';
+      setTimeout(function(){ loadKeysTab(); loadGuide(); }, 1200);
+    } else {
+      st.textContent = '✗ ' + (d.error || 'error'); st.style.color = '#ef4444';
+    }
+  })
+  .catch(function(e){ st.textContent = '✗ ' + e.message; st.style.color = '#ef4444'; });
+}
+
+function saveHAKeys() {
+  var keys = {};
+  var url = document.getElementById('gi-HA_URL'); if(url&&url.value.trim()) keys['HA_URL'] = url.value.trim();
+  var tok = document.getElementById('gi-HA_TOKEN'); if(tok&&tok.value.trim()) keys['HA_TOKEN'] = tok.value.trim();
+  if(!Object.keys(keys).length) return;
+  var st = document.getElementById('gi-ha-st');
+  st.textContent = 'Saving…'; st.style.color = '#64748b';
+  fetch(HUB+'/api/jarvis/save-keys',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keys:keys})})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.ok){st.textContent='✓ Saved!';st.style.color='#22d87a';url.value='';tok.value='';setTimeout(function(){loadGuide();},1000);}
+    else{st.textContent='✗ '+(d.error||'error');st.style.color='#ef4444';}
+  }).catch(function(e){st.textContent='✗ '+e.message;st.style.color='#ef4444';});
+}
+
+function saveTGKeys() {
+  var keys = {};
+  var bot = document.getElementById('gi-TELEGRAM_BOT_TOKEN'); if(bot&&bot.value.trim()) keys['TELEGRAM_BOT_TOKEN'] = bot.value.trim();
+  var cid = document.getElementById('gi-TELEGRAM_CHAT_ID'); if(cid&&cid.value.trim()) keys['TELEGRAM_CHAT_ID'] = cid.value.trim();
+  if(!Object.keys(keys).length) return;
+  var st = document.getElementById('gi-tg-st');
+  st.textContent = 'Saving…'; st.style.color = '#64748b';
+  fetch(HUB+'/api/jarvis/save-keys',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keys:keys})})
+  .then(function(r){return r.json();}).then(function(d){
+    if(d.ok){st.textContent='✓ Saved!';st.style.color='#22d87a';bot.value='';cid.value='';setTimeout(function(){loadGuide();},1000);}
+    else{st.textContent='✗ '+(d.error||'error');st.style.color='#ef4444';}
+  }).catch(function(e){st.textContent='✗ '+e.message;st.style.color='#ef4444';});
+}
+
+// Save a single key from anywhere on the page (used by inline guide inputs)
+function saveOneKey(keyName, inputId, statusId) {
+  var val = document.getElementById(inputId).value.trim();
+  if (!val) return;
+  var st = document.getElementById(statusId);
+  st.textContent = 'Saving…'; st.style.color = '#64748b';
+  var keys = {}; keys[keyName] = val;
+  fetch(HUB + '/api/jarvis/save-keys', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({keys: keys})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      st.textContent = '✓ Saved!'; st.style.color = '#22d87a';
+      document.getElementById(inputId).value = '';
+      setTimeout(function(){ loadGuide(); loadKeysTab(); }, 1000);
+    } else {
+      st.textContent = '✗ ' + (d.error||'error'); st.style.color = '#ef4444';
+    }
+  })
+  .catch(function(e){ st.textContent = '✗ ' + e.message; st.style.color='#ef4444'; });
+}
+
+// ── Copy (works on HTTP, not just HTTPS) ─────────────────────────────────────
+function cp(btn, text){
+  var orig = btn.textContent;
+  function _done(){ btn.textContent='COPIED ✓'; btn.classList.add('copied'); setTimeout(function(){btn.textContent=orig;btn.classList.remove('copied');},1500); }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(_done).catch(function(){ _fallback(text, _done); });
+  } else { _fallback(text, _done); }
+}
+function _fallback(text, cb){
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); } catch(e){}
+  document.body.removeChild(ta);
+  if(cb) cb();
+}
+
+// ── Refresh all state ─────────────────────────────────────────────────────────
+function refreshAll(){
+  fetch(HUB+'/api/active-staff').then(function(r){return r.json();}).then(function(d){
+    document.getElementById('sb-room').textContent = d.room ? 'ROOM '+d.room.room_num : '—';
+    document.getElementById('sb-ip').textContent   = d.room ? d.room.ip : '—';
+    document.getElementById('sb-staff').textContent = d.person || '—';
+    document.getElementById('sb-slot').textContent  = d.slot_id || '—';
+    document.getElementById('sb-tts').textContent   = d.tts || d.voice || '—';
+    document.getElementById('sb-session').textContent = d.session_id || '—';
+
+    // active state box
+    var box = document.getElementById('active-state-box');
+    if(box){
+      box.innerHTML = [
+        row('Person',  d.person||'—'),
+        row('Slot',    d.slot_id||'—'),
+        row('Group',   d.group_num||'—'),
+        row('TTS',     d.tts||'—'),
+        row('Voice',   d.voice||'—'),
+        row('WW Model',d.ww_model||'—'),
+        row('Room',    d.room ? 'ROOM '+d.room.room_num+' ('+d.room.ip+')' : '—'),
+      ].join('');
+    }
+
+    var ip = d.room ? d.room.ip : '192.168.0.38';
+    var vbEl = document.getElementById('vb-status');
+    if(vbEl) vbEl.textContent = ip+'/simple';
+    var vbLink = document.getElementById('vb-link');
+    if(vbLink) vbLink.href = 'http://'+ip+'/simple';
+
+    // room tiles
+    var active = d.room ? d.room.room_num : 38;
+    document.querySelectorAll('.room-tile').forEach(function(tile){
+      var n = parseInt(tile.dataset.room);
+      tile.classList.toggle('active', n===active);
+    });
+  }).catch(function(e){ lg('active-staff fetch failed: '+e.message, 'err'); });
+}
+
+function row(k,v){
+  return '<div style="display:flex;gap:10px;border-bottom:1px solid rgba(0,212,255,.06);padding:4px 0">'
+    +'<span style="color:rgba(0,212,255,.4);width:80px;flex-shrink:0">'+k+'</span>'
+    +'<span style="color:#00d4ff">'+v+'</span></div>';
+}
+
+// ── Room grid ─────────────────────────────────────────────────────────────────
+function buildRoomGrid(){
+  var grid = document.getElementById('room-grid');
+  var form = document.getElementById('room-labels-form');
+  var haList = document.getElementById('ha-room-list');
+  grid.innerHTML = '';
+  var formHtml = '';
+  var haHtml = '';
+  for(var n=38;n<=48;n++){
+    var label = _roomLabels[n] || '';
+    var tile = document.createElement('div');
+    tile.className = 'room-tile';
+    tile.dataset.room = n;
+    tile.onclick = (function(num){ return function(){ setRoomDirect(num); }; })(n);
+    tile.innerHTML =
+      '<div class="rt-ping" id="ping-'+n+'"></div>'+
+      '<div class="rt-num">'+n+'</div>'+
+      '<div class="rt-ip">192.168.0.'+n+'</div>'+
+      '<div class="rt-label">'+(label||'Room '+n)+'</div>'+
+      '<a class="rt-link" href="http://192.168.0.'+n+'/simple" target="_blank" onclick="event.stopPropagation()">open /simple</a>';
+    grid.appendChild(tile);
+
+    formHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +'<span style="font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.4);width:30px">.'+n+'</span>'
+      +'<input class="inp" id="rl-'+n+'" placeholder="Room label (e.g. Living Room)" '
+      +'value="'+(label||'')+'" style="flex:1;padding:5px 8px;font-size:11px">'
+      +'</div>';
+
+    haHtml += '<div><span style="color:var(--cyan)">'+n+'</span>'
+      +' → 192.168.0.'+n+' — '+(label||'Room '+n)+'</div>';
+  }
+  if(form) form.innerHTML = formHtml;
+  if(haList) haList.innerHTML = haHtml;
+}
+
+function saveRoomLabels(){
+  for(var n=38;n<=48;n++){
+    var el = document.getElementById('rl-'+n);
+    if(el) _roomLabels[n] = el.value.trim();
+  }
+  localStorage.setItem(ROOM_LABELS_KEY, JSON.stringify(_roomLabels));
+  buildRoomGrid();
+  lg('Room labels saved', 'ok');
+}
+
+function buildHaRoomList(){
+  var haList = document.getElementById('ha-room-list');
+  if(!haList) return;
+  var html = '';
+  for(var n=38;n<=48;n++){
+    html += '<div><span style="color:var(--cyan)">'+n+'</span>'
+      +' → 192.168.0.'+n+' — '+(_roomLabels[n]||'Room '+n)+'</div>';
+  }
+  haList.innerHTML = html;
+}
+
+function pingAllRooms(){
+  for(var n=38;n<=48;n++){
+    (function(num){
+      var el = document.getElementById('ping-'+num);
+      if(el){ el.className='rt-ping'; }
+      fetch('http://192.168.0.'+num+'/simple',{method:'GET',mode:'no-cors',signal:AbortSignal.timeout(3000)})
+        .then(function(){ if(el) el.className='rt-ping ok'; lg('192.168.0.'+num+' OK','ok'); })
+        .catch(function(){ if(el) el.className='rt-ping fail'; lg('192.168.0.'+num+' FAIL','err'); });
+    })(n);
+  }
+}
+
+function setRoomDirect(n){
+  fetch(HUB+'/webhook/'+n,{method:'POST'})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      lg('Room set → '+n+' ('+d.ip+')', 'ok');
+      refreshAll();
+    })
+    .catch(function(e){ lg('Set room failed: '+e.message,'err'); });
+}
+
+function setRoom(){
+  var n = parseInt(document.getElementById('set-room-inp').value);
+  if(n<38||n>48){alert('Must be 38-48');return;}
+  fetch(HUB+'/webhook/'+n,{method:'POST'})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      document.getElementById('set-room-status').textContent = '✓ ROOM '+n;
+      lg('Active room → '+n, 'ok');
+      refreshAll();
+    })
+    .catch(function(e){
+      document.getElementById('set-room-status').textContent = 'ERR';
+      lg('setRoom failed: '+e.message,'err');
+    });
+}
+
+// ── Tab map ───────────────────────────────────────────────────────────────────
+function buildTabMap(){
+  var el = document.getElementById('tab-map');
+  if(!el) return;
+  var html = '<div style="color:rgba(0,212,255,.3)">TAB</div><div style="color:rgba(0,212,255,.3)">GROUP</div><div style="color:rgba(0,212,255,.3)">LABEL</div>';
+  TAB_MAP.forEach(function(t){
+    html += '<div style="color:rgba(0,212,255,.4)">'+t.tab+'</div>'
+      +'<div style="color:rgba(0,212,255,.5)">'+t.group+'</div>'
+      +'<div style="color:'+t.color+'">'+t.label+'</div>';
+  });
+  el.innerHTML = html;
+}
+
+// ── NEW TASK ──────────────────────────────────────────────────────────────────
+function newTask(btn){
+  btn.disabled=true; btn.textContent='…';
+  fetch(HUB+'/api/jarvis-new-task',{method:'POST'})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      btn.textContent = d.ping ? 'READY ✓' : 'SENT ✓';
+      lg('New task — session='+d.session_id+' voice-box='+d.voice_box+' ping='+(d.ping?'OK':'FAIL'), d.ping?'ok':'info');
+      document.getElementById('sb-session').textContent = d.session_id;
+      setTimeout(function(){btn.textContent='NEW TASK';btn.disabled=false;},2000);
+      refreshAll();
+    })
+    .catch(function(e){ btn.textContent='ERR'; btn.disabled=false; lg('new-task: '+e.message,'err'); });
+}
+
+// ── Webhook test console ──────────────────────────────────────────────────────
+function tryWebhook(btn, method, url, body){
+  var orig = btn.textContent; btn.textContent='…';
+  var opts = {method:method, headers:{'Content-Type':'application/json'}};
+  if(body) opts.body = JSON.stringify(body);
+  fetch(url, opts)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      btn.textContent = d.ok!==false ? '✓' : 'ERR';
+      lg(method+' '+url+' → '+JSON.stringify(d).slice(0,80), d.ok!==false?'ok':'err');
+      setTimeout(function(){btn.textContent=orig;},2000);
+      refreshAll();
+    })
+    .catch(function(e){ btn.textContent='ERR'; lg(url+' failed: '+e.message,'err'); setTimeout(function(){btn.textContent=orig;},2000); });
+}
+
+function runConsole(){
+  var method = document.getElementById('tc-method').value;
+  var url = document.getElementById('tc-url').value.trim();
+  var bodyStr = document.getElementById('tc-body').value.trim();
+  var out = document.getElementById('tc-out');
+  out.textContent = '…';
+  var opts = {method:method};
+  if(bodyStr){ try{ opts.body=bodyStr; opts.headers={'Content-Type':'application/json'}; } catch(e){} }
+  fetch(url, opts)
+    .then(function(r){return r.text();})
+    .then(function(t){
+      try{ out.textContent = JSON.stringify(JSON.parse(t),null,2); }
+      catch(e){ out.textContent = t; }
+      lg(method+' '+url, 'ok');
+    })
+    .catch(function(e){ out.textContent='ERROR: '+e.message; lg(url+' failed: '+e.message,'err'); });
+}
+
+// ── API fetch+show ────────────────────────────────────────────────────────────
+function fetchAndShow(btn, path, outId){
+  var orig = btn.textContent; btn.textContent='…';
+  fetch(HUB+path)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var el = document.getElementById(outId);
+      el.style.display='block';
+      el.textContent = JSON.stringify(d,null,2);
+      btn.textContent=orig;
+      lg('GET '+path, 'ok');
+    })
+    .catch(function(e){ btn.textContent='ERR'; lg(path+' failed: '+e.message,'err'); setTimeout(function(){btn.textContent=orig;},2000); });
+}
+
+// ── Staff preview ─────────────────────────────────────────────────────────────
+function loadStaffPreview(){
+  var tab = parseInt(document.getElementById('sw-group').value)||1;
+  var t = TAB_MAP[tab-1] || TAB_MAP[0];
+  document.getElementById('sw-preview').textContent =
+    'Tab '+tab+' → Group '+t.group+' ('+t.label+')  •  webhook: /jarvis/webhook/'+tab+'/{slot}';
+
+  fetch(HUB+'/api/people-names?tab='+tab)
+    .then(function(r){return r.json();})
+    .then(function(arr){
+      var html = arr.map(function(p){
+        return '<div class="staff-slot">'
+          +'<span class="ss-num">'+p.id+'</span>'
+          +'<span class="ss-name">'+p.name+'</span>'
+          +'<span class="ss-badge">slot '+p.id+'</span>'
+          +'<button class="ss-fire" onclick="fireSwitchDirect('+tab+','+p.id+',this)">SWITCH</button>'
+          +'</div>';
+      }).join('');
+      document.getElementById('staff-list').innerHTML = html;
+    })
+    .catch(function(){ document.getElementById('staff-list').innerHTML='<div style="color:rgba(255,100,100,.5);font-family:var(--mono);font-size:10px">Could not load names</div>'; });
+}
+
+function fireSwitchDirect(tab, slot, btn){
+  btn.textContent='…'; btn.disabled=true;
+  fetch(HUB+'/jarvis/webhook/'+tab+'/'+slot,{method:'POST'})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      btn.textContent='✓';
+      lg('Switched → tab'+tab+'/slot'+slot+' = '+d.name+' | room '+d.room.room_num,'ok');
+      setTimeout(function(){btn.textContent='SWITCH';btn.disabled=false;},1500);
+      refreshAll();
+    })
+    .catch(function(e){ btn.textContent='ERR'; btn.disabled=false; lg('switch failed: '+e.message,'err'); });
+}
+
+function fireSwitch(btn){
+  var tab  = parseInt(document.getElementById('sw-group').value)||1;
+  var slot = parseInt(document.getElementById('sw-slot').value)||1;
+  btn.disabled=true;
+  fetch(HUB+'/jarvis/webhook/'+tab+'/'+slot,{method:'POST'})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      document.getElementById('sw-status').style.color='var(--green)';
+      document.getElementById('sw-status').textContent='✓ '+d.name;
+      lg('Switched → '+d.name+' ('+d.slot_id+')', 'ok');
+      btn.disabled=false;
+      refreshAll();
+    })
+    .catch(function(e){ document.getElementById('sw-status').textContent='ERR'; btn.disabled=false; lg('switch: '+e.message,'err'); });
+}
+
+function pingVoiceBox(btn){
+  btn.textContent='…'; btn.disabled=true;
+  fetch(HUB+'/api/active-room')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      return fetch('http://'+d.ip+'/simple',{mode:'no-cors',signal:AbortSignal.timeout(3000)});
+    })
+    .then(function(){ btn.textContent='OK ✓'; btn.style.borderColor='var(--green)'; lg('Voice box ping OK','ok'); setTimeout(function(){btn.textContent='PING VOICE BOX';btn.style.borderColor='';btn.disabled=false;},2000); })
+    .catch(function(e){ btn.textContent='FAIL'; btn.style.borderColor='var(--red)'; lg('Voice box ping failed: '+e.message,'err'); setTimeout(function(){btn.textContent='PING VOICE BOX';btn.style.borderColor='';btn.disabled=false;},2000); });
+}
+
+// ── Memory tab ────────────────────────────────────────────────────────────────
+function loadMemSettings(){
+  fetch(HUB+'/api/jarvis-settings')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var el = document.getElementById('mem-revert');
+      if(el) el.value = d.revert_minutes || 30;
+      buildGroupDefaultsForm(d.group_defaults || {}, d.revert_minutes || 30);
+      loadGroupMemory();
+    }).catch(function(){});
+}
+
+function buildGroupDefaultsForm(defaults, revertMin){
+  var el = document.getElementById('group-defaults-form');
+  if(!el) return;
+  var html = '<div style="color:rgba(0,212,255,.35)">GROUP</div><div style="color:rgba(0,212,255,.35)">LABEL</div><div style="color:rgba(0,212,255,.35)">DEFAULT SLOT</div>';
+  TAB_MAP.forEach(function(t){
+    var def = defaults[String(t.tab)] || 1;
+    html += '<div style="color:rgba(0,212,255,.5)">'+t.tab+'</div>'
+      +'<div style="color:'+t.color+';font-size:10px">'+t.label+'</div>'
+      +'<input class="inp" id="gd-'+t.tab+'" type="number" min="1" max="30" value="'+def+'"'
+      +' style="width:70px;padding:4px 6px;font-size:10px">';
+  });
+  el.innerHTML = html;
+}
+
+function saveMemSettings(){
+  var revert = parseInt(document.getElementById('mem-revert').value) || 30;
+  var defaults = {};
+  TAB_MAP.forEach(function(t){
+    var el = document.getElementById('gd-'+t.tab);
+    if(el) defaults[String(t.tab)] = parseInt(el.value)||1;
+  });
+  fetch(HUB+'/api/jarvis-settings',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({revert_minutes: revert, group_defaults: defaults})
+  }).then(function(r){return r.json();}).then(function(d){
+    var st = document.getElementById('mem-save-status');
+    if(st){st.textContent='SAVED ✓';setTimeout(function(){st.textContent='';},2000);}
+    lg('Memory settings saved — revert='+revert+'min','ok');
+  }).catch(function(e){ lg('Save failed: '+e.message,'err'); });
+}
+
+function clearAllMemory(){
+  if(!confirm('Clear all per-group memory? Staff will revert to defaults.')) return;
+  // Post with empty defaults to trigger a clear — server keeps defaults, wipes group_last via recall
+  fetch(HUB+'/api/jarvis-settings',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({revert_minutes: 0})  // 0 = everything expired immediately
+  }).then(function(){ lg('Memory cleared (revert=0min applied)','ok'); loadGroupMemory(); });
+}
+
+function loadGroupMemory(){
+  fetch(HUB+'/api/jarvis-group-state')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var el = document.getElementById('group-memory-list');
+      if(!el) return;
+      var html = '<div style="display:grid;grid-template-columns:30px 1fr 80px 60px 50px;gap:4px 10px;margin-bottom:6px;color:rgba(0,212,255,.3)">'
+        +'<div>TAB</div><div>LABEL</div><div>STAFF</div><div>AGE</div><div>STATUS</div></div>';
+      TAB_MAP.forEach(function(t){
+        var g = d.groups[String(t.tab)];
+        var staff = g ? (g.staff_num ? 'Slot '+g.staff_num : '—') : '—';
+        var person = g && g.person ? ' ('+g.person+')' : '';
+        var age = g && g.age_minutes !== null ? g.age_minutes+'m' : '—';
+        var status = g && !g.expired
+          ? '<span style="color:var(--green)">✓ MEM</span>'
+          : '<span style="color:rgba(0,212,255,.3)">DEFAULT</span>';
+        html += '<div style="color:rgba(0,212,255,.5)">'+t.tab+'</div>'
+          +'<div style="color:'+t.color+'">'+t.label+'</div>'
+          +'<div style="color:var(--cyan)">'+staff+person+'</div>'
+          +'<div style="color:rgba(0,212,255,.4)">'+age+'</div>'
+          +'<div>'+status+'</div>';
+      });
+      el.innerHTML = '<div style="display:grid;grid-template-columns:30px 1fr 80px 60px 50px;gap:4px 10px">'+html+'</div>';
+    }).catch(function(e){ lg('group-state failed: '+e.message,'err'); });
+}
+
+// ── Setup Guide ───────────────────────────────────────────────────────────────
+
+var _guideData = null;
+
+var STEPS = [
+  {
+    id:'groq', n:1, title:'Groq API Key', critical:true,
+    get ok(){ return _guideData && _guideData.groq && _guideData.groq.ok; },
+    get label(){ return _guideData ? (_guideData.groq.count + ' key(s) set') : '…'; },
+    fix:'1. Go to <a href="https://console.groq.com/keys" target="_blank" style="color:var(--cyan)">console.groq.com/keys</a> → sign up free → Create API Key<br>'
+       +'2. Copy the key (starts with <code>gsk_</code>)<br>'
+       +'3. Paste it below and click APPLY:<br>'
+       +'<div style="display:flex;gap:8px;margin-top:10px;align-items:center">'
+       +'<input id="gi-GROQ_API_KEY_1" type="text" placeholder="gsk_…paste your key here" style="flex:1;background:#0a0a1a;border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:9px 12px;color:#e2e8f0;font-family:var(--mono);font-size:12px;outline:none">'
+       +'<button onclick="saveOneKey(\'GROQ_API_KEY_1\',\'gi-GROQ_API_KEY_1\',\'gi-groq-st\')" style="background:#22d87a;color:#000;border:none;border-radius:6px;padding:9px 20px;font-weight:700;font-size:12px;cursor:pointer;font-family:\'Segoe UI\',system-ui,sans-serif;white-space:nowrap">APPLY</button>'
+       +'</div>'
+       +'<span id="gi-groq-st" style="font-size:11px;display:block;margin-top:6px"></span>',
+    note: function(){ return _guideData ? _guideData.groq.note : ''; },
+    impact:'Function calling at ~1s. 14,400 free req/day. Most important key.'
+  },
+  {
+    id:'gemini', n:2, title:'Gemini API Keys (5 max)', critical:false,
+    get ok(){ return _guideData && _guideData.gemini && _guideData.gemini.count > 0; },
+    get label(){ return _guideData ? (_guideData.gemini.count + '/5 keys set') : '…'; },
+    fix:'1. Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--cyan)">aistudio.google.com/app/apikey</a><br>'
+       +'2. Create up to 5 keys (5 different Google accounts = 5x free quota)<br>'
+       +'3. Paste your first key below:<br>'
+       +'<div style="display:flex;gap:8px;margin-top:10px;align-items:center">'
+       +'<input id="gi-GEMINI_API_KEY_1" type="text" placeholder="AIza…paste your key here" style="flex:1;background:#0a0a1a;border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:9px 12px;color:#e2e8f0;font-family:var(--mono);font-size:12px;outline:none">'
+       +'<button onclick="saveOneKey(\'GEMINI_API_KEY_1\',\'gi-GEMINI_API_KEY_1\',\'gi-gem-st\')" style="background:#22d87a;color:#000;border:none;border-radius:6px;padding:9px 20px;font-weight:700;font-size:12px;cursor:pointer;font-family:\'Segoe UI\',system-ui,sans-serif;white-space:nowrap">APPLY</button>'
+       +'</div>'
+       +'<span id="gi-gem-st" style="font-size:11px;display:block;margin-top:6px"></span>'
+       +'<div style="margin-top:8px;font-size:11px;color:rgba(0,212,255,.4)">For more keys go to the <b style="color:var(--cyan)">🔑 KEYS &amp; FIX</b> tab above.</div>',
+    note: function(){ return _guideData ? _guideData.gemini.note : ''; },
+    impact:'Vision, fallback LLM, camera snapshot tool. Rotates automatically on quota hit.'
+  },
+  {
+    id:'ha', n:3, title:'Home Assistant Token', critical:false,
+    get ok(){ return _guideData && _guideData.ha && _guideData.ha.ok; },
+    get label(){
+      if(!_guideData) return '…';
+      if(_guideData.ha.ok) return 'Connected to '+_guideData.ha.url;
+      return (!_guideData.ha.url_set?'HA_URL missing':!_guideData.ha.token_set?'Token missing':'Not connected');
+    },
+    fix:'1. Open <a href="http://192.168.0.3:8123" target="_blank" style="color:var(--cyan)">Home Assistant</a> → Profile → Security → Long-lived access tokens → Create token<br>'
+       +'2. Paste your HA URL and token below:<br>'
+       +'<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">'
+       +'<input id="gi-HA_URL" type="text" placeholder="http://192.168.0.3:8123" style="background:#0a0a1a;border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:9px 12px;color:#e2e8f0;font-family:var(--mono);font-size:12px;outline:none">'
+       +'<div style="display:flex;gap:8px;align-items:center">'
+       +'<input id="gi-HA_TOKEN" type="text" placeholder="eyJ…paste HA token here" style="flex:1;background:#0a0a1a;border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:9px 12px;color:#e2e8f0;font-family:var(--mono);font-size:12px;outline:none">'
+       +'<button onclick="saveHAKeys()" style="background:#22d87a;color:#000;border:none;border-radius:6px;padding:9px 20px;font-weight:700;font-size:12px;cursor:pointer;font-family:\'Segoe UI\',system-ui,sans-serif;white-space:nowrap">APPLY</button>'
+       +'</div>'
+       +'</div>'
+       +'<span id="gi-ha-st" style="font-size:11px;display:block;margin-top:6px"></span>',
+    note: function(){ return _guideData ? _guideData.ha.note : ''; },
+    impact:'Unlocks: home_control, home_query, camera_snapshot tools — lights, locks, sensors, cameras.'
+  },
+  {
+    id:'nocodb', n:4, title:'NocoDB Connection', critical:true,
+    get ok(){ return _guideData && _guideData.nocodb && _guideData.nocodb.ok; },
+    get label(){ return _guideData ? (_guideData.nocodb.ok ? 'Connected: '+_guideData.nocodb.url : 'Not configured') : '…'; },
+    fix:'1. Open <a href="http://192.168.0.107:8080" target="_blank" style="color:var(--cyan)">NocoDB</a> → Team → Tokens → Create API token<br>'
+       +'2. Paste token below:<br>'
+       +'<div style="display:flex;gap:8px;margin-top:10px;align-items:center">'
+       +'<input id="gi-NOCODB_API_TOKEN" type="text" placeholder="paste NocoDB token…" style="flex:1;background:#0a0a1a;border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:9px 12px;color:#e2e8f0;font-family:var(--mono);font-size:12px;outline:none">'
+       +'<button onclick="saveOneKey(\'NOCODB_API_TOKEN\',\'gi-NOCODB_API_TOKEN\',\'gi-noco-st\')" style="background:#22d87a;color:#000;border:none;border-radius:6px;padding:9px 20px;font-weight:700;font-size:12px;cursor:pointer;font-family:\'Segoe UI\',system-ui,sans-serif;white-space:nowrap">APPLY</button>'
+       +'</div>'
+       +'<span id="gi-noco-st" style="font-size:11px;display:block;margin-top:6px"></span>',
+    note: function(){ return ''; },
+    impact:'Job registry source. ALL_STAFF (601 records) + All-Jobs (6,751 records) live here.'
+  },
+  {
+    id:'telegram', n:5, title:'Telegram Bot', critical:false,
+    get ok(){ return _guideData && _guideData.telegram && _guideData.telegram.ok; },
+    get label(){ return _guideData ? (_guideData.telegram.ok ? 'Bot configured' : 'Not configured') : '…'; },
+    fix:'1. Message <a href="https://t.me/BotFather" target="_blank" style="color:var(--cyan)">@BotFather</a> → /newbot → copy your bot token<br>'
+       +'2. Message your bot once, get chat ID from <code>api.telegram.org/botTOKEN/getUpdates</code><br>'
+       +'3. Paste below:<br>'
+       +'<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">'
+       +'<input id="gi-TELEGRAM_BOT_TOKEN" type="text" placeholder="123456:ABC…bot token" style="background:#0a0a1a;border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:9px 12px;color:#e2e8f0;font-family:var(--mono);font-size:12px;outline:none">'
+       +'<div style="display:flex;gap:8px;align-items:center">'
+       +'<input id="gi-TELEGRAM_CHAT_ID" type="text" placeholder="-100123456789  chat ID" style="flex:1;background:#0a0a1a;border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:9px 12px;color:#e2e8f0;font-family:var(--mono);font-size:12px;outline:none">'
+       +'<button onclick="saveTGKeys()" style="background:#22d87a;color:#000;border:none;border-radius:6px;padding:9px 20px;font-weight:700;font-size:12px;cursor:pointer;font-family:\'Segoe UI\',system-ui,sans-serif;white-space:nowrap">APPLY</button>'
+       +'</div>'
+       +'</div>'
+       +'<span id="gi-tg-st" style="font-size:11px;display:block;margin-top:6px"></span>',
+    note: function(){ return _guideData ? _guideData.telegram.note : ''; },
+    impact:'send_message tool, approval requests, morning briefings, reminders delivered to your phone.'
+  },
+  {
+    id:'registry', n:6, title:'Job Registry Loaded', critical:true,
+    get ok(){ return _guideData && _guideData.registry && _guideData.registry.jobs > 0; },
+    get label(){
+      if(!_guideData) return '…';
+      var r = _guideData.registry;
+      return r.jobs+' jobs, '+r.staff+' staff, '+r.aliases+' aliases in MemPalace';
+    },
+    fix:'If 0 jobs — run a NocoDB sync to load All-Jobs into MemPalace:<br>'
+       +'<pre style="margin:4px 0">curl -X POST http://192.168.0.3:8080/api/mempalace/sync</pre>'
+       +'Or from the MemPalace page: click SYNC ALL.<br>'
+       +'After sync, jobs should appear here within ~30 seconds.',
+    note: function(){ return ''; },
+    impact:'The find_job and execute_job tools rely on this. Without it, JARVIS cannot route tasks.'
+  },
+  {
+    id:'provider', n:7, title:'AI Provider Status', critical:false,
+    get ok(){ return _guideData && (_guideData.groq.ok || _guideData.gemini.count > 0); },
+    get label(){
+      if(!_guideData) return '…';
+      var s = _guideData.scores || {};
+      var parts = [];
+      Object.keys(s).forEach(function(p){
+        var d = s[p]; parts.push(p+' '+d.avg.toFixed(1)+'★ ('+d.n+' calls)');
+      });
+      return parts.length ? parts.join(' · ') : 'No calls recorded yet';
+    },
+    fix:'Just start chatting with JARVIS — provider scores are recorded automatically.',
+    note: function(){ return 'Router picks best provider based on historical scores.'; },
+    impact:'Score feedback loop adapts routing over time. Groq + Gemini = redundant pipeline.'
+  },
+];
+
+function loadGuide(){
+  document.getElementById('guide-spin').style.display='inline-block';
+  document.getElementById('guide-overall-text').textContent = 'Checking configuration…';
+  fetch(HUB+'/api/jarvis/config-check')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      _guideData = d;
+      document.getElementById('guide-spin').style.display='none';
+      var col = d.overall==='ok' ? 'var(--green)' : d.overall==='partial' ? 'var(--amber)' : 'var(--red)';
+      var txt = d.overall==='ok' ? '✓ ALL SYSTEMS GO — JARVIS is fully configured'
+              : d.overall==='partial' ? '⚠ PARTIAL — Some features limited (see steps below)'
+              : '✗ CRITICAL CONFIG MISSING — JARVIS will use fallback mode only';
+      document.getElementById('guide-overall-text').textContent = txt;
+      document.getElementById('guide-overall-text').style.color = col;
+      renderGuideSteps();
+    })
+    .catch(function(e){
+      document.getElementById('guide-spin').style.display='none';
+      document.getElementById('guide-overall-text').textContent = 'Check failed: '+e.message;
+      document.getElementById('guide-overall-text').style.color = 'var(--red)';
+    });
+}
+
+function renderGuideSteps(){
+  var container = document.getElementById('guide-steps');
+  container.innerHTML = '';
+  STEPS.forEach(function(step){
+    var ok = step.ok;
+    var statusColor = ok ? 'var(--green)' : (step.critical ? 'var(--red)' : 'var(--amber)');
+    var icon = ok ? '✓' : (step.critical ? '✗' : '⚠');
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.style.borderColor = ok ? 'rgba(34,216,122,.25)' : (step.critical?'rgba(244,63,94,.25)':'rgba(245,158,11,.2)');
+    card.innerHTML =
+      '<div style="display:flex;align-items:center;gap:12px;cursor:pointer" onclick="toggleStep('+step.n+',this)">'
+      +'<div style="font-family:var(--mono);font-size:18px;color:'+statusColor+';width:24px;flex-shrink:0">'+icon+'</div>'
+      +'<div style="flex:1">'
+      +'  <div style="font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.4)">STEP '+step.n+(step.critical?' <span style="color:var(--red);font-size:8px">REQUIRED</span>':'')+'</div>'
+      +'  <div style="font-size:14px;color:var(--cyan);font-weight:600">'+step.title+'</div>'
+      +'  <div style="font-family:var(--mono);font-size:10px;color:'+statusColor+';margin-top:2px">'+step.label+'</div>'
+      +'</div>'
+      +'<div style="font-size:10px;font-family:var(--mono);color:rgba(0,212,255,.3)">'+( ok ? '' : '▼ HOW TO FIX' )+'</div>'
+      +'</div>'
+      +( ok ? '' :
+        '<div class="step-detail" id="step-detail-'+step.n+'" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border2)">'
+        +'<div style="font-size:12px;color:rgba(0,212,255,.5);margin-bottom:8px;line-height:1.7">'+step.fix+'</div>'
+        +'<div style="font-size:11px;color:rgba(0,212,255,.35);font-style:italic">Impact: '+step.impact+'</div>'
+        +(step.note() ? '<div style="font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.3);margin-top:4px">'+step.note()+'</div>' : '')
+        +'</div>'
+      );
+    container.appendChild(card);
+    // Auto-expand failed steps
+    if(!ok){
+      var detail = card.querySelector('.step-detail');
+      if(detail) detail.style.display='block';
+    }
+  });
+}
+
+function toggleStep(n, header){
+  var detail = document.getElementById('step-detail-'+n);
+  if(!detail) return;
+  detail.style.display = detail.style.display==='none' ? 'block' : 'none';
+}
+
+function testJarvis(btn){
+  var msg = document.getElementById('test-msg').value.trim();
+  if(!msg) return;
+  var orig = btn.textContent; btn.textContent='…'; btn.disabled=true;
+  var out = document.getElementById('test-reply');
+  out.style.display='block'; out.textContent='Waiting for JARVIS…';
+  fetch(HUB+'/api/jarvis',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({message:msg, wing:'auto', user:'sam'})
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    var reply = d.reply || d.error || JSON.stringify(d);
+    var provider = d.provider ? ' ['+d.provider+']' : '';
+    var ms = d.elapsed_ms ? ' ('+Math.round(d.elapsed_ms)+'ms)' : '';
+    out.textContent = provider+ms+'\n\n'+reply;
+    btn.textContent=orig; btn.disabled=false;
+  }).catch(function(e){
+    out.textContent='Error: '+e.message;
+    btn.textContent=orig; btn.disabled=false;
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildRoomGrid();
+buildTabMap();
+refreshAll();
+loadMemSettings();
+loadGuide();
+setInterval(refreshAll, 6000);
+setInterval(loadGroupMemory, 10000);
+
+/* ══════════════ ACCESS TAB ══════════════ */
+var _accessData = null;
+var _selectedMatrixIP = null;
+
+var GROUP_META = [
+  {id:'master',      label:'Jarvis',        color:'#00d4ff'},
+  {id:'sam-main',    label:'SAM Main',      color:'#22d87a'},
+  {id:'ptnr',        label:'Partner',       color:'#f59e0b'},
+  {id:'house',       label:'House',         color:'#a855f7'},
+  {id:'ai',          label:'Personal',      color:'#06b6d4'},
+  {id:'personal',    label:'Personal-2',    color:'#84cc16'},
+  {id:'personal2',   label:'Sole-Trader',   color:'#a3e635'},
+  {id:'soletrader',  label:'Sole-Trader-2', color:'#fb923c'},
+  {id:'soletrader2', label:'LTD',           color:'#fdba74'},
+  {id:'ltd',         label:'LTD-2',         color:'#e879f9'},
+  {id:'ltd2',        label:'PIA',           color:'#d946ef'},
+  {id:'pia',         label:'PIA-2',         color:'#f43f5e'},
+  {id:'sparea',      label:'Spare-A',       color:'#8b5cf6'},
+  {id:'spareb',      label:'Spare-B',       color:'#06b6d4'},
+  {id:'sparec',      label:'Spare-C',       color:'#10b981'},
+];
+
+var IP_LABELS = {
+  '192.168.0.3': 'SAM (0.3)',
+  '192.168.0.4': 'Partner (0.4)',
+  '192.168.0.5': 'House (0.5)',
+  '192.168.0.6': 'Work (0.6)',
+  '192.168.0.7': 'ALL (0.7)',
+};
+
+function loadAccessSettings() {
+  fetch(HUB+'/api/jarvis/access-settings').then(function(r){return r.json();}).then(function(d){
+    _accessData = d;
+    renderGlobalToggles(d);
+    renderMatrix(d);
+    renderNocoIPs(d);
+  }).catch(function(e){ lg('Access settings load error: '+e,'error'); });
+  loadPersonAccess();
+}
+
+/* ── Person Access Overview ── */
+function loadPersonAccess() {
+  fetch(HUB+'/api/person-access').then(function(r){return r.json();}).then(function(d){
+    if (!d.ok) return;
+    var grid = document.getElementById('person-access-grid');
+    var order = ['sam','gf','house','work','all'];
+    grid.innerHTML = order.map(function(key){
+      var p = d.persons[key]; if (!p) return '';
+      var wh  = p.inbound_webhook;
+      var eid = 'pa-wh-'+key;
+
+      // Jobs/staff chips
+      var jobsHtml = (p.jobs||[]).length
+        ? '<div style="margin-top:10px">'
+          + '<div style="font-size:9px;color:rgba(0,212,255,.3);letter-spacing:.05em;margin-bottom:5px;text-transform:uppercase">Jobs / Staff</div>'
+          + (p.jobs||[]).map(function(j){
+              return '<span style="font-size:9px;background:#0d1117;border:1px solid rgba(255,255,255,.07);border-radius:3px;padding:2px 7px;margin:2px 2px 2px 0;display:inline-block;color:#94a3b8">'+escHtml(j)+'</span>';
+            }).join('')
+          + '</div>'
+        : '';
+
+      // Reply webhook row
+      var rwh = p.reply_webhook || '';
+      var replyHtml = '<div style="margin-top:8px;font-size:9px">'
+        + '<span style="color:rgba(0,212,255,.3);text-transform:uppercase;letter-spacing:.04em">Reply webhook</span><br>'
+        + (rwh
+            ? '<span style="color:#a78bfa;word-break:break-all;font-family:var(--mono)">'+escHtml(rwh)+'</span>'
+              + ' <button class="copy-btn" style="margin-left:4px" onclick="cp(this,'+JSON.stringify(rwh)+')">COPY</button>'
+            : '<span style="color:#2d3748">not set — configure in pipeline page</span>')
+        + '</div>';
+
+      return '<div style="background:#0a0c14;border:1px solid '+p.color+'33;border-radius:8px;padding:14px">'
+        // Header
+        + '<div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">'
+        +   '<span style="font-size:18px;line-height:1">'+p.icon+'</span>'
+        +   '<div>'
+        +     '<div style="font-size:13px;font-weight:700;color:'+p.color+'">'+p.label+'</div>'
+        +     '<div style="font-size:9px;color:#334155">wing: '+p.memory_wing+'</div>'
+        +   '</div>'
+        + '</div>'
+        // Inbound webhook URL
+        + '<div style="font-size:9px;color:rgba(0,212,255,.4);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Inbound webhook (POST)</div>'
+        + '<div id="'+eid+'" style="font-family:var(--mono);font-size:10px;background:#020305;border:1px solid rgba(0,212,255,.12);border-radius:5px;padding:6px 9px;word-break:break-all;color:#6b8cff;margin-bottom:5px;user-select:all">'+escHtml(wh)+'</div>'
+        + '<div style="display:flex;gap:5px;flex-wrap:wrap">'
+        +   '<button class="copy-btn" onclick="cp(this,'+JSON.stringify(wh)+')">COPY URL</button>'
+        +   '<button class="copy-btn" onclick="cp(this,'+JSON.stringify('curl -s -X POST '+wh+' -H \"Content-Type: application/json\" -d \'{\"text\":\"hello\"}\'')+')" title="Copy as curl command">COPY CURL</button>'
+        +   '<a href="'+escHtml(wh)+'?text=test" target="_blank" style="display:inline-flex;align-items:center;font-family:var(--mono);font-size:8px;letter-spacing:.04em;padding:2px 8px;border:1px solid rgba(0,212,255,.2);border-radius:3px;color:#94a3b8;text-decoration:none" onmouseover="this.style.color=\'#00d4ff\'" onmouseout="this.style.color=\'#94a3b8\'">OPEN ↗</a>'
+        +   '<button class="copy-btn" onclick="paQuickTest('+JSON.stringify(key)+','+JSON.stringify(wh)+')" title="Send \'hello\' and show reply">TEST</button>'
+        + '</div>'
+        + replyHtml
+        + jobsHtml
+        + '</div>';
+    }).join('');
+  }).catch(function(e){
+    document.getElementById('person-access-grid').innerHTML = '<div style="color:#f87171;font-size:11px">Failed to load: '+e+'</div>';
+  });
+}
+
+function paQuickTest(person, url) {
+  var res = document.getElementById('pa-test-result');
+  var sel = document.getElementById('pa-person-sel');
+  if (sel) sel.value = person;
+  res.style.display='block'; res.textContent='Testing '+person+'…';
+  fetch(url, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({text:'hello'}),
+  }).then(function(r){return r.json();}).then(function(d){
+    res.textContent = (d.reply || d.error || JSON.stringify(d));
+    refreshActivityLog();
+  }).catch(function(e){ res.textContent='Error: '+e; });
+}
+
+var _paLogTimer = null;
+function refreshActivityLog() {
+  var filter = (document.getElementById('pa-log-filter')||{}).value || '';
+  var url = HUB+'/api/person-activity?limit=30'+(filter?'&person='+filter:'');
+  fetch(url).then(function(r){return r.json();}).then(function(d){
+    if (!d.ok) return;
+    var el = document.getElementById('pa-activity-log');
+    if (!el) return;
+    var COLORS = {sam:'#3b82f6',gf:'#ec4899',house:'#22c55e',work:'#f59e0b',default:'#94a3b8'};
+    var ICONS  = {sam:'👤',gf:'💕',house:'🏠',work:'💼',default:'•'};
+    if (!d.rows || !d.rows.length) { el.innerHTML='<span style="color:#334155">No activity yet.</span>'; return; }
+    el.innerHTML = d.rows.map(function(r){
+      var col  = COLORS[r.person]||COLORS.default;
+      var icon = ICONS[r.person]||ICONS.default;
+      var ts   = new Date(r.ts*1000).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      var roleCol = r.role==='assistant' ? '#a78bfa' : col;
+      return '<div style="display:flex;gap:6px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03)">'
+        +'<span style="color:#334155;flex-shrink:0">'+ts+'</span>'
+        +'<span style="color:'+col+';flex-shrink:0">'+icon+' '+r.person+'</span>'
+        +'<span style="color:'+roleCol+';flex-shrink:0">['+r.role+']</span>'
+        +'<span style="color:#64748b;word-break:break-word">'+escHtml(r.content.slice(0,120))+(r.content.length>120?'…':'')+'</span>'
+        +'</div>';
+    }).join('');
+    el.scrollTop = 0; // newest first
+  }).catch(function(){});
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function startActivityLogPoll() {
+  refreshActivityLog();
+  if (_paLogTimer) clearInterval(_paLogTimer);
+  _paLogTimer = setInterval(refreshActivityLog, 5000);
+}
+function stopActivityLogPoll() {
+  if (_paLogTimer) { clearInterval(_paLogTimer); _paLogTimer=null; }
+}
+
+function paTestSend() {
+  var person = document.getElementById('pa-person-sel').value;
+  var text   = document.getElementById('pa-test-inp').value.trim();
+  if (!text) return;
+  var res = document.getElementById('pa-test-result');
+  res.style.display='block'; res.textContent='Sending…';
+  fetch(HUB+'/pipeline/webhook/'+person, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({text: text}),
+  }).then(function(r){return r.json();}).then(function(d){
+    if (d.person === 'all') {
+      var lines = Object.entries(d.results||{}).map(function(kv){ return kv[0].toUpperCase()+': '+(kv[1].reply||kv[1].error||'?'); });
+      res.textContent = lines.join('\n');
+    } else {
+      res.textContent = (d.reply || d.error || JSON.stringify(d));
+    }
+  }).catch(function(e){ res.textContent='Error: '+e; });
+}
+
+function renderGlobalToggles(d) {
+  var disabled = d.disabled_groups || [];
+  var html = GROUP_META.map(function(g){
+    var off = disabled.indexOf(g.id) >= 0;
+    return '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;'
+      +(off?'opacity:.4':'')
+      +'" title="'+(off?'DISABLED':'ENABLED')+'">'
+      +'<input type="checkbox" data-gid="'+g.id+'" '+(off?'':'checked')
+      +' onchange="toggleGlobalGroup(this)" style="accent-color:'+g.color+';width:14px;height:14px">'
+      +'<span style="color:'+g.color+';font-weight:600">'+g.label+'</span>'
+      +'</label>';
+  }).join('');
+  document.getElementById('global-group-toggles').innerHTML = html;
+}
+
+function toggleGlobalGroup(cb) {
+  var gid = cb.dataset.gid;
+  var label = cb.closest('label');
+  label.style.opacity = cb.checked ? '' : '0.4';
+  label.title = cb.checked ? 'ENABLED' : 'DISABLED';
+  // Will be collected on save
+}
+
+function renderMatrix(d) {
+  var matrix = d.exposure_matrix || {};
+  var disabled = d.disabled_groups || [];
+  var ips = Object.keys(matrix);
+  if (!ips.length) { document.getElementById('matrix-wrap').innerHTML = '<span style="color:rgba(0,212,255,.3);font-size:11px">No IPs configured</span>'; return; }
+
+  var style = 'style="border-collapse:collapse;font-size:11px;min-width:600px"';
+  var html = '<table '+style+'><thead><tr>'
+    +'<th style="text-align:left;padding:6px 12px 6px 0;color:rgba(0,212,255,.5);font-size:10px;white-space:nowrap">GROUP</th>';
+  ips.forEach(function(ip){
+    var lbl = IP_LABELS[ip] || ip;
+    html += '<th style="padding:4px 8px;text-align:center;color:rgba(0,212,255,.5);font-size:10px;cursor:pointer;white-space:nowrap" '
+      +'onclick="selectMatrixIP(\''+ip+'\',this)">'+lbl+'</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  GROUP_META.forEach(function(g){
+    var off = disabled.indexOf(g.id) >= 0;
+    html += '<tr style="'+(off?'opacity:.35':'')+'" title="'+(off?'Globally disabled':'')+'"><td style="padding:4px 12px 4px 0;white-space:nowrap">'
+      +'<span style="color:'+g.color+';font-weight:600">'+g.label+'</span></td>';
+    ips.forEach(function(ip){
+      var allowed = matrix[ip] || [];
+      var checked = allowed.indexOf('*') >= 0 || allowed.indexOf(g.id) >= 0;
+      html += '<td style="text-align:center;padding:4px 8px">'
+        +'<input type="checkbox" data-ip="'+ip+'" data-gid="'+g.id+'" '+(checked?'checked':'')
+        +' style="accent-color:'+g.color+';width:16px;height:16px" '+(off?'disabled':'')+'>'
+        +'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('matrix-wrap').innerHTML = html;
+}
+
+function selectMatrixIP(ip, th) {
+  _selectedMatrixIP = ip;
+  document.querySelectorAll('#matrix-wrap th').forEach(function(t){ t.style.background=''; });
+  th.style.background = 'rgba(0,212,255,.1)';
+  document.getElementById('del-ip-btn').style.display = '';
+}
+
+function addMatrixIP() {
+  var ip = prompt('Enter IP address (e.g. 192.168.0.10):');
+  if (!ip) return;
+  if (!_accessData) _accessData = {exposure_matrix:{}, disabled_groups:[], noco_allowed_ips:[]};
+  if (!_accessData.exposure_matrix[ip]) _accessData.exposure_matrix[ip] = ['master'];
+  renderMatrix(_accessData);
+  lg('Added IP '+ip+' to matrix','ok');
+}
+
+function removeSelectedIP() {
+  if (!_selectedMatrixIP || !_accessData) return;
+  if (!confirm('Remove '+_selectedMatrixIP+' from matrix?')) return;
+  delete _accessData.exposure_matrix[_selectedMatrixIP];
+  _selectedMatrixIP = null;
+  document.getElementById('del-ip-btn').style.display = 'none';
+  renderMatrix(_accessData);
+}
+
+function renderNocoIPs(d) {
+  var ips = d.noco_allowed_ips || [];
+  document.getElementById('noco-ips-list').innerHTML = ips.map(function(ip){
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+      +'<span>'+ip+'</span>'
+      +'<button onclick="removeNocoIP(\''+ip+'\')" style="background:rgba(239,68,68,.15);color:#f87171;border:none;border-radius:4px;padding:1px 8px;font-size:10px;cursor:pointer">×</button>'
+      +'</div>';
+  }).join('') || '<span style="color:rgba(0,212,255,.3)">None configured</span>';
+}
+
+function addNocoIP() {
+  var ip = document.getElementById('noco-ip-input').value.trim();
+  if (!ip) return;
+  if (!_accessData) _accessData = {exposure_matrix:{}, disabled_groups:[], noco_allowed_ips:[]};
+  if (_accessData.noco_allowed_ips.indexOf(ip) < 0) _accessData.noco_allowed_ips.push(ip);
+  document.getElementById('noco-ip-input').value = '';
+  renderNocoIPs(_accessData);
+}
+
+function removeNocoIP(ip) {
+  if (!_accessData) return;
+  _accessData.noco_allowed_ips = _accessData.noco_allowed_ips.filter(function(x){ return x !== ip; });
+  renderNocoIPs(_accessData);
+}
+
+function collectMatrixFromDOM() {
+  var matrix = {};
+  document.querySelectorAll('#matrix-wrap input[data-ip]').forEach(function(cb){
+    var ip = cb.dataset.ip;
+    var gid = cb.dataset.gid;
+    if (!matrix[ip]) matrix[ip] = [];
+    if (cb.checked) matrix[ip].push(gid);
+  });
+  return matrix;
+}
+
+function collectDisabledFromDOM() {
+  var disabled = [];
+  document.querySelectorAll('#global-group-toggles input[data-gid]').forEach(function(cb){
+    if (!cb.checked) disabled.push(cb.dataset.gid);
+  });
+  return disabled;
+}
+
+function saveAccessSettings() {
+  var matrix = collectMatrixFromDOM();
+  var disabled = collectDisabledFromDOM();
+  var nocoIps = (_accessData && _accessData.noco_allowed_ips) || [];
+
+  fetch(HUB+'/api/jarvis/access-settings', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({exposure_matrix: matrix, disabled_groups: disabled, noco_allowed_ips: nocoIps})
+  }).then(function(r){return r.json();}).then(function(d){
+    if (d.ok) {
+      var s = document.getElementById('access-save-status');
+      s.textContent = 'Saved!';
+      setTimeout(function(){ s.textContent=''; }, 2000);
+      lg('Access settings saved','ok');
+      _accessData = {exposure_matrix: matrix, disabled_groups: disabled, noco_allowed_ips: nocoIps};
+    }
+  }).catch(function(e){ lg('Save error: '+e,'error'); });
+}
+
+function exportCloneProfile() {
+  window.open(HUB+'/api/jarvis/clone-profile', '_blank');
+}
+
+function importCloneProfile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      fetch(HUB+'/api/jarvis/import-profile', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      }).then(function(r){return r.json();}).then(function(d){
+        var s = document.getElementById('clone-status');
+        if (d.ok) {
+          s.textContent = 'Profile imported successfully!';
+          s.style.color = 'var(--green)';
+          lg('Clone profile imported','ok');
+          loadAccessSettings();
+        } else {
+          s.textContent = 'Error: '+(d.error||'Unknown');
+          s.style.color = '#f87171';
+        }
+      });
+    } catch(err) {
+      lg('Invalid JSON file: '+err,'error');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS — Tools</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'JetBrains Mono',monospace,system-ui;font-size:13px;min-height:100vh}
+a{color:#6b8cff;text-decoration:none}
+.top{background:#0d0f17;border-bottom:1px solid #1e2030;padding:11px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo{font-size:14px;font-weight:700;color:#fff}.logo span{color:#6b8cff}
+.nav{margin-left:auto;display:flex;gap:14px;font-size:11px}
+.nav a{color:#4a5568}.nav a:hover{color:#dde1f5}
+.wrap{max-width:1100px;margin:0 auto;padding:22px 18px}
+h1{font-size:16px;font-weight:700;color:#fff;margin-bottom:3px}
+.sub{color:#4a5568;font-size:11px;margin-bottom:22px}
+
+/* two-col layout */
+.cols{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:start}
+@media(max-width:700px){.cols{grid-template-columns:1fr}}
+
+/* add panel */
+.panel{background:#0d0f17;border:1px solid #1e2030;border-radius:10px;padding:16px}
+.panel-title{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+label{font-size:10px;color:#7880a0;display:block;margin-bottom:3px}
+.inp{width:100%;background:#13151f;border:1px solid #2a2d42;border-radius:6px;padding:8px 10px;color:#dde1f5;font-family:inherit;font-size:12px;margin-bottom:10px;outline:none;transition:border-color .15s}
+.inp:focus{border-color:#6b8cff}
+select.inp{cursor:pointer}
+.btn{padding:8px 16px;border-radius:6px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-primary{background:#6b8cff;color:#fff;width:100%;margin-top:2px}
+.btn-sm{padding:5px 10px;font-size:10px}
+.btn-ghost{background:#1e2030;color:#7880a0;border:1px solid #2a2d42}
+.btn-ghost:hover{color:#dde1f5}
+.btn-danger{background:rgba(255,95,109,.12);color:#ff5f6d;border:1px solid rgba(255,95,109,.2)}
+
+/* section headers */
+.sec-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sec-title{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em}
+.sec-badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600}
+.ok{background:rgba(63,220,138,.12);color:#3fdc8a;border:1px solid rgba(63,220,138,.25)}
+.warn{background:rgba(255,154,74,.12);color:#ff9a4a;border:1px solid rgba(255,154,74,.25)}
+
+/* tools grid */
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.tool-card{background:#0d0f17;border:1px solid #1e2030;border-radius:9px;padding:12px 14px;transition:border-color .15s}
+.tool-card.enabled{border-color:rgba(107,140,255,.3)}
+.tool-card-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tool-icon{font-size:18px;flex-shrink:0}
+.tool-name{font-weight:700;font-size:12px;color:#dde1f5;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tool-desc{font-size:10px;color:#4a5568;margin-bottom:10px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tool-foot{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.badge{font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;letter-spacing:.03em}
+.badge-cli{background:rgba(63,220,138,.1);color:#3fdc8a;border:1px solid rgba(63,220,138,.2)}
+.badge-composio{background:rgba(107,140,255,.1);color:#6b8cff;border:1px solid rgba(107,140,255,.2)}
+.badge-custom{background:rgba(255,154,74,.1);color:#ff9a4a;border:1px solid rgba(255,154,74,.2)}
+.badge-auto{background:rgba(255,154,74,.12);color:#ff9a4a}
+.badge-ask{background:rgba(91,156,246,.1);color:#5b9cf6}
+.toggle{position:relative;width:32px;height:18px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:#2a2d42;border-radius:99px;cursor:pointer;transition:background .2s}
+.toggle input:checked~.toggle-track{background:#6b8cff}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:12px;height:12px;background:#fff;border-radius:50%;transition:left .2s;pointer-events:none}
+.toggle input:checked~.toggle-track .toggle-thumb{left:17px}
+
+/* composio catalogue */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;margin-top:8px}
+.cat-item{background:#13151f;border:1px solid #1e2030;border-radius:7px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:border-color .15s}
+.cat-item:hover{border-color:#6b8cff}
+.cat-item.added{border-color:rgba(63,220,138,.4);background:rgba(63,220,138,.04)}
+.cat-item-icon{font-size:16px;flex-shrink:0}
+.cat-item-name{font-size:11px;font-weight:600;color:#dde1f5}
+.cat-item-type{font-size:9px;color:#4a5568}
+
+/* filter bar */
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.filter-inp{background:#0d0f17;border:1px solid #1e2030;border-radius:6px;padding:6px 10px;font-size:11px;color:#dde1f5;font-family:inherit;outline:none;width:160px}
+.filter-inp:focus{border-color:#6b8cff}
+.filter-tab{font-size:10px;padding:4px 10px;border-radius:5px;background:#13151f;border:1px solid #1e2030;color:#7880a0;cursor:pointer;font-family:inherit}
+.filter-tab.on{background:#6b8cff22;border-color:#6b8cff;color:#6b8cff}
+
+/* test area */
+.test-area{background:#13151f;border:1px solid #1e2030;border-radius:6px;padding:8px 10px;font-size:11px;color:#7880a0;margin-top:8px;min-height:40px;white-space:pre-wrap;display:none;max-height:200px;overflow-y:auto}
+.test-area.show{display:block}
+
+.status{font-size:11px;padding:7px 10px;border-radius:6px;margin-top:8px;display:none}
+.status.show{display:block}
+.ok-st{background:rgba(63,220,138,.1);color:#3fdc8a;border:1px solid rgba(63,220,138,.2)}
+.err-st{background:rgba(255,95,109,.08);color:#ff5f6d;border:1px solid rgba(255,95,109,.15)}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">JARVIS <span>TOOLS</span></div>
+  <div class="nav">
+    <a href="/">Agent</a>
+    <a href="/setup">Setup</a>
+    <a href="/status">Status</a>
+    <a href="/links">Links</a>
+    <a href="/webhooks">Webhooks</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Tools & Integrations</h1>
+  <p class="sub">Add CLI tools or Composio apps. Set "Ask" (confirm before use) or "Full Power" (auto-execute). The agent knows what's enabled and uses them automatically.</p>
+
+  <div class="cols">
+    <!-- LEFT: Add tool panel -->
+    <div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-title">➕ Add tool</div>
+        <label>Type</label>
+        <select class="inp" id="add-type" onchange="onTypeChange()">
+          <option value="composio">Composio app (4000+ integrations)</option>
+          <option value="cli">CLI tool</option>
+          <option value="custom">Custom / script</option>
+        </select>
+        <label>Name</label>
+        <input class="inp" id="add-name" placeholder="e.g. Google Calendar"/>
+        <div id="add-app-row">
+          <label>Composio app ID</label>
+          <input class="inp" id="add-app" placeholder="e.g. google_calendar"/>
+        </div>
+        <div id="add-cmd-row" style="display:none">
+          <label>Command / path</label>
+          <input class="inp" id="add-cmd" placeholder="e.g. /bin/ffmpeg"/>
+        </div>
+        <label>Description</label>
+        <input class="inp" id="add-desc" placeholder="What this tool does…"/>
+        <label>Permission</label>
+        <select class="inp" id="add-perm">
+          <option value="ask">Ask — confirm before each use</option>
+          <option value="auto">Full Power — auto-execute, no confirmation</option>
+        </select>
+        <button class="btn btn-primary" onclick="addTool()">Add Tool</button>
+        <div class="status" id="add-status"></div>
+      </div>
+
+      <!-- Import from CLI list -->
+      <div class="panel">
+        <div class="panel-title">📋 Import from CLI list</div>
+        <p style="font-size:10px;color:#4a5568;margin-bottom:10px">Click any installed CLI tool to add it instantly.</p>
+        <input class="filter-inp" id="cli-search" placeholder="filter tools…" oninput="filterCliImport()" style="width:100%;margin-bottom:8px"/>
+        <div id="cli-import-list" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:5px">
+          <div style="color:#4a5568;font-size:11px">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Active tools + Composio catalogue -->
+    <div>
+      <!-- Active tools -->
+      <div class="sec-hd">
+        <div class="sec-title">Active Tools</div>
+        <div class="sec-badge ok" id="tools-badge">0 tools</div>
+        <div style="flex:1"></div>
+        <div class="filter-bar" style="margin:0">
+          <input class="filter-inp" id="tools-search" placeholder="search…" oninput="renderTools()"/>
+          <button class="filter-tab on" id="ft-all" onclick="setFilter('all')">All</button>
+          <button class="filter-tab" id="ft-composio" onclick="setFilter('composio')">Composio</button>
+          <button class="filter-tab" id="ft-cli" onclick="setFilter('cli')">CLI</button>
+          <button class="filter-tab" id="ft-genspark" onclick="setFilter('genspark')">✨ Genspark</button>
+          <button class="filter-tab" id="ft-jarvis" onclick="setFilter('jarvis')">🧠 JARVIS</button>
+        </div>
+      </div>
+      <div class="tools-grid" id="tools-grid">
+        <div style="color:#4a5568;font-size:11px;grid-column:1/-1">No tools added yet — add one from the left panel.</div>
+      </div>
+
+      <!-- Composio catalogue -->
+      <div style="margin-top:24px">
+        <div class="sec-hd">
+          <div class="sec-title">⚡ Composio Quick-Add</div>
+          <div class="sec-badge warn">click to add</div>
+        </div>
+        <input class="filter-inp" id="cat-search" placeholder="search apps…" oninput="filterCatalogue()" style="margin-bottom:8px"/>
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let _tools = [];
+let _filter = 'all';
+
+const COMPOSIO_APPS = [
+  {id:'google_calendar',name:'Google Calendar',icon:'📅',desc:'Events, scheduling, reminders'},
+  {id:'gmail',name:'Gmail',icon:'📧',desc:'Send, read, label emails'},
+  {id:'google_drive',name:'Google Drive',icon:'📁',desc:'Files, folders, sharing'},
+  {id:'google_sheets',name:'Google Sheets',icon:'📊',desc:'Spreadsheets & data'},
+  {id:'google_docs',name:'Google Docs',icon:'📄',desc:'Documents & writing'},
+  {id:'github',name:'GitHub',icon:'🐙',desc:'Repos, issues, PRs, actions'},
+  {id:'gitlab',name:'GitLab',icon:'🦊',desc:'Repos, CI/CD, merge requests'},
+  {id:'slack',name:'Slack',icon:'💬',desc:'Messages, channels, notifications'},
+  {id:'discord',name:'Discord',icon:'🎮',desc:'Messages, channels, roles'},
+  {id:'telegram',name:'Telegram',icon:'✈️',desc:'Messages, bots, channels'},
+  {id:'notion',name:'Notion',icon:'📝',desc:'Pages, databases, blocks'},
+  {id:'trello',name:'Trello',icon:'🗂️',desc:'Boards, cards, lists'},
+  {id:'linear',name:'Linear',icon:'⚡',desc:'Issues, cycles, projects'},
+  {id:'jira',name:'Jira',icon:'🔵',desc:'Issues, sprints, boards'},
+  {id:'airtable',name:'Airtable',icon:'🗃️',desc:'Bases, tables, records'},
+  {id:'stripe',name:'Stripe',icon:'💳',desc:'Payments, customers, invoices'},
+  {id:'shopify',name:'Shopify',icon:'🛍️',desc:'Products, orders, customers'},
+  {id:'hubspot',name:'HubSpot',icon:'🟠',desc:'CRM, contacts, deals'},
+  {id:'salesforce',name:'Salesforce',icon:'☁️',desc:'CRM, leads, opportunities'},
+  {id:'twilio',name:'Twilio',icon:'📱',desc:'SMS, calls, WhatsApp'},
+  {id:'sendgrid',name:'SendGrid',icon:'📨',desc:'Transactional email'},
+  {id:'whatsapp',name:'WhatsApp',icon:'💚',desc:'Messages, media'},
+  {id:'twitter',name:'Twitter/X',icon:'🐦',desc:'Tweets, DMs, timeline'},
+  {id:'linkedin',name:'LinkedIn',icon:'💼',desc:'Posts, connections, messages'},
+  {id:'instagram',name:'Instagram',icon:'📸',desc:'Posts, stories, DMs'},
+  {id:'youtube',name:'YouTube',icon:'▶️',desc:'Videos, channels, playlists'},
+  {id:'wordpress',name:'WordPress',icon:'📰',desc:'Posts, pages, media'},
+  {id:'dropbox',name:'Dropbox',icon:'📦',desc:'Files, folders, sharing'},
+  {id:'onedrive',name:'OneDrive',icon:'🔷',desc:'Microsoft cloud files'},
+  {id:'outlook',name:'Outlook',icon:'📬',desc:'Email, calendar, contacts'},
+  {id:'teams',name:'Microsoft Teams',icon:'🔵',desc:'Chat, meetings, channels'},
+  {id:'zoom',name:'Zoom',icon:'🎥',desc:'Meetings, webinars, recordings'},
+  {id:'calendly',name:'Calendly',icon:'📆',desc:'Scheduling, bookings'},
+  {id:'typeform',name:'Typeform',icon:'📋',desc:'Forms, surveys, responses'},
+  {id:'mailchimp',name:'Mailchimp',icon:'🐒',desc:'Email campaigns, audiences'},
+  {id:'asana',name:'Asana',icon:'🎯',desc:'Tasks, projects, teams'},
+  {id:'monday',name:'Monday.com',icon:'🗓️',desc:'Work OS, boards, automations'},
+  {id:'clickup',name:'ClickUp',icon:'✅',desc:'Tasks, docs, goals'},
+  {id:'figma',name:'Figma',icon:'🎨',desc:'Designs, prototypes, comments'},
+  {id:'zendesk',name:'Zendesk',icon:'🎫',desc:'Tickets, agents, customers'},
+  {id:'intercom',name:'Intercom',icon:'💬',desc:'Customer messaging, support'},
+  {id:'freshdesk',name:'Freshdesk',icon:'🌿',desc:'Support tickets, agents'},
+  {id:'pipedrive',name:'Pipedrive',icon:'🔄',desc:'Sales pipeline, deals'},
+  {id:'n8n',name:'n8n',icon:'⚙️',desc:'Workflow automation'},
+  {id:'make',name:'Make (Integromat)',icon:'🔮',desc:'Visual automation'},
+  {id:'zapier',name:'Zapier',icon:'⚡',desc:'App automation'},
+  {id:'supabase',name:'Supabase',icon:'🟢',desc:'Database, auth, storage'},
+  {id:'firebase',name:'Firebase',icon:'🔥',desc:'DB, auth, hosting'},
+  {id:'aws',name:'AWS',icon:'☁️',desc:'S3, Lambda, EC2 and more'},
+  {id:'openai',name:'OpenAI',icon:'🤖',desc:'ChatGPT, DALL·E, Whisper'},
+];
+
+// ── JARVIS built-in tools (always available, no Composio needed) ───────────
+const JARVIS_TOOLS = [
+  // Genspark agents
+  {id:'gs_claw',      name:'Genspark Claw',      icon:'✨', cat:'genspark', desc:'Super web search agent', webhook:'/webhook/Genspark/claw'},
+  {id:'gs_research',  name:'Genspark Research',   icon:'📖', cat:'genspark', desc:'Deep multi-source research', webhook:'/webhook/Genspark/research'},
+  {id:'gs_factcheck', name:'Genspark Fact Check', icon:'✅', cat:'genspark', desc:'Fact-check any claim', webhook:'/webhook/Genspark/fact-check'},
+  {id:'gs_call',      name:'Genspark Call For Me',icon:'📞', cat:'genspark', desc:'AI makes phone calls', webhook:'/webhook/Genspark/call'},
+  {id:'gs_download',  name:'Genspark Download',   icon:'⬇️', cat:'genspark', desc:'Download For Me agent', webhook:'/webhook/Genspark/download'},
+  {id:'gs_slides',    name:'Genspark Slides',     icon:'📊', cat:'genspark', desc:'AI presentation maker', webhook:'/webhook/Genspark/slides'},
+  {id:'gs_sheets',    name:'Genspark Sheets',     icon:'📋', cat:'genspark', desc:'AI spreadsheet agent', webhook:'/webhook/Genspark/sheets'},
+  {id:'gs_docs',      name:'Genspark Docs',       icon:'📄', cat:'genspark', desc:'AI document generator', webhook:'/webhook/Genspark/docs'},
+  {id:'gs_developer', name:'Genspark Developer',  icon:'💻', cat:'genspark', desc:'AI coding agent', webhook:'/webhook/Genspark/developer'},
+  {id:'gs_designer',  name:'Genspark Designer',   icon:'🎨', cat:'genspark', desc:'AI design agent', webhook:'/webhook/Genspark/designer'},
+  {id:'gs_image',     name:'Genspark Image',      icon:'🖼', cat:'genspark', desc:'AI image generator', webhook:'/webhook/Genspark/image'},
+  {id:'gs_video',     name:'Genspark Video',      icon:'🎬', cat:'genspark', desc:'AI video generation', webhook:'/webhook/Genspark/video'},
+  {id:'gs_audio',     name:'Genspark Audio',      icon:'🔊', cat:'genspark', desc:'AI audio generation', webhook:'/webhook/Genspark/audio'},
+  {id:'gs_music',     name:'Genspark Music',      icon:'🎵', cat:'genspark', desc:'AI music generator', webhook:'/webhook/Genspark/music'},
+  {id:'gs_meeting',   name:'Genspark Meeting',    icon:'📝', cat:'genspark', desc:'AI meeting notes', webhook:'/webhook/Genspark/meeting'},
+  {id:'gs_translate', name:'Genspark Translate',  icon:'🌐', cat:'genspark', desc:'AI translation agent', webhook:'/webhook/Genspark/translation'},
+  {id:'gs_workflows', name:'Genspark Workflows',  icon:'⚙️', cat:'genspark', desc:'Workflow automation', webhook:'/webhook/Genspark/workflows'},
+  {id:'gs_inbox',     name:'Genspark Inbox',      icon:'📬', cat:'genspark', desc:'Email management agent', webhook:'/webhook/Genspark/inbox'},
+  {id:'gs_photo',     name:'Genspark Photo',      icon:'📷', cat:'genspark', desc:'Photo Genius editor', webhook:'/webhook/Genspark/photo'},
+  {id:'gs_clip',      name:'Genspark Clip',       icon:'✂️', cat:'genspark', desc:'Clip Genius video tool', webhook:'/webhook/Genspark/clip'},
+  {id:'gs_pods',      name:'Genspark Pods',       icon:'🎙', cat:'genspark', desc:'AI Pods creator', webhook:'/webhook/Genspark/pods'},
+  {id:'gs_search',    name:'Genspark Search',     icon:'🔍', cat:'genspark', desc:'Genspark web search', webhook:'/webhook/Genspark/search'},
+  // JARVIS local tools
+  {id:'jv_research',  name:'Deep Research',    icon:'🔬', cat:'jarvis', desc:'Multi-source research + Gemini synthesis', webhook:'/api/deep_research'},
+  {id:'jv_transcribe',name:'Whisper Transcribe',icon:'🎤', cat:'jarvis', desc:'Local speech-to-text (offline)', webhook:'/api/transcribe'},
+  {id:'jv_ocr',       name:'OCR Extract',     icon:'👁', cat:'jarvis', desc:'Extract text from image with Tesseract', webhook:'/api/ocr'},
+  {id:'jv_pdf',       name:'PDF Summarise',   icon:'📑', cat:'jarvis', desc:'Summarise any PDF file', webhook:'/api/pdf'},
+  {id:'jv_summarise', name:'Page Summarise',  icon:'📝', cat:'jarvis', desc:'Summarise any URL or text', webhook:'/api/summarise'},
+  {id:'jv_vision',    name:'Screen Vision',   icon:'📸', cat:'jarvis', desc:'Gemini Vision analysis of VNC screen', webhook:'/api/vision/screen'},
+  {id:'jv_record',    name:'Session Record',  icon:'⏺', cat:'jarvis', desc:'Record VNC display :1 to MP4', webhook:'/api/record/start'},
+  {id:'jv_briefing',  name:'Daily Briefing',  icon:'☀️', cat:'jarvis', desc:'News + weather briefing for today', webhook:'/api/briefing'},
+  {id:'jv_email',     name:'Email Fetch',     icon:'📧', cat:'jarvis', desc:'Fetch unread emails via IMAP', webhook:'/api/email/fetch'},
+];
+
+const TYPE_ICONS = {composio:'🔗',cli:'⚙️',custom:'📝'};
+const PERM_LABELS = {auto:'⚡ Full Power',ask:'🔒 Ask'};
+
+async function loadTools(){
+  try{
+    const d = await fetch(API+'/tools').then(r=>r.json());
+    _tools = d.tools || [];
+    renderTools();
+    renderCatalogue();
+  }catch(e){}
+}
+
+function setFilter(f){
+  _filter = f;
+  ['all','composio','cli','genspark','jarvis'].forEach(x=>{
+    document.getElementById('ft-'+x)?.classList.toggle('on', x===f);
+  });
+  renderTools();
+}
+
+function renderTools(){
+  const q = (document.getElementById('tools-search').value||'').toLowerCase();
+  let tools = _tools;
+  // Include JARVIS_TOOLS in genspark/jarvis filter views and 'all'
+  if(_filter === 'genspark' || _filter === 'jarvis') {
+    tools = JARVIS_TOOLS.filter(t=>t.cat===_filter);
+    if(q) tools = tools.filter(t=>t.name.toLowerCase().includes(q)||t.desc.toLowerCase().includes(q));
+    document.getElementById('tools-badge').textContent = `${tools.length} ${_filter} tools`;
+    const grid = document.getElementById('tools-grid');
+    if(!tools.length){grid.innerHTML='<div style="color:#4a5568;font-size:11px;grid-column:1/-1">No tools found.</div>';return;}
+    grid.innerHTML = tools.map(t=>`
+      <div class="tool-card enabled">
+        <div class="tool-card-hd">
+          <span class="tool-icon">${t.icon}</span>
+          <div style="flex:1;min-width:0">
+            <div class="tool-name">${t.name}</div>
+            <div style="display:flex;gap:4px;margin-top:2px">
+              <span class="badge badge-composio">${t.cat}</span>
+              <span style="font-size:9px;color:#3a3e55;font-family:monospace">${t.webhook}</span>
+            </div>
+          </div>
+        </div>
+        <div class="tool-desc">${t.desc}</div>
+        <div class="tool-foot">
+          <button class="btn btn-sm btn-ghost" onclick="runJarvisTool('${t.id}','${t.webhook}','${t.cat}')">▶ Run</button>
+          <button class="btn btn-sm btn-ghost" onclick="addToolToChat('${t.name}','${t.webhook}','${t.desc}')">+ Add to Chat</button>
+        </div>
+      </div>`).join('');
+    return;
+  }
+  if(_filter !== 'all') tools = tools.filter(t=>t.type===_filter);
+  if(q) tools = tools.filter(t=>t.name.toLowerCase().includes(q) || (t.description||'').toLowerCase().includes(q));
+  document.getElementById('tools-badge').textContent = `${_tools.filter(t=>t.enabled).length} enabled / ${_tools.length} total`;
+  const grid = document.getElementById('tools-grid');
+  if(!tools.length){
+    grid.innerHTML='<div style="color:#4a5568;font-size:11px;grid-column:1/-1">No tools match. Add some from the left panel or Composio Quick-Add below.</div>';
+    return;
+  }
+  grid.innerHTML = tools.map(t=>{
+    const icon = t.icon || TYPE_ICONS[t.type] || '🔧';
+    const typeBadge = t.type==='composio'?'badge-composio':t.type==='cli'?'badge-cli':'badge-custom';
+    const permBadge = t.permission==='auto'?'badge-auto':'badge-ask';
+    const cmd = t.command&&t.command!=='N/A'?`<div style="font-size:9px;color:#3a3e55;font-family:monospace;margin-top:2px">${t.command||t.app||''}</div>`:'';
+    return `<div class="tool-card ${t.enabled?'enabled':''}" id="tc-${t.id}">
+      <div class="tool-card-hd">
+        <span class="tool-icon">${icon}</span>
+        <div style="flex:1;min-width:0">
+          <div class="tool-name">${t.name}</div>
+          <div style="display:flex;gap:4px;margin-top:2px">
+            <span class="badge ${typeBadge}">${t.type}</span>
+            <span class="badge ${permBadge}">${PERM_LABELS[t.permission]||t.permission}</span>
+          </div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" ${t.enabled?'checked':''} onchange="toggleTool('${t.id}',this.checked)"/>
+          <div class="toggle-track"><div class="toggle-thumb"></div></div>
+        </label>
+      </div>
+      <div class="tool-desc">${t.description||'No description'}</div>
+      ${cmd}
+      <div class="tool-foot">
+        <button class="btn btn-sm btn-ghost" onclick="testTool('${t.id}')">▶ Test</button>
+        <select class="btn btn-sm btn-ghost" style="font-size:10px" onchange="setPermission('${t.id}',this.value)">
+          <option value="ask" ${t.permission==='ask'?'selected':''}>Ask</option>
+          <option value="auto" ${t.permission==='auto'?'selected':''}>Full Power</option>
+        </select>
+        <button class="btn btn-sm btn-danger" onclick="deleteTool('${t.id}')">✕</button>
+      </div>
+      <div class="test-area" id="test-${t.id}"></div>
+    </div>`;
+  }).join('');
+  // update catalogue "added" state
+  renderCatalogue();
+}
+
+function renderCatalogue(){
+  const q = (document.getElementById('cat-search')?.value||'').toLowerCase();
+  const addedApps = new Set(_tools.filter(t=>t.type==='composio').map(t=>t.app));
+  const apps = q ? COMPOSIO_APPS.filter(a=>a.name.toLowerCase().includes(q)||a.desc.toLowerCase().includes(q)||a.id.includes(q)) : COMPOSIO_APPS;
+  document.getElementById('cat-grid').innerHTML = apps.map(a=>{
+    const isAdded = addedApps.has(a.id);
+    return `<div class="cat-item ${isAdded?'added':''}" onclick="${isAdded?'':`quickAdd('${a.id}','${a.name}','${a.icon}','${a.desc}')`}" title="${a.desc}">
+      <span class="cat-item-icon">${a.icon}</span>
+      <div>
+        <div class="cat-item-name">${a.name}</div>
+        <div class="cat-item-type">${isAdded?'✓ added':'composio'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterCatalogue(){ renderCatalogue(); }
+
+async function quickAdd(appId, name, icon, desc){
+  const r = await fetch(API+'/tools', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({type:'composio',app:appId,name,icon,description:desc,permission:'ask',enabled:true})
+  });
+  const d = await r.json();
+  if(d.ok){ await loadTools(); showStatus('add-status','✓ '+name+' added','ok'); }
+}
+
+async function addTool(){
+  const type = document.getElementById('add-type').value;
+  const name = document.getElementById('add-name').value.trim();
+  const desc = document.getElementById('add-desc').value.trim();
+  const perm = document.getElementById('add-perm').value;
+  if(!name){ showStatus('add-status','Enter a name','err'); return; }
+  const payload = {type, name, description:desc, permission:perm, enabled:true};
+  if(type==='composio') payload.app = document.getElementById('add-app').value.trim();
+  if(type==='cli'||type==='custom') payload.command = document.getElementById('add-cmd').value.trim();
+  const r = await fetch(API+'/tools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const d = await r.json();
+  if(d.ok){
+    showStatus('add-status','✓ '+name+' added','ok');
+    document.getElementById('add-name').value='';
+    document.getElementById('add-desc').value='';
+    document.getElementById('add-app').value='';
+    document.getElementById('add-cmd').value='';
+    await loadTools();
+  }
+}
+
+function onTypeChange(){
+  const t = document.getElementById('add-type').value;
+  document.getElementById('add-app-row').style.display = t==='composio'?'':'none';
+  document.getElementById('add-cmd-row').style.display = (t==='cli'||t==='custom')?'':'none';
+}
+
+async function toggleTool(id, enabled){
+  await fetch(API+'/tools/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
+  const t = _tools.find(x=>x.id===id);
+  if(t){ t.enabled = enabled; renderTools(); }
+}
+
+async function setPermission(id, permission){
+  await fetch(API+'/tools/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({permission})});
+  const t = _tools.find(x=>x.id===id);
+  if(t){ t.permission = permission; }
+}
+
+async function deleteTool(id){
+  if(!confirm('Remove this tool?')) return;
+  await fetch(API+'/tools/'+id,{method:'DELETE'});
+  _tools = _tools.filter(t=>t.id!==id);
+  renderTools();
+}
+
+async function testTool(id){
+  const tool = _tools.find(t=>t.id===id);
+  if(!tool) return;
+  const args = prompt(`Test "${tool.name}"\nEnter any args/parameters (or leave blank):`, '');
+  if(args===null) return;
+  const area = document.getElementById('test-'+id);
+  area.className='test-area show';
+  area.textContent='Running…';
+  const r = await fetch(API+'/tools/'+id+'/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({args})});
+  const d = await r.json();
+  area.textContent = d.output || d.error || '(no output)';
+}
+
+// CLI import list
+let _cliTools = [];
+async function loadCliImport(){
+  try{
+    const d = await fetch(API+'/cli-tools').then(r=>r.json());
+    _cliTools = d.tools||[];
+    filterCliImport();
+  }catch(e){}
+}
+
+function filterCliImport(){
+  const q = (document.getElementById('cli-search').value||'').toLowerCase();
+  const addedCmds = new Set(_tools.filter(t=>t.type==='cli').map(t=>t.command));
+  const tools = q ? _cliTools.filter(t=>t.name.toLowerCase().includes(q)||t.category.toLowerCase().includes(q)) : _cliTools;
+  const el = document.getElementById('cli-import-list');
+  el.innerHTML = tools.map(t=>{
+    const isAdded = addedCmds.has(t.command);
+    const hasCmd = t.command && t.command!=='N/A';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:#13151f;border:1px solid ${isAdded?'rgba(63,220,138,.3)':'#1e2030'};border-radius:6px;cursor:${hasCmd&&!isAdded?'pointer':'default'}"
+      onclick="${hasCmd&&!isAdded?`importCli('${t.name.replace(/'/g,"\\'")}','${t.command}','${t.category}')`:''}">
+      <span style="font-size:13px">${isAdded?'✓':'⚙️'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:600;color:${isAdded?'#3fdc8a':'#dde1f5'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</div>
+        <div style="font-size:9px;color:#3a3e55;font-family:monospace">${t.command!=='N/A'?t.command:t.category}</div>
+      </div>
+      ${!isAdded&&hasCmd?`<span style="font-size:9px;color:#6b8cff">+ add</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function importCli(name, command, category){
+  const r = await fetch(API+'/tools',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({type:'cli',name,command,description:category+' CLI tool',permission:'ask',enabled:true})
+  });
+  const d = await r.json();
+  if(d.ok){ await loadTools(); filterCliImport(); }
+}
+
+function showStatus(id, msg, type){
+  const el = document.getElementById(id);
+  el.textContent=msg;
+  el.className='status show '+(type==='ok'?'ok-st':'err-st');
+  setTimeout(()=>el.classList.remove('show'),4000);
+}
+
+loadTools();
+loadCliImport();
+
+// ── Genspark / JARVIS tool runner ──────────────────────────────────────────
+async function runJarvisTool(id, webhook, cat){
+  const query = prompt(`Query for ${id.replace('gs_','').replace('jv_','')}:`);
+  if(query === null) return;
+  const SERVER = window.location.origin;
+  if(cat === 'genspark'){
+    // enable first
+    await fetch(`${SERVER}/api/genspark/enable`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{"enabled":true}'});
+    const r = await fetch(`${SERVER}${webhook}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query})
+    });
+    const d = await r.json();
+    alert((d.result||d.error||JSON.stringify(d)).substring(0,800));
+  } else {
+    // JARVIS local tool
+    if(webhook === '/api/deep_research'){
+      const r = await fetch(`${SERVER}${webhook}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
+      const d = await r.json();
+      alert((d.answer||d.error||'').substring(0,800));
+    } else if(webhook === '/api/summarise'){
+      const r = await fetch(`${SERVER}${webhook}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:query})});
+      const d = await r.json();
+      alert((d.summary||d.error||'').substring(0,800));
+    } else if(webhook === '/api/briefing'){
+      const r = await fetch(`${SERVER}${webhook}`);
+      const d = await r.json();
+      alert((d.briefing||d.error||'').substring(0,800));
+    } else if(webhook === '/api/vision/screen'){
+      const r = await fetch(`${SERVER}${webhook}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:query})});
+      const d = await r.json();
+      alert((d.text||d.error||'').substring(0,800));
+    } else {
+      alert(`Webhook: ${SERVER}${webhook}\nQuery: ${query}\n\n(File upload tools need the overlay or dedicated page)`);
+    }
+  }
+}
+
+// ── Add tool to chat context (sends a system note to the agent) ────────────
+async function addToolToChat(name, webhook, desc){
+  const SERVER = window.location.origin;
+  const msg = `[Tool added to context]\nName: ${name}\nWebhook: ${SERVER}${webhook}\nDescription: ${desc}\nYou can now call this tool by sending a POST to the webhook URL.`;
+  try{
+    await fetch(`${SERVER}/api/chat`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message: msg, source:'tools-page'})
+    });
+    showToast(`${name} added to chat context`);
+  }catch(e){showToast('Error: '+e.message);}
+}
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

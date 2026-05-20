@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS — Status & Integrations</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'JetBrains Mono',monospace,system-ui;font-size:13px;min-height:100vh}
+a{color:#6b8cff;text-decoration:none}
+.top{background:#0d0f17;border-bottom:1px solid #1e2030;padding:12px 24px;display:flex;align-items:center;gap:12px}
+.logo{font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px}.logo span{color:#6b8cff}
+.nav-links{margin-left:auto;display:flex;gap:16px;font-size:11px}
+.nav-links a{color:#7880a0}.nav-links a:hover{color:#dde1f5}
+.wrap{max-width:900px;margin:0 auto;padding:28px 20px}
+h1{font-size:16px;font-weight:700;color:#fff;margin-bottom:4px}
+.sub{color:#7880a0;font-size:11px;margin-bottom:24px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.card{background:#0d0f17;border:1px solid #1e2030;border-radius:10px;overflow:hidden}
+.card-hd{padding:12px 16px;border-bottom:1px solid #1e2030;display:flex;align-items:center;gap:8px}
+.card-title{font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.05em;flex:1}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot.on{background:#3fdc8a;box-shadow:0 0 6px #3fdc8a66}
+.dot.off{background:#555}
+.dot.warn{background:#facc15;box-shadow:0 0 6px #facc1566}
+.card-body{padding:14px 16px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #13151f}
+.stat-row:last-child{border-bottom:none}
+.stat-lbl{color:#7880a0;font-size:11px}
+.stat-val{font-size:11px;color:#dde1f5;text-align:right;max-width:60%;word-break:break-all}
+.stat-val.on{color:#3fdc8a}
+.stat-val.off{color:#f87171}
+.stat-val.warn{color:#facc15}
+.url-box{background:#07080d;border:1px solid #1e2030;border-radius:6px;padding:8px 10px;font-size:11px;color:#6b8cff;word-break:break-all;margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.copy-btn{background:#1e2030;border:none;border-radius:4px;padding:3px 8px;font-size:10px;color:#7880a0;cursor:pointer;white-space:nowrap}
+.copy-btn:hover{color:#dde1f5}
+.key-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #13151f}
+.key-row:last-child{border-bottom:none}
+.key-num{font-size:10px;color:#4a5568;width:16px}
+.key-val{flex:1;font-size:11px;color:#7880a0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.key-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.key-status.active{background:#1a3a24;color:#3fdc8a}
+.key-status.cooldown{background:#3a1c1c;color:#f87171}
+.key-status.empty{background:#1e2030;color:#4a5568}
+.prog-bar{height:4px;background:#1e2030;border-radius:2px;margin-top:4px}
+.prog-fill{height:100%;border-radius:2px;background:#6b8cff;transition:width .5s}
+.section-full{grid-column:1/-1}
+.table{width:100%;border-collapse:collapse;font-size:11px}
+.table th{text-align:left;color:#4a5568;font-weight:600;padding:6px 8px;border-bottom:1px solid #1e2030;text-transform:uppercase;font-size:10px;letter-spacing:.05em}
+.table td{padding:7px 8px;border-bottom:1px solid #13151f;color:#a0aec0;vertical-align:top}
+.table tr:last-child td{border-bottom:none}
+.table td:first-child{color:#dde1f5}
+.badge{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.badge-blue{background:#1a3a5c;color:#5b9cf6}
+.badge-green{background:#1a3a24;color:#3fdc8a}
+.badge-red{background:#3a1c1c;color:#f87171}
+.badge-grey{background:#1e2030;color:#6b7280}
+.btn{padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none}
+.btn-primary{background:#6b8cff;color:#fff}.btn-primary:hover{opacity:.85}
+.btn-secondary{background:#1e2030;color:#7880a0;border:1px solid #2a2d42}.btn-secondary:hover{color:#dde1f5}
+.toast{position:fixed;bottom:20px;right:20px;background:#1e2030;border:1px solid #2a2d42;border-radius:7px;padding:8px 14px;font-size:12px;color:#dde1f5;z-index:9999;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.refresh-note{font-size:10px;color:#4a5568;margin-top:16px;text-align:center}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">JARVIS<span>.</span></div>
+  <span style="font-size:11px;color:#4a5568">Status & Integrations</span>
+  <div class="nav-links">
+    <a href="/">Agent</a>
+    <a href="/setup">Setup</a>
+    <a href="/mitos2">MITOS2</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>System Status</h1>
+  <div class="sub">Live view of all services, webhooks, and API integrations. Auto-refreshes every 15s.</div>
+
+  <div class="grid">
+
+    <!-- Services -->
+    <div class="card">
+      <div class="card-hd"><div class="dot" id="svc-dot"></div><div class="card-title">Core Services</div><button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="loadAll()">↺ Refresh</button></div>
+      <div class="card-body" id="svc-body">Loading…</div>
+    </div>
+
+    <!-- LiteLLM Fleet -->
+    <div class="card">
+      <div class="card-hd"><div class="dot" id="llm-dot"></div><div class="card-title">LiteLLM Fleet</div></div>
+      <div class="card-body" id="llm-body">Loading…</div>
+    </div>
+
+    <!-- Gemini Key Pool -->
+    <div class="card">
+      <div class="card-hd"><div class="dot" id="key-dot"></div><div class="card-title">Gemini Key Pool</div><button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="resetCooldowns()">Clear 429s</button></div>
+      <div class="card-body" id="key-body">Loading…</div>
+    </div>
+
+    <!-- Telegram -->
+    <div class="card">
+      <div class="card-hd"><div class="dot" id="tg-dot"></div><div class="card-title">Telegram</div></div>
+      <div class="card-body" id="tg-body">Loading…</div>
+    </div>
+
+    <!-- Webhook — full width -->
+    <div class="card section-full">
+      <div class="card-hd"><div class="dot on"></div><div class="card-title">Webhooks & Integrations</div><button class="btn btn-secondary" style="font-size:10px;padding:3px 8px" onclick="testIncoming()">Test Incoming</button></div>
+      <div class="card-body" id="webhook-body">Loading…</div>
+    </div>
+
+    <!-- API Endpoints reference — full width -->
+    <div class="card section-full">
+      <div class="card-hd"><div class="dot on"></div><div class="card-title">API Endpoint Reference</div></div>
+      <div class="card-body">
+        <table class="table">
+          <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th><th>Use for</th></tr></thead>
+          <tbody id="endpoint-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MITOS2 info -->
+    <div class="card section-full">
+      <div class="card-hd"><div class="dot" id="m2-dot"></div><div class="card-title">MITOS2 Overlay</div><a href="/mitos2" class="btn btn-primary" style="font-size:10px;padding:3px 10px">Open ↗</a></div>
+      <div class="card-body" id="m2-body">Loading…</div>
+    </div>
+
+  </div>
+  <div class="refresh-note" id="refresh-note">Last updated: —</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const origin = window.location.origin;
+
+const ENDPOINTS = [
+  {path:'/run',method:'POST',desc:'Run an AI task (browser automation)',use:'Agent UI → task execution'},
+  {path:'/stream/{id}',method:'GET',desc:'SSE stream for task progress',use:'Agent UI → live updates'},
+  {path:'/webhook/receive',method:'POST',desc:'Incoming webhook → MITOS2 feed',use:'n8n, Zapier, external services'},
+  {path:'/webhook/send',method:'POST',desc:'Send message to all outgoing webhooks',use:'Internal → push to n8n'},
+  {path:'/webhook/config',method:'GET/POST',desc:'Get/set outgoing webhook URLs',use:'MITOS2 config panel'},
+  {path:'/webhook/history',method:'GET',desc:'Webhook event history (last 50)',use:'Audit, debugging'},
+  {path:'/webhook/test',method:'POST',desc:'Fire a test event to MITOS2',use:'Integration testing'},
+  {path:'/mitos2/push',method:'POST',desc:'Push a custom event to MITOS2',use:'Any service → overlay'},
+  {path:'/mitos2/events',method:'GET',desc:'Last N MITOS2 events',use:'Polling clients'},
+  {path:'/mitos2/stream',method:'GET',desc:'SSE stream for MITOS2 events',use:'MITOS2 overlay UI'},
+  {path:'/mitos2/action',method:'POST',desc:'Carry On / Stop / New Message',use:'MITOS2 action buttons'},
+  {path:'/gemini-keys',method:'GET',desc:'Key pool status (active/cooldown)',use:'Setup, monitoring'},
+  {path:'/gemini-keys/reset',method:'POST',desc:'Clear all 429 cooldowns',use:'Quick fix after quota reset'},
+  {path:'/code/run',method:'POST',desc:'Run a task with Claude Code CLI',use:'Code tab in agent UI'},
+  {path:'/code/stream/{id}',method:'GET',desc:'SSE stream for code task output',use:'Code tab in agent UI'},
+  {path:'/code/stop/{id}',method:'POST',desc:'Kill a running code task',use:'Stop button'},
+  {path:'/config',method:'GET/POST',desc:'Read/write .env configuration',use:'Setup page, API saves'},
+  {path:'/health',method:'GET',desc:'Service health check',use:'Monitoring, setup page'},
+  {path:'/rules',method:'GET/POST',desc:'Agent rules CRUD',use:'Rules panel'},
+  {path:'/screenshot',method:'GET',desc:'Latest browser screenshot',use:'Vision panel'},
+];
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function copy(s){ navigator.clipboard.writeText(s).then(()=>toast('Copied!')).catch(()=>{}); }
+
+function setDot(id, state){
+  const d=document.getElementById(id);
+  if(!d)return;
+  d.className='dot '+(state==='on'?'on':state==='warn'?'warn':'off');
+}
+
+async function loadAll(){
+  await Promise.all([loadHealth(), loadKeys(), loadWebhooks(), loadM2()]);
+  document.getElementById('refresh-note').textContent='Last updated: '+new Date().toLocaleTimeString();
+  buildEndpointTable();
+}
+
+async function loadHealth(){
+  try{
+    const r=await fetch('/health');
+    const d=await r.json();
+
+    // Services card
+    const llmOk=d.litellm_proxy, tgOk=d.telegram;
+    setDot('svc-dot', llmOk?'on':'warn');
+    document.getElementById('svc-body').innerHTML=`
+      <div class="stat-row"><span class="stat-lbl">AI Browser (this)</span><span class="stat-val on">✓ running :${d.port||8080}</span></div>
+      <div class="stat-row"><span class="stat-lbl">LiteLLM Proxy</span><span class="stat-val ${llmOk?'on':'off'}">${llmOk?'✓ connected':'✗ not set'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Telegram</span><span class="stat-val ${tgOk?'on':'off'}">${tgOk?'✓ set':'✗ not set'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">VNC</span><span class="stat-val">${d.vnc_running?'✓ running :5900':'—'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">MITOS overlay</span><span class="stat-val">${d.mitos_overlay?'✓ :7070':'—'}</span></div>
+    `;
+
+    // LiteLLM card
+    const base=d.litellm_base||'—', key=d.litellm_key||'—', model=d.litellm_model||'—';
+    setDot('llm-dot', llmOk?'on':'off');
+    document.getElementById('llm-body').innerHTML=`
+      <div class="stat-row"><span class="stat-lbl">Status</span><span class="stat-val ${llmOk?'on':'off'}">${llmOk?'Connected':'Not configured'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Default model</span><span class="stat-val">${model}</span></div>
+      <div class="stat-row"><span class="stat-lbl">API key</span><span class="stat-val">${key?key.slice(0,12)+'…':'—'}</span></div>
+      <div class="url-box"><span>${base||'—'}</span>${base&&base!=='—'?`<button class="copy-btn" onclick="copy('${base}')">Copy</button>`:''}</div>
+    `;
+
+    // Telegram card
+    setDot('tg-dot', tgOk?'on':'off');
+    document.getElementById('tg-body').innerHTML=`
+      <div class="stat-row"><span class="stat-lbl">Status</span><span class="stat-val ${tgOk?'on':'off'}">${tgOk?'✓ Configured':'✗ Not configured'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Bot token</span><span class="stat-val">${d.telegram_token?d.telegram_token.slice(0,14)+'…':'—'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Chat ID</span><span class="stat-val">${d.telegram_chat||'—'}</span></div>
+      ${tgOk?`<button class="btn btn-secondary" style="margin-top:10px;font-size:11px" onclick="testTelegram()">Send Test Message</button>`:'<div style="margin-top:10px;font-size:10px;color:#4a5568">Add token at <a href="/setup">Setup</a></div>'}
+    `;
+  }catch(e){
+    document.getElementById('svc-body').innerHTML='<div style="color:#f87171;font-size:11px">Failed to load: '+e.message+'</div>';
+  }
+}
+
+async function loadKeys(){
+  try{
+    const r=await fetch('/gemini-keys');
+    const d=await r.json();
+    setDot('key-dot', d.active>0?'on':d.total>0?'warn':'off');
+    const now=Date.now()/1000;
+    let html=`<div class="stat-row"><span class="stat-lbl">Keys configured</span><span class="stat-val">${d.total} / 5</span></div>
+      <div class="stat-row"><span class="stat-lbl">Active (no 429)</span><span class="stat-val ${d.active>0?'on':'off'}">${d.active} / ${d.total}</span></div>`;
+    if(d.total>0){
+      html+='<div style="margin-top:10px">';
+      d.keys.forEach(k=>{
+        const st=k.active?'active':'cooldown';
+        const label=k.active?'active':`429 — ${Math.ceil(k.cooldown_remaining/60)}m`;
+        html+=`<div class="key-row"><div class="key-num">${k.index}</div><div class="key-val">${k.key_preview}</div><div class="key-status ${st}">${label}</div></div>`;
+      });
+      html+='</div>';
+      // fill bars
+      const pct=d.total>0?Math.round(d.active/d.total*100):0;
+      html+=`<div style="margin-top:10px;font-size:10px;color:#4a5568">Pool capacity</div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${pct>60?'#3fdc8a':pct>30?'#facc15':'#f87171'}"></div></div>`;
+    } else {
+      html+='<div style="margin-top:10px;font-size:10px;color:#4a5568">No keys — add up to 5 at <a href="/setup">Setup</a> to avoid 429 quota errors.</div>';
+    }
+    document.getElementById('key-body').innerHTML=html;
+  }catch(e){}
+}
+
+async function loadWebhooks(){
+  try{
+    const [cfgR, histR] = await Promise.all([fetch('/webhook/config'), fetch('/webhook/history?last=5')]);
+    const cfg = await cfgR.json();
+    const hist = await histR.json();
+    const webhooks = cfg.webhooks || [];
+    const incoming = `${origin}/webhook/receive`;
+    let html=`
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;color:#4a5568;margin-bottom:5px;text-transform:uppercase;font-weight:700;letter-spacing:.05em">Incoming (POST here to push to MITOS2)</div>
+        <div class="url-box"><span>${incoming}</span><button class="copy-btn" onclick="copy('${incoming}')">Copy</button></div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;color:#4a5568;margin-bottom:5px;text-transform:uppercase;font-weight:700;letter-spacing:.05em">Outgoing Webhooks (${webhooks.length})</div>`;
+    if(webhooks.length){
+      webhooks.forEach(w=>{ html+=`<div class="key-row"><div class="key-val" style="max-width:none">${w.name||'Webhook'}: <span style="color:#6b8cff">${w.url}</span></div><button class="copy-btn" onclick="copy('${w.url}')">Copy</button></div>`; });
+    } else {
+      html+='<div style="color:#4a5568;font-size:11px">No outgoing webhooks. Add them in <a href="/mitos2">MITOS2</a> → Webhooks tab.</div>';
+    }
+    html+=`</div>`;
+    if(hist.length){
+      html+=`<div><div style="font-size:10px;color:#4a5568;margin-bottom:6px;text-transform:uppercase;font-weight:700;letter-spacing:.05em">Recent Events</div>`;
+      hist.slice().reverse().forEach(h=>{
+        const dir=h.direction==='out'?'▲ Out':'▼ In';
+        const badge=`<span class="badge badge-${h.direction==='out'?'green':'blue'}">${dir}</span>`;
+        const body=typeof h.payload==='string'?h.payload:JSON.stringify(h.payload);
+        html+=`<div class="stat-row"><span class="stat-lbl">${badge} ${new Date(h.ts||0).toLocaleTimeString()}</span><span class="stat-val" style="color:#a0aec0;font-size:10px">${body.slice(0,80)}${body.length>80?'…':''}</span></div>`;
+      });
+      html+='</div>';
+    }
+    document.getElementById('webhook-body').innerHTML=html;
+  }catch(e){}
+}
+
+async function loadM2(){
+  try{
+    const r=await fetch('/mitos2/events?last=5');
+    const evs=await r.json();
+    setDot('m2-dot','on');
+    const incoming=`${origin}/webhook/receive`;
+    const m2url=`${origin}/mitos2`;
+    document.getElementById('m2-body').innerHTML=`
+      <div class="stat-row"><span class="stat-lbl">Status</span><span class="stat-val on">✓ running</span></div>
+      <div class="stat-row"><span class="stat-lbl">Recent events</span><span class="stat-val">${evs.length} loaded</span></div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <a href="/mitos2" class="btn btn-primary">Open MITOS2 Overlay</a>
+        <button class="btn btn-secondary" onclick="testM2()">Push Test Event</button>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-size:10px;color:#4a5568;margin-bottom:5px;text-transform:uppercase;font-weight:700;letter-spacing:.05em">Webhook URL (n8n / Zapier / any HTTP)</div>
+        <div class="url-box"><span>${incoming}</span><button class="copy-btn" onclick="copy('${incoming}')">Copy</button></div>
+        <div style="margin-top:8px;font-size:10px;color:#4a5568">POST JSON with a "message" field. The payload appears as a card in MITOS2 with action buttons.</div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:#4a5568">Example payload:<br><span style="color:#6b8cff">{"message":"Flight found: LHR→AMS £89","source":"n8n","type":"result"}</span></div>
+    `;
+  }catch(e){setDot('m2-dot','off');document.getElementById('m2-body').innerHTML='<span style="color:#f87171">MITOS2 unavailable</span>';}
+}
+
+function buildEndpointTable(){
+  const rows=ENDPOINTS.map(e=>`<tr><td><code style="color:#6b8cff">${e.path}</code></td><td><span class="badge badge-grey">${e.method}</span></td><td>${e.desc}</td><td style="color:#7880a0">${e.use}</td></tr>`).join('');
+  document.getElementById('endpoint-table').innerHTML=rows;
+}
+
+async function testIncoming(){
+  try{
+    const r=await fetch('/webhook/receive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'Test from Status page',source:'status-page',type:'info'})});
+    const d=await r.json();
+    toast(d.ok?'Test event sent to MITOS2!':'Error: '+(d.error||'?'));
+  }catch(e){toast('Failed: '+e.message);}
+}
+
+async function testM2(){
+  try{
+    const r=await fetch('/webhook/test',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    toast(d.ok?'Test event pushed!':'Error');
+  }catch(e){toast('Failed');}
+}
+
+async function testTelegram(){
+  try{
+    const r=await fetch('/telegram/test',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    toast('Telegram test sent!');
+  }catch(e){toast('Failed: '+e.message);}
+}
+
+async function resetCooldowns(){
+  try{
+    await fetch('/gemini-keys/reset',{method:'POST'});
+    toast('Cooldowns cleared!');
+    await loadKeys();
+  }catch(e){toast('Failed');}
+}
+
+loadAll();
+setInterval(loadAll, 15000);
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

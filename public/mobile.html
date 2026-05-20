@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="theme-color" content="#07080d"/>
+<title>JARVIS</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#07080d;--s1:#0d0f17;--s2:#13151f;--b1:#1e2030;--b2:#2a2d42;--tx:#dde1f5;--tm:#7880a0;--tf:#3a3e55;--blue:#6b8cff;--grn:#3fdc8a;--red:#f87171;--orange:#ff9a4a}
+html{height:100%;background:var(--bg)}
+body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace,system-ui;font-size:14px;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+/* Top bar */
+.top{background:var(--s1);border-bottom:1px solid var(--b1);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;padding-top:env(safe-area-inset-top,10px)}
+.logo{font-size:16px;font-weight:800;color:#fff;letter-spacing:.5px}
+.logo span{color:var(--blue)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--grn);box-shadow:0 0 5px var(--grn);animation:gp 2s infinite}
+@keyframes gp{0%,100%{opacity:1}50%{opacity:.35}}
+.top-btns{margin-left:auto;display:flex;gap:6px}
+.tbtn{width:34px;height:34px;border-radius:10px;background:var(--s2);border:1px solid var(--b1);color:var(--tm);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none}
+
+/* Chat feed */
+.feed{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
+
+/* Messages */
+.msg-user{align-self:flex-end;background:var(--blue);color:#fff;border-radius:18px 18px 4px 18px;padding:10px 14px;max-width:82%;font-size:13px;line-height:1.5}
+.msg-ai{align-self:flex-start;background:var(--s1);border:1px solid var(--b1);border-radius:4px 18px 18px 18px;padding:10px 14px;max-width:90%;font-size:13px;line-height:1.6}
+.msg-ai .think{font-size:10px;color:var(--tf);margin-bottom:5px;display:flex;align-items:center;gap:4px}
+.msg-ai .think::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0}
+.msg-result{background:var(--s2);border:1px solid var(--b1);border-radius:12px;padding:12px;font-size:12px;line-height:1.6;color:var(--tx)}
+.msg-result-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:6px}
+
+/* Thinking dots */
+.thinking{display:flex;gap:5px;padding:12px 16px;background:var(--s1);border:1px solid var(--b1);border-radius:4px 18px 18px 18px;align-self:flex-start}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--tf);animation:td .8s ease-in-out infinite}
+.tdot:nth-child(2){animation-delay:.15s}
+.tdot:nth-child(3){animation-delay:.3s}
+@keyframes td{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px);background:var(--blue)}}
+
+/* Drawer overlay */
+.drawer-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:none;animation:fadein .2s}
+.drawer-bg.open{display:block}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.drawer{position:fixed;top:0;right:-280px;width:280px;height:100%;background:var(--s1);border-left:1px solid var(--b1);z-index:50;transition:right .25s ease;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+.drawer.open{right:0}
+.drawer-hd{padding:16px;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:10px}
+.drawer-hd span{font-size:14px;font-weight:700;color:#fff;flex:1}
+.drawer-close{font-size:16px;color:var(--tm);background:none;border:none;cursor:pointer;padding:4px}
+.drawer-body{flex:1;overflow-y:auto;padding:12px}
+.drawer-sec{margin-bottom:18px}
+.drawer-sec-title{font-size:9px;color:var(--tf);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:8px}
+.drawer-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;background:var(--s2);border:1px solid var(--b1);margin-bottom:6px;text-decoration:none;color:var(--tx);font-size:12px;cursor:pointer}
+.drawer-link:active{background:var(--b1)}
+.drawer-link-icon{font-size:18px;width:24px;text-align:center}
+
+/* Input bar */
+.input-bar{background:var(--s1);border-top:1px solid var(--b1);padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));flex-shrink:0}
+.chips-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips-row::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;font-size:11px;padding:5px 11px;border-radius:8px;background:var(--s2);border:1px solid var(--b2);color:var(--tm);cursor:pointer;white-space:nowrap;font-family:inherit}
+.chip:active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.inp-row{display:flex;gap:8px;align-items:flex-end}
+.inp-box{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:14px;padding:10px 14px;color:var(--tx);font-family:inherit;font-size:14px;outline:none;resize:none;min-height:44px;max-height:110px;line-height:1.4;transition:border-color .15s}
+.inp-box:focus{border-color:var(--blue)}
+.btn-row{display:flex;gap:6px;flex-shrink:0}
+.icon-btn{width:44px;height:44px;border-radius:12px;border:1px solid var(--b1);background:var(--s2);color:var(--tm);font-size:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.icon-btn.active{background:rgba(63,220,138,.15);border-color:rgba(63,220,138,.4);color:var(--grn)}
+.send-btn{width:44px;height:44px;border-radius:12px;background:var(--blue);border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.send-btn:active{opacity:.8}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">JARVIS <span>AI</span></div>
+  <div class="dot" id="agent-dot"></div>
+  <span style="font-size:11px;color:var(--tm);flex:1" id="status-lbl">Ready</span>
+  <div class="top-btns">
+    <a href="/overlay/big" class="tbtn" title="Big Display">📺</a>
+    <a href="/overlay/rc" class="tbtn" title="Remote Control">📡</a>
+    <button class="tbtn" onclick="openDrawer()" title="Menu">☰</button>
+  </div>
+</div>
+
+<div class="feed" id="feed">
+  <div class="msg-ai">
+    <div class="think">JARVIS online</div>
+    Hey! I'm ready. What do you need?
+  </div>
+</div>
+
+<!-- Drawer backdrop -->
+<div class="drawer-bg" id="drawer-bg" onclick="closeDrawer()"></div>
+<!-- Drawer -->
+<div class="drawer" id="drawer">
+  <div class="drawer-hd">
+    <span>JARVIS Menu</span>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-sec">
+      <div class="drawer-sec-title">Pages</div>
+      <a href="/" class="drawer-link"><span class="drawer-link-icon">🧠</span>Agent (desktop)</a>
+      <a href="/setup" class="drawer-link"><span class="drawer-link-icon">⚙️</span>Setup & API keys</a>
+      <a href="/tools-page" class="drawer-link"><span class="drawer-link-icon">🔧</span>Tools & Composio</a>
+      <a href="/status" class="drawer-link"><span class="drawer-link-icon">📊</span>Status</a>
+      <a href="/links" class="drawer-link"><span class="drawer-link-icon">🔗</span>Network Links</a>
+      <a href="/webhooks" class="drawer-link"><span class="drawer-link-icon">🪝</span>Webhooks</a>
+      <a href="/overlay/rc" class="drawer-link"><span class="drawer-link-icon">📡</span>RC Remote</a>
+      <a href="/overlay/big" class="drawer-link"><span class="drawer-link-icon">📺</span>Big Display</a>
+    </div>
+    <div class="drawer-sec">
+      <div class="drawer-sec-title">AI Engine</div>
+      <div id="drawer-ai">
+        <div class="drawer-link" onclick="setEngine('gemini')"><span class="drawer-link-icon">✨</span>Gemini (default)</div>
+        <div class="drawer-link" onclick="setEngine('ollama')"><span class="drawer-link-icon">🦙</span>Ollama (local)</div>
+        <div class="drawer-link" onclick="setEngine('claude')"><span class="drawer-link-icon">🤖</span>Claude Code</div>
+      </div>
+    </div>
+    <div class="drawer-sec">
+      <div class="drawer-sec-title">Info</div>
+      <div style="font-size:10px;color:var(--tf);line-height:1.7">
+        Server: 192.168.0.8:8080<br/>
+        Composio: 192.168.0.8:350<br/>
+        LiteLLM: 192.168.0.3:3080
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="input-bar">
+  <div class="chips-row">
+    <button class="chip" onclick="sendChip('Check my emails')">📧 emails</button>
+    <button class="chip" onclick="sendChip(\"What's my schedule today?\")">📅 today</button>
+    <button class="chip" onclick="sendChip('Run a quick status check')">🔧 status</button>
+    <button class="chip" onclick="sendChip('What can you do?')">❓ help</button>
+    <button class="chip" onclick="sendChip('Send Telegram: all good')">📨 ping</button>
+  </div>
+  <div class="inp-row">
+    <textarea class="inp-box" id="inp" rows="1" placeholder="Ask JARVIS anything…" oninput="resize()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea>
+    <div class="btn-row">
+      <button class="icon-btn" id="mic-btn" onclick="toggleMic()" title="Voice">🎤</button>
+      <button class="send-btn" onclick="send()">▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='';
+let _engine='gemini';
+let _history=[];
+let _thinking=false;
+
+function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawer-bg').classList.add('open');}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawer-bg').classList.remove('open');}
+function setEngine(e){_engine=e;closeDrawer();setStatus('Engine: '+e);}
+
+function resize(){const el=document.getElementById('inp');el.style.height='auto';el.style.height=Math.min(el.scrollHeight,110)+'px';}
+function setStatus(t){document.getElementById('status-lbl').textContent=t;}
+
+function scrollBottom(){const f=document.getElementById('feed');f.scrollTop=f.scrollHeight;}
+
+function addMsg(cls,html){
+  const f=document.getElementById('feed');
+  const d=document.createElement('div');d.className=cls;
+  if(typeof html==='string')d.innerHTML=html;
+  else d.appendChild(html);
+  f.appendChild(d);scrollBottom();return d;
+}
+
+function addUser(text){addMsg('msg-user',esc(text));}
+function addThinking(){const d=addMsg('thinking','<div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>');d.id='thinking-el';return d;}
+function removeThinking(){document.getElementById('thinking-el')?.remove();}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+async function send(){
+  const inp=document.getElementById('inp');
+  const text=inp.value.trim();if(!text||_thinking)return;
+  inp.value='';resize();
+  addUser(text);
+  _history.push({role:'user',content:text});
+  await runTask(text);
+}
+
+function sendChip(msg){document.getElementById('inp').value=msg;send();}
+
+const _profDir=n=>n===0?'default':'profile-'+n;
+
+async function runTask(text){
+  // Profile shortcut — works from mobile too
+  const pm=text.match(/^(?:open\s+)?profile\s+(default|\d)\s*(.*)?$/i);
+  if(pm){
+    const pNum=pm[1].toLowerCase()==='default'?0:parseInt(pm[1]);
+    const site=(pm[2]||'').trim();
+    let url=null;
+    if(site){
+      try{const d=await fetch(API+'/api/sites').then(r=>r.json());const hit=(d.sites||[]).find(s=>parseInt(s.profile_num||0)===pNum&&s.name.toLowerCase().includes(site.toLowerCase()));if(hit)url=hit.login_url||hit.url;}catch{}
+    }
+    await fetch(API+'/vnc/open',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:url||'about:blank',profile:_profDir(pNum)})});
+    addMsg('msg-ai',`✓ Profile ${pNum} opened in VNC${url?' → '+url:''}`);
+    return;
+  }
+  _thinking=true;setStatus('Thinking…');
+  const dot=document.getElementById('agent-dot');
+  dot.style.background='var(--orange)';dot.style.boxShadow='0 0 5px var(--orange)';
+  addThinking();
+  try{
+    const r=await fetch(API+'/run',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text,model:'gemini-2.5-flash',rules:[],auto_execute:true,history:_history.slice(-6)})
+    });
+    const d=await r.json();
+    removeThinking();
+    if(d.task_id) await pollTask(d.task_id,text);
+  }catch(e){
+    removeThinking();
+    addMsg('msg-ai',`<div class="think">error</div>${esc(e.message)}`);
+  }
+  _thinking=false;
+  dot.style.background='var(--grn)';dot.style.boxShadow='0 0 5px var(--grn)';
+  setStatus('Ready');
+}
+
+async function pollTask(tid,origText){
+  let last=0,done=false,resultBody='',resultTitle='';
+  while(!done){
+    await new Promise(r=>setTimeout(r,700));
+    try{
+      const d=await fetch(API+'/stream/'+tid+'?last='+last).then(r=>r.json());
+      for(const ev of(d.events||[])){
+        last++;
+        if(ev.result_body) resultBody=ev.result_body;
+        if(ev.result_title) resultTitle=ev.result_title;
+      }
+      done=d.done;
+    }catch{break;}
+  }
+  const resp=resultBody||'Done.';
+  _history.push({role:'assistant',content:resp});
+  if(resultTitle){
+    addMsg('msg-ai',`<div class="think">${esc(resultTitle)}</div><div class="msg-result"><div class="msg-result-title">${esc(resultTitle)}</div>${esc(resp)}</div>`);
+  } else {
+    addMsg('msg-ai',`<div class="think">JARVIS</div>${esc(resp)}`);
+  }
+  scrollBottom();
+}
+
+// Voice
+let _recognising=false,_recognition=null;
+function toggleMic(){
+  const btn=document.getElementById('mic-btn');
+  if(_recognising){_recognition?.stop();btn.classList.remove('active');return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Speech not supported');return;}
+  _recognition=new SR();
+  _recognition.continuous=false;_recognition.interimResults=false;_recognition.lang='en-GB';
+  _recognition.onstart=()=>{_recognising=true;btn.classList.add('active');setStatus('Listening…');};
+  _recognition.onend=()=>{_recognising=false;btn.classList.remove('active');};
+  _recognition.onresult=(e)=>{
+    const t=e.results[0][0].transcript;
+    document.getElementById('inp').value=t;resize();send();
+  };
+  _recognition.start();
+}
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

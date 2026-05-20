@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS Node Registry</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#090b12;--panel:#0d0f1a;--border:rgba(255,255,255,.07);--accent:#00d4ff;--green:#3fdc8a;--red:#f87171;--yellow:#facc15;--text:#c8d2e6;--dim:rgba(200,210,230,.35);--purple:#a78bfa;--blue:#60a5fa;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace,system-ui;font-size:12px;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:12px;height:48px;flex-shrink:0;}
+.logo{color:var(--accent);font-weight:800;font-size:14px;letter-spacing:1px;}
+.sep{width:1px;height:20px;background:var(--border);}
+.spacer{flex:1;}
+.nav a{color:var(--dim);font-size:10px;text-decoration:none;margin-left:12px;}
+.nav a:hover{color:var(--accent);}
+.ctrlbar{background:#0b0d18;border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.stat-box{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:6px 12px;display:flex;flex-direction:column;align-items:center;min-width:70px;}
+.stat-val{font-size:20px;font-weight:800;color:var(--accent);}
+.stat-lbl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:1px;}
+.btn{padding:7px 14px;border-radius:6px;border:none;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-blue{background:rgba(0,212,255,.15);color:var(--accent);border:1px solid rgba(0,212,255,.25);}
+.btn-blue:hover{background:rgba(0,212,255,.25);}
+.btn-green{background:rgba(63,220,138,.15);color:var(--green);border:1px solid rgba(63,220,138,.25);}
+.content{flex:1;padding:16px;overflow-y:auto;}
+
+/* Node grid */
+.nodes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px;}
+.node-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .2s;}
+.node-card.online{border-color:rgba(63,220,138,.2);}
+.node-card.offline{border-color:rgba(248,113,113,.1);}
+.node-card.master{border-color:rgba(0,212,255,.25);}
+.node-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);}
+.node-num{width:34px;height:34px;border-radius:8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--accent);flex-shrink:0;}
+.node-num.master{background:rgba(0,212,255,.2);border-color:rgba(0,212,255,.4);}
+.node-name{font-size:13px;font-weight:800;color:#fff;}
+.node-ip{font-size:10px;color:var(--dim);}
+.health-dot{width:8px;height:8px;border-radius:50%;}
+.health-dot.online{background:var(--green);box-shadow:0 0 5px var(--green);}
+.health-dot.offline{background:var(--red);}
+.node-body{padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+.field-row{display:flex;flex-direction:column;gap:3px;}
+.field-lbl{font-size:9px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.field-inp{width:100%;padding:5px 8px;background:#060810;border:1px solid rgba(255,255,255,.06);border-radius:4px;color:#ddd;font-size:11px;font-family:inherit;outline:none;resize:vertical;min-height:34px;}
+.field-inp:focus{border-color:rgba(0,212,255,.3);}
+.tags-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.tag-pill{padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;display:flex;align-items:center;gap:3px;}
+.tag-pill button{background:none;border:none;color:inherit;cursor:pointer;font-size:10px;line-height:1;padding:0;}
+.tag-inp{flex:1;min-width:80px;padding:2px 7px;background:#060810;border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:inherit;font-size:10px;outline:none;}
+.tag-inp:focus{border-color:rgba(0,212,255,.3);}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.vmtype-sel{padding:4px 7px;background:#060810;border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit;font-size:10px;outline:none;}
+.llm-toggle{display:flex;align-items:center;gap:7px;}
+.tog{width:32px;height:18px;background:#1e2030;border-radius:9px;cursor:pointer;position:relative;transition:background .2s;border:1px solid var(--border);}
+.tog.on{background:rgba(63,220,138,.3);border-color:rgba(63,220,138,.4);}
+.tog::after{content:'';position:absolute;width:12px;height:12px;background:#555;border-radius:50%;top:2px;left:2px;transition:all .2s;}
+.tog.on::after{left:16px;background:var(--green);}
+.lanes-row{display:flex;gap:4px;}
+.lane{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;border:1px solid var(--border);}
+.lane.idle{background:rgba(63,220,138,.1);border-color:rgba(63,220,138,.2);color:var(--green);}
+.lane.busy{background:rgba(250,204,21,.1);border-color:rgba(250,204,21,.2);color:var(--yellow);}
+.lane.offline{background:rgba(255,255,255,.03);color:#333;border-color:rgba(255,255,255,.04);}
+.save-btn{width:100%;padding:5px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);border-radius:5px;color:var(--accent);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;}
+.save-btn:hover{background:rgba(0,212,255,.2);}
+.jobs-badge{font-size:9px;padding:1px 7px;border-radius:4px;font-weight:700;background:rgba(250,204,21,.15);color:var(--yellow);border:1px solid rgba(250,204,21,.2);}
+.proxy-link{font-size:9px;color:var(--blue);text-decoration:none;}
+.proxy-link:hover{text-decoration:underline;}
+
+/* Flow diagram section */
+.flow-section{margin-top:24px;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.flow-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.flow-title{font-size:13px;font-weight:800;color:#fff;}
+.flow-body{padding:16px;overflow-x:auto;}
+.flow-canvas{display:flex;gap:0;align-items:stretch;min-height:280px;position:relative;}
+.flow-col{display:flex;flex-direction:column;align-items:center;gap:0;flex:1;min-width:130px;position:relative;}
+.flow-col::after{content:'';position:absolute;top:40px;right:-1px;width:2px;height:calc(100% - 40px);background:rgba(255,255,255,.05);z-index:0;}
+.flow-col:last-child::after{display:none;}
+.flow-node-hdr{width:100%;text-align:center;padding:6px 4px;background:rgba(0,212,255,.06);border-bottom:1px solid var(--border);font-size:9px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.flow-events{flex:1;width:100%;padding:6px 4px;display:flex;flex-direction:column;gap:4px;position:relative;z-index:1;}
+.flow-event{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:5px;padding:4px 6px;font-size:9px;color:var(--text);position:relative;animation:fadein .3s;}
+@keyframes fadein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.flow-event.think{border-color:rgba(167,139,250,.3);color:#a78bfa;}
+.flow-event.plan{border-color:rgba(96,165,250,.3);color:#60a5fa;}
+.flow-event.browser{border-color:rgba(63,220,138,.3);color:var(--green);}
+.flow-event.result{border-color:rgba(250,204,21,.3);color:var(--yellow);}
+.flow-event.route{border-color:rgba(0,212,255,.3);color:var(--accent);}
+.flow-event.done{border-color:rgba(63,220,138,.4);color:var(--green);font-weight:700;}
+.flow-arrow{position:absolute;top:50%;right:-18px;font-size:14px;color:var(--accent);z-index:2;transform:translateY(-50%);}
+.flow-time{font-size:8px;color:#444;float:right;}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1f2e;border:1px solid rgba(0,212,255,.3);border-radius:8px;padding:8px 14px;font-size:11px;color:#e8ecf4;z-index:9999;display:none;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">🌐 NODE REGISTRY</span>
+  <div class="sep"></div>
+  <span style="font-size:10px;color:var(--dim)">JARVIS Swarm — Master + 8 Browser VMs</span>
+  <div class="spacer"></div>
+  <div class="nav">
+    <a href="/">Agent</a>
+    <a href="/slaves">Slaves</a>
+    <a href="/gemini-fleet">Fleet</a>
+    <a href="/network">Network</a>
+  </div>
+</div>
+
+<div class="ctrlbar">
+  <div class="stat-box"><div class="stat-val" id="st-total">9</div><div class="stat-lbl">Nodes</div></div>
+  <div class="stat-box"><div class="stat-val" id="st-online">…</div><div class="stat-lbl">Online</div></div>
+  <div class="stat-box"><div class="stat-val" id="st-lanes">…</div><div class="stat-lbl">Free Lanes</div></div>
+  <div class="stat-box"><div class="stat-val" id="st-jobs">…</div><div class="stat-lbl">Running Jobs</div></div>
+  <div class="spacer"></div>
+  <button class="btn btn-blue" onclick="loadMesh()">↺ Mesh Status</button>
+</div>
+
+<div class="content">
+  <div class="nodes-grid" id="nodes-grid">
+    <div style="color:var(--dim);font-size:11px">Loading nodes…</div>
+  </div>
+
+  <!-- Flow diagram -->
+  <div class="flow-section">
+    <div class="flow-hdr">
+      <span class="flow-title">⚡ Live Swarm Flow — Communication Sequence</span>
+      <button onclick="clearFlow()" style="font-size:9px;color:var(--dim);background:none;border:none;cursor:pointer;">Clear</button>
+    </div>
+    <div class="flow-body">
+      <div class="flow-canvas" id="flow-canvas">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let _mesh = null;
+let _registry = [];
+const TAG_COLORS = ['#a78bfa','#60a5fa','#34d399','#facc15','#f87171','#fb923c','#e879f9'];
+
+async function loadMesh() {
+  try {
+    const [mesh, reg] = await Promise.all([
+      fetch('/api/mesh/status').then(r=>r.json()),
+      fetch('/api/nodes').then(r=>r.json()),
+    ]);
+    _mesh     = mesh;
+    _registry = reg.nodes || [];
+    renderNodes(mesh, _registry);
+    buildFlowCanvas(mesh.nodes || []);
+    document.getElementById('st-online').textContent = mesh.online || 0;
+    document.getElementById('st-lanes').textContent  = mesh.free_lanes || 0;
+    document.getElementById('st-jobs').textContent   =
+      (mesh.nodes||[]).reduce((s,n) => s + (n.jobs_running||0), 0);
+  } catch(e) {
+    document.getElementById('nodes-grid').innerHTML =
+      `<div style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+function renderNodes(mesh, registry) {
+  const mNodes = mesh.nodes || [];
+  const regMap = {};
+  registry.forEach(r => regMap[r.ip] = r);
+
+  document.getElementById('nodes-grid').innerHTML = mNodes.map((n,i) => {
+    const reg  = regMap[n.ip] || {};
+    const isMaster = n.role === 'master';
+    const lanes = n.lanes || {};
+    const desc  = reg.description || '';
+    const purpose = reg.purpose || '';
+    const tags  = reg.tags || [];
+    const vmType = reg.vm_type || 'vm';
+    const llmFree = reg.llm_free !== false;
+    const numLabel = isMaster ? 'M' : (n.profile || i);
+    const tagColor = TAG_COLORS[i % TAG_COLORS.length];
+
+    return `
+    <div class="node-card ${n.health} ${isMaster?'master':''}" id="nc-${n.id}">
+      <div class="node-hdr">
+        <div class="node-num ${isMaster?'master':''}">${numLabel}</div>
+        <div style="flex:1">
+          <div class="node-name" id="nn-${n.id}">${esc(n.name)}</div>
+          <div class="node-ip">${n.ip}${isMaster?' · MASTER':' · Profile '+(n.profile||'?')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="health-dot ${n.health}"></div>
+          <span style="font-size:10px;color:var(--dim)">${n.health}</span>
+          ${n.jobs_running ? `<span class="jobs-badge">${n.jobs_running} running</span>` : ''}
+        </div>
+      </div>
+      <div class="node-body">
+        <!-- Lanes -->
+        <div class="field-row">
+          <div class="field-lbl">Lanes (A–E)</div>
+          <div class="lanes-row">
+            ${['A','B','C','D','E'].map(l=>{
+              const s = lanes[l] || (n.health==='offline' ? 'offline' : 'idle');
+              return `<div class="lane ${s}" title="Lane ${l}: ${s}">${l}</div>`;
+            }).join('')}
+            ${n.health==='online' ? `<a href="/slave/${n.ip}/worker" target="_blank" class="proxy-link" style="margin-left:6px">↗ Worker</a>
+            <a href="/slave/${n.ip}/" target="_blank" class="proxy-link" style="margin-left:4px">↗ Agent</a>` : ''}
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="field-row">
+          <div class="field-lbl">What this VM does</div>
+          <textarea class="field-inp" id="desc-${n.id}" rows="2">${esc(desc)}</textarea>
+        </div>
+
+        <!-- Purpose / Assigned Jobs -->
+        <div class="field-row">
+          <div class="field-lbl">Assigned purpose / LLM tasks</div>
+          <input class="field-inp" id="purpose-${n.id}" value="${esc(purpose)}" placeholder="e.g. Gemini browser tasks, PIA profile 0">
+        </div>
+
+        <div class="row-2">
+          <!-- VM Type -->
+          <div class="field-row">
+            <div class="field-lbl">Type</div>
+            <select class="vmtype-sel" id="vmtype-${n.id}">
+              <option value="vm" ${vmType==='vm'?'selected':''}>Proxmox VM</option>
+              <option value="lxc" ${vmType==='lxc'?'selected':''}>LXC Container</option>
+              <option value="bare" ${vmType==='bare'?'selected':''}>Bare Metal</option>
+              <option value="docker" ${vmType==='docker'?'selected':''}>Docker</option>
+            </select>
+          </div>
+
+          <!-- LLM Free -->
+          <div class="field-row">
+            <div class="field-lbl">LLM Available</div>
+            <div class="llm-toggle">
+              <div class="tog ${llmFree?'on':''}" id="llm-${n.id}" onclick="toggleLlm('${n.id}')"></div>
+              <span id="llm-lbl-${n.id}" style="font-size:10px;color:${llmFree?'var(--green)':'var(--dim)'}">
+                ${llmFree ? 'Free — can take jobs' : 'Busy / locked'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="field-row">
+          <div class="field-lbl">Tags</div>
+          <div class="tags-row" id="tags-${n.id}">
+            ${tags.map((t,ti)=>`<span class="tag-pill" style="background:rgba(${hexRgb(tagColor)},.15);color:${tagColor};border:1px solid rgba(${hexRgb(tagColor)},.25)">${esc(t)}<button onclick="removeTag('${n.id}',${ti})">×</button></span>`).join('')}
+            <input class="tag-inp" id="taginp-${n.id}" placeholder="+ tag" onkeydown="if(event.key==='Enter'){addTag('${n.id}');event.preventDefault();}">
+          </div>
+        </div>
+
+        <button class="save-btn" onclick="saveNode('${n.id}')">💾 Save Node Info</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleLlm(id) {
+  const tog = document.getElementById(`llm-${id}`);
+  const lbl = document.getElementById(`llm-lbl-${id}`);
+  const on  = tog.classList.toggle('on');
+  lbl.textContent = on ? 'Free — can take jobs' : 'Busy / locked';
+  lbl.style.color = on ? 'var(--green)' : 'var(--dim)';
+}
+
+function addTag(id) {
+  const inp = document.getElementById(`taginp-${id}`);
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.value = '';
+  const node = (_mesh?.nodes||[]).find(n=>n.id===id);
+  const reg  = _registry.find(r=>r.id===id) || {};
+  const tags = reg.tags ? [...reg.tags] : [];
+  tags.push(val);
+  // Update registry locally and re-render tags cell
+  if (reg) reg.tags = tags;
+  const color = TAG_COLORS[(_mesh?.nodes||[]).findIndex(n=>n.id===id) % TAG_COLORS.length];
+  const container = document.getElementById(`tags-${id}`);
+  const pill = document.createElement('span');
+  pill.className = 'tag-pill';
+  pill.style.cssText = `background:rgba(${hexRgb(color)},.15);color:${color};border:1px solid rgba(${hexRgb(color)},.25)`;
+  pill.innerHTML = `${esc(val)}<button onclick="this.parentElement.remove()">×</button>`;
+  container.insertBefore(pill, document.getElementById(`taginp-${id}`));
+}
+
+function removeTag(id, idx) {
+  const reg = _registry.find(r=>r.id===id);
+  if (reg?.tags) reg.tags.splice(idx,1);
+}
+
+async function saveNode(id) {
+  const desc    = document.getElementById(`desc-${id}`)?.value || '';
+  const purpose = document.getElementById(`purpose-${id}`)?.value || '';
+  const vmType  = document.getElementById(`vmtype-${id}`)?.value || 'vm';
+  const llmFree = document.getElementById(`llm-${id}`)?.classList.contains('on');
+  const tagEls  = document.querySelectorAll(`#tags-${id} .tag-pill`);
+  const tags    = Array.from(tagEls).map(el => el.textContent.replace('×','').trim()).filter(Boolean);
+
+  try {
+    const r = await fetch(`/api/nodes/${id}`, {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({description:desc, purpose, vm_type:vmType, llm_free:llmFree, tags})
+    });
+    const d = await r.json();
+    if (d.ok) toast(`✓ ${d.node?.name} saved`);
+    else toast(`✗ ${d.error}`, true);
+  } catch(e) { toast(`✗ ${e.message}`, true); }
+}
+
+// ── Flow Canvas ──────────────────────────────────────────────────────────────
+let _flowCols = {};
+
+function buildFlowCanvas(nodes) {
+  const online = nodes.filter(n => n.health === 'online');
+  const canvas = document.getElementById('flow-canvas');
+  _flowCols = {};
+  canvas.innerHTML = online.map(n => {
+    _flowCols[n.ip] = n.id;
+    return `
+    <div class="flow-col" id="fc-${n.id}">
+      <div class="flow-node-hdr">${n.name}<br><span style="color:#555;font-size:8px">${n.ip}</span></div>
+      <div class="flow-events" id="fe-${n.id}"></div>
+    </div>`;
+  }).join('');
+}
+
+function addFlowEvent(nodeId, type, text) {
+  const el = document.getElementById(`fe-${nodeId}`);
+  if (!el) return;
+  const ev = document.createElement('div');
+  ev.className = `flow-event ${type}`;
+  const now = new Date().toLocaleTimeString('en-GB',{hour12:false});
+  ev.innerHTML = `${esc(text.slice(0,45))}<span class="flow-time">${now}</span>`;
+  el.appendChild(ev);
+  el.scrollTop = el.scrollHeight;
+  // Keep max 20 events per column
+  while (el.children.length > 20) el.removeChild(el.firstChild);
+}
+
+function clearFlow() {
+  document.querySelectorAll('.flow-events').forEach(el => el.innerHTML = '');
+}
+
+// Subscribe to master's event stream and render flow events
+let _flowEs = null;
+function startFlowStream() {
+  if (_flowEs) _flowEs.close();
+  // Poll jobs to visualise
+  setInterval(async () => {
+    try {
+      const d = await fetch('/api/jobs').then(r=>r.json());
+      const jobs = d.jobs || [];
+      jobs.filter(j=>j.status==='running').forEach(j => {
+        const nodeId = j.slave_ip ? (_flowCols[j.slave_ip] || 'master') : 'master';
+        addFlowEvent(nodeId, 'plan', `Job #${j.job_num}: ${j.text.slice(0,30)}`);
+      });
+    } catch(e) {}
+  }, 5000);
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function hexRgb(hex) {
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+let _tt;
+function toast(msg, isErr=false) {
+  const el = document.getElementById('toast');
+  el.textContent=msg; el.style.display='block'; el.style.opacity='1';
+  el.style.borderColor = isErr ? 'rgba(248,113,113,.4)' : 'rgba(0,212,255,.3)';
+  clearTimeout(_tt);
+  _tt = setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.style.display='none',400);},3500);
+}
+
+loadMesh();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

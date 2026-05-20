@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>✈️ JARVIS Flights</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0c14;color:#c8d2e6;font-family:'JetBrains Mono',monospace,system-ui;font-size:13px;min-height:100vh;}
+
+/* NAV */
+nav{background:#0d0f1a;border-bottom:1px solid rgba(107,140,255,.15);padding:0 20px;display:flex;align-items:center;gap:16px;height:44px;position:sticky;top:0;z-index:100;}
+nav .logo{color:#6b8cff;font-weight:800;font-size:14px;letter-spacing:1px;text-decoration:none;}
+nav a{color:rgba(200,210,230,.5);font-size:11px;text-decoration:none;transition:color .2s;}
+nav a:hover,nav a.active{color:#6b8cff;}
+nav .spacer{flex:1;}
+.nav-badge{background:rgba(107,140,255,.15);color:#6b8cff;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;}
+
+/* HEADER */
+.fl-header{padding:20px 24px 12px;border-bottom:1px solid rgba(255,255,255,.05);}
+.fl-title{font-size:18px;font-weight:800;color:#e8ecf4;display:flex;align-items:center;gap:10px;}
+.fl-meta{font-size:11px;color:rgba(200,210,230,.4);margin-top:4px;}
+.fl-updated{font-size:10px;color:rgba(107,140,255,.6);}
+
+/* VIEW SWITCHER */
+.view-bar{display:flex;gap:6px;padding:12px 24px;border-bottom:1px solid rgba(255,255,255,.05);align-items:center;flex-wrap:wrap;}
+.vbtn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(200,210,230,.6);padding:6px 14px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;transition:all .2s;}
+.vbtn:hover{background:rgba(107,140,255,.15);color:#6b8cff;border-color:rgba(107,140,255,.3);}
+.vbtn.active{background:rgba(107,140,255,.2);color:#6b8cff;border-color:#6b8cff;}
+.view-bar .spacer{flex:1;}
+.compare-btn{background:#facc15;color:#1a1500;font-weight:800;display:none;}
+.compare-btn:hover{background:#fbbf24;color:#1a1500;}
+.sort-label{font-size:10px;color:rgba(200,210,230,.4);}
+select.sort-sel{background:#0d0f1a;border:1px solid rgba(255,255,255,.1);color:#c8d2e6;padding:5px 10px;border-radius:6px;font-family:inherit;font-size:11px;cursor:pointer;}
+
+/* CONTENT */
+.fl-content{padding:16px 24px;}
+
+/* TABLE VIEW */
+.fl-table{width:100%;border-collapse:collapse;}
+.fl-table th{text-align:left;font-size:10px;font-weight:700;color:rgba(200,210,230,.35);letter-spacing:.8px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06);}
+.fl-table td{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+.fl-table tr{cursor:pointer;transition:background .15s;}
+.fl-table tr:hover td{background:rgba(107,140,255,.07);}
+.fl-table tr.selected td{background:rgba(107,140,255,.12);}
+.fl-table .chk{width:32px;}
+.fl-table input[type=checkbox]{accent-color:#6b8cff;width:14px;height:14px;cursor:pointer;}
+.fl-table .rank{font-size:10px;color:rgba(200,210,230,.3);font-weight:700;}
+.airline-logo{width:26px;height:26px;border-radius:6px;background:rgba(107,140,255,.15);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#6b8cff;margin-right:6px;vertical-align:middle;flex-shrink:0;}
+.airline-name{font-weight:700;color:#e8ecf4;font-size:12px;}
+.route{color:rgba(200,210,230,.5);font-size:10px;}
+.time-big{font-size:13px;font-weight:700;color:#e8ecf4;}
+.time-arr{color:rgba(200,210,230,.5);font-size:11px;}
+.duration-tag{background:rgba(255,255,255,.05);padding:2px 7px;border-radius:4px;font-size:9px;color:rgba(200,210,230,.4);}
+.stops-tag{font-size:10px;border-radius:4px;padding:2px 7px;}
+.stops-0{background:rgba(63,220,138,.1);color:#3fdc8a;}
+.stops-n{background:rgba(250,204,21,.1);color:#facc15;}
+.price-big{font-size:15px;font-weight:800;color:#3fdc8a;}
+.price-cur{font-size:10px;color:rgba(200,210,230,.4);}
+.row-actions{display:flex;gap:5px;}
+.row-btn{background:rgba(255,255,255,.06);border:none;color:rgba(200,210,230,.6);padding:5px 10px;border-radius:5px;cursor:pointer;font-size:10px;font-weight:700;font-family:inherit;transition:all .2s;}
+.row-btn:hover{background:rgba(107,140,255,.2);color:#6b8cff;}
+.row-btn.tg{background:rgba(41,182,246,.1);color:#29b6f6;}
+.row-btn.tg:hover{background:rgba(41,182,246,.2);}
+
+/* CARD VIEW */
+.fl-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.fl-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;cursor:pointer;transition:all .2s;position:relative;}
+.fl-card:hover{border-color:rgba(107,140,255,.35);background:rgba(107,140,255,.06);}
+.fl-card.selected{border-color:#6b8cff;background:rgba(107,140,255,.1);}
+.card-rank{position:absolute;top:12px;right:12px;background:rgba(107,140,255,.15);color:#6b8cff;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:800;}
+.card-airline{font-weight:800;color:#e8ecf4;font-size:13px;margin-bottom:4px;}
+.card-route{font-size:11px;color:rgba(200,210,230,.5);margin-bottom:10px;}
+.card-times{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.card-time{font-size:14px;font-weight:700;color:#e8ecf4;}
+.card-arrow{color:rgba(200,210,230,.3);font-size:12px;}
+.card-dur{font-size:10px;color:rgba(200,210,230,.35);background:rgba(255,255,255,.04);padding:2px 6px;border-radius:3px;}
+.card-price{font-size:20px;font-weight:800;color:#3fdc8a;}
+.card-price span{font-size:11px;color:rgba(200,210,230,.4);}
+.card-meta{display:flex;gap:8px;margin-top:8px;align-items:center;}
+.card-btns{display:flex;gap:6px;margin-top:10px;}
+
+/* SLIDESHOW VIEW */
+.fl-slide{max-width:500px;margin:0 auto;}
+.slide-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:28px;text-align:center;position:relative;}
+.slide-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.slide-arrow{background:rgba(255,255,255,.07);border:none;color:#c8d2e6;width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:16px;font-family:inherit;transition:all .2s;}
+.slide-arrow:hover{background:rgba(107,140,255,.2);color:#6b8cff;}
+.slide-counter{font-size:11px;color:rgba(200,210,230,.4);}
+.slide-airline{font-size:22px;font-weight:800;color:#e8ecf4;margin-bottom:6px;}
+.slide-route{font-size:14px;color:rgba(200,210,230,.5);margin-bottom:20px;}
+.slide-times{display:flex;justify-content:center;gap:20px;margin-bottom:16px;}
+.slide-t{text-align:center;}
+.slide-t .big{font-size:28px;font-weight:800;color:#e8ecf4;}
+.slide-t .label{font-size:10px;color:rgba(200,210,230,.35);text-transform:uppercase;letter-spacing:.6px;}
+.slide-mid{color:rgba(200,210,230,.25);font-size:20px;padding-top:12px;}
+.slide-price{font-size:36px;font-weight:800;color:#3fdc8a;margin:16px 0 6px;}
+.slide-tags{display:flex;justify-content:center;gap:8px;margin-bottom:16px;}
+.slide-detail{font-size:11px;color:rgba(200,210,230,.4);text-align:left;background:rgba(255,255,255,.03);padding:10px 14px;border-radius:8px;margin-bottom:16px;}
+.slide-btns{display:flex;gap:8px;justify-content:center;}
+.slide-dots{display:flex;gap:6px;justify-content:center;margin-top:12px;}
+.slide-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15);cursor:pointer;transition:background .2s;}
+.slide-dot.active{background:#6b8cff;}
+
+/* COMPARE VIEW */
+.compare-grid{display:grid;gap:12px;}
+.compare-row{display:grid;align-items:start;border-bottom:1px solid rgba(255,255,255,.04);}
+.compare-label{font-size:10px;font-weight:700;color:rgba(200,210,230,.35);text-transform:uppercase;letter-spacing:.7px;padding:8px 0 4px;}
+.compare-val{font-size:12px;color:#e8ecf4;padding:4px 8px;}
+.compare-winner{color:#3fdc8a;font-weight:700;}
+.compare-header{display:grid;gap:12px;margin-bottom:8px;}
+.compare-airline-hdr{background:rgba(107,140,255,.1);border:1px solid rgba(107,140,255,.2);border-radius:8px;padding:12px;text-align:center;}
+
+/* DETAIL PANEL */
+.detail-overlay{position:fixed;top:0;right:-420px;width:420px;height:100vh;background:#0d0f1a;border-left:1px solid rgba(107,140,255,.2);z-index:200;transition:right .3s cubic-bezier(.4,0,.2,1);overflow-y:auto;}
+.detail-overlay.open{right:0;}
+.detail-close{position:absolute;top:16px;right:16px;background:none;border:none;color:rgba(200,210,230,.4);font-size:16px;cursor:pointer;}
+.detail-close:hover{color:#e8ecf4;}
+.detail-inner{padding:24px;}
+.detail-airline{font-size:18px;font-weight:800;color:#e8ecf4;margin-bottom:4px;}
+.detail-route{font-size:12px;color:rgba(200,210,230,.5);margin-bottom:20px;}
+.detail-price{font-size:30px;font-weight:800;color:#3fdc8a;margin-bottom:16px;}
+.detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.detail-key{font-size:11px;color:rgba(200,210,230,.35);}
+.detail-val{font-size:11px;color:#e8ecf4;font-weight:700;}
+.detail-btns{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
+.dbtn{padding:10px;border-radius:8px;border:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s;}
+.dbtn:hover{opacity:.85;}
+.dbtn-tg{background:#29b6f6;color:#fff;}
+.dbtn-compare{background:rgba(107,140,255,.2);color:#6b8cff;border:1px solid rgba(107,140,255,.3);}
+
+/* ASK JARVIS */
+.ask-bar{position:fixed;bottom:0;left:0;right:0;background:#0d0f1a;border-top:1px solid rgba(107,140,255,.15);padding:10px 24px;display:flex;gap:8px;align-items:center;z-index:150;}
+.ask-input{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#e8ecf4;padding:8px 14px;border-radius:8px;font-family:inherit;font-size:12px;outline:none;}
+.ask-input:focus{border-color:rgba(107,140,255,.4);}
+.ask-send{background:#6b8cff;border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;transition:opacity .2s;}
+.ask-send:hover{opacity:.85;}
+.ask-hint{font-size:10px;color:rgba(200,210,230,.3);}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:60px 20px;color:rgba(200,210,230,.3);}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:.4;}
+.empty-title{font-size:14px;font-weight:700;color:rgba(200,210,230,.5);margin-bottom:8px;}
+.empty-sub{font-size:11px;line-height:1.6;}
+
+/* TOAST */
+.toast{position:fixed;top:60px;right:20px;background:#1a1f2e;border:1px solid rgba(107,140,255,.3);border-radius:8px;padding:10px 16px;font-size:11px;color:#e8ecf4;z-index:999;animation:toastin .2s ease;transition:opacity .3s;}
+@keyframes toastin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
+/* STATUS */
+.status-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;}
+.status-live{background:#3fdc8a;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+body{padding-bottom:60px;}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="logo">JARVIS</a>
+  <a href="/">Agent</a>
+  <a href="/overlay/big">Overlay</a>
+  <a href="/flights" class="active">✈️ Flights</a>
+  <a href="/browser-jobs">Jobs</a>
+  <a href="/webhooks">Webhooks</a>
+  <a href="/manual">Docs</a>
+  <span class="spacer"></span>
+  <span class="nav-badge"><span class="status-dot status-live"></span>LIVE</span>
+</nav>
+
+<div class="fl-header">
+  <div class="fl-title">✈️ Flight Results <span id="flight-count" style="font-size:13px;font-weight:400;color:rgba(200,210,230,.4)"></span></div>
+  <div class="fl-meta" id="fl-search"></div>
+  <div class="fl-updated" id="fl-updated"></div>
+</div>
+
+<div class="view-bar">
+  <button class="vbtn active" id="vbtn-table" onclick="setView('table')">📊 Table</button>
+  <button class="vbtn" id="vbtn-cards" onclick="setView('cards')">🃏 Cards</button>
+  <button class="vbtn" id="vbtn-slide" onclick="setView('slide')">▶ Slideshow</button>
+  <button class="vbtn" id="vbtn-compare" onclick="setView('compare')">⚖ Compare</button>
+  <span class="spacer"></span>
+  <button class="vbtn compare-btn" id="compare-action-btn" onclick="doCompare()">⚖ Compare Selected</button>
+  <span class="sort-label">Sort:</span>
+  <select class="sort-sel" id="sort-sel" onchange="renderCurrent()">
+    <option value="price">Price ↑</option>
+    <option value="depart">Depart ↑</option>
+    <option value="duration">Duration ↑</option>
+    <option value="airline">Airline A-Z</option>
+  </select>
+</div>
+
+<div class="fl-content" id="fl-content">
+  <div class="empty">
+    <div class="empty-icon">✈️</div>
+    <div class="empty-title">No flight data yet</div>
+    <div class="empty-sub">Ask JARVIS for flights below, or push data via<br><code>POST /flights/data</code></div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-overlay" id="detail-panel">
+  <button class="detail-close" onclick="closeDetail()">✕</button>
+  <div class="detail-inner" id="detail-inner"></div>
+</div>
+
+<!-- Ask JARVIS bar -->
+<div class="ask-bar">
+  <input class="ask-input" id="ask-input" placeholder='Ask JARVIS: "show me in excel style", "sort by cheapest", "compare flights 1 and 3"…' onkeydown="if(event.key==='Enter')askJarvis()"/>
+  <button class="ask-send" onclick="askJarvis()">Send ↵</button>
+  <span class="ask-hint" id="ask-hint"></span>
+</div>
+
+<script>
+let _flights = [];
+let _search = '';
+let _view = 'table';
+let _selected = new Set();
+let _slideIdx = 0;
+let _sse = null;
+let _toastTimer = null;
+
+// ── SSE connection ──
+function connectSSE() {
+  if (_sse) _sse.close();
+  _sse = new EventSource('/flights/stream');
+  _sse.onmessage = (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      if (d.type === 'ping') return;
+      if (d.type === 'flights') {
+        _flights = d.flights || [];
+        _search = d.search || '';
+        updateHeader(d);
+        renderCurrent();
+        if (_flights.length > 0) toast(`✈️ ${_flights.length} flights loaded`);
+      }
+    } catch {}
+  };
+  _sse.onerror = () => setTimeout(connectSSE, 3000);
+}
+
+function updateHeader(d) {
+  const el = document.getElementById('fl-search');
+  if (el) el.textContent = d.search || '';
+  const upd = document.getElementById('fl-updated');
+  if (upd && d.updated) upd.textContent = 'Updated ' + new Date(d.updated).toLocaleTimeString();
+  const cnt = document.getElementById('flight-count');
+  if (cnt && _flights.length) cnt.textContent = `(${_flights.length} flights)`;
+}
+
+// ── View switcher ──
+function setView(v) {
+  _view = v;
+  ['table','cards','slide','compare'].forEach(x => {
+    const b = document.getElementById('vbtn-'+x);
+    if (b) b.classList.toggle('active', x === v);
+  });
+  renderCurrent();
+}
+
+function getSorted() {
+  const s = document.getElementById('sort-sel').value;
+  return [..._flights].sort((a,b) => {
+    if (s === 'price') return (a.price||0) - (b.price||0);
+    if (s === 'depart') return (a.depart||'').localeCompare(b.depart||'');
+    if (s === 'duration') return (a.duration||'').localeCompare(b.duration||'');
+    if (s === 'airline') return (a.airline||'').localeCompare(b.airline||'');
+    return 0;
+  });
+}
+
+function renderCurrent() {
+  if (!_flights.length) return;
+  if (_view === 'table')   renderTable();
+  else if (_view === 'cards')   renderCards();
+  else if (_view === 'slide')   renderSlide();
+  else if (_view === 'compare') renderCompare();
+}
+
+// ── TABLE VIEW ──
+function renderTable() {
+  const flights = getSorted();
+  const cmp = document.getElementById('compare-action-btn');
+  if (cmp) cmp.style.display = _selected.size >= 2 ? '' : 'none';
+
+  let html = `<table class="fl-table"><thead><tr>
+    <th class="chk"></th>
+    <th>#</th><th>Airline</th><th>Route</th><th>Depart</th><th>Arrive</th>
+    <th>Duration</th><th>Stops</th><th>Price</th><th>Actions</th>
+  </tr></thead><tbody>`;
+
+  flights.forEach((f, i) => {
+    const id = f.id || ('f' + i);
+    const sel = _selected.has(id);
+    const init = (f.airline||'?').slice(0,2).toUpperCase();
+    const stopsCls = f.stops === 0 ? 'stops-0' : 'stops-n';
+    const stopsLbl = f.stops === 0 ? 'Direct' : f.stops + ' stop' + (f.stops>1?'s':'');
+    html += `<tr class="${sel?'selected':''}" onclick="rowClick(event,'${id}',${i})">
+      <td class="chk" onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} onchange="toggleSel('${id}',this)"/></td>
+      <td class="rank">${i+1}</td>
+      <td><span class="airline-logo">${init}</span><span class="airline-name">${esc(f.airline||'')}</span></td>
+      <td class="route">${esc(f.from||'')} → ${esc(f.to||'')}</td>
+      <td><div class="time-big">${timeStr(f.depart)}</div><div class="time-arr">${dateStr(f.depart)}</div></td>
+      <td><div class="time-big">${timeStr(f.arrive)}</div><div class="time-arr">${dateStr(f.arrive)}</div></td>
+      <td><span class="duration-tag">${esc(f.duration||'')}</span></td>
+      <td><span class="stops-tag ${stopsCls}">${stopsLbl}</span></td>
+      <td><div class="price-big">${f.currency||'£'}${fmt(f.price)}</div></td>
+      <td onclick="event.stopPropagation()"><div class="row-actions">
+        <button class="row-btn" onclick="openDetail(${i})">Details</button>
+        <button class="row-btn tg" onclick="sendTG([${i}])">📱</button>
+      </div></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('fl-content').innerHTML = html;
+}
+
+// ── CARDS VIEW ──
+function renderCards() {
+  const flights = getSorted();
+  let html = '<div class="fl-cards">';
+  flights.forEach((f, i) => {
+    const id = f.id || ('f' + i);
+    const sel = _selected.has(id);
+    const stopsCls = f.stops === 0 ? 'stops-0' : 'stops-n';
+    const stopsLbl = f.stops === 0 ? 'Direct' : f.stops + ' stop(s)';
+    html += `<div class="fl-card ${sel?'selected':''}" onclick="openDetail(${i})">
+      <div class="card-rank">#${i+1}</div>
+      <div class="card-airline">${esc(f.airline||'')}</div>
+      <div class="card-route">${esc(f.from||'')} → ${esc(f.to||'')}</div>
+      <div class="card-times">
+        <div class="card-time">${timeStr(f.depart)}</div>
+        <div class="card-arrow">→</div>
+        <div class="card-time">${timeStr(f.arrive)}</div>
+        <div class="card-dur">${esc(f.duration||'')}</div>
+      </div>
+      <div class="card-price">${f.currency||'£'}${fmt(f.price)} <span>per person</span></div>
+      <div class="card-meta">
+        <span class="stops-tag ${stopsCls}">${stopsLbl}</span>
+        ${f.source?`<span class="duration-tag">${esc(f.source)}</span>`:''}
+      </div>
+      <div class="card-btns" onclick="event.stopPropagation()">
+        <button class="row-btn" onclick="openDetail(${i})">View Details</button>
+        <button class="row-btn tg" onclick="sendTG([${i}])">📱 Telegram</button>
+        <button class="row-btn" onclick="toggleSel('${id}',null,event)">
+          ${sel?'☑ Selected':'☐ Compare'}
+        </button>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('fl-content').innerHTML = html;
+}
+
+// ── SLIDESHOW VIEW ──
+function renderSlide() {
+  const flights = getSorted();
+  if (!flights.length) return;
+  if (_slideIdx >= flights.length) _slideIdx = 0;
+  const f = flights[_slideIdx];
+  const stopsCls = f.stops === 0 ? 'stops-0' : 'stops-n';
+  const stopsLbl = f.stops === 0 ? 'Direct' : f.stops + ' stop(s)';
+
+  const dots = flights.map((_,i) =>
+    `<div class="slide-dot ${i===_slideIdx?'active':''}" onclick="slideGo(${i})"></div>`
+  ).join('');
+
+  const html = `<div class="fl-slide">
+    <div class="slide-card">
+      <div class="slide-nav">
+        <button class="slide-arrow" onclick="slideGo(${_slideIdx-1})">‹</button>
+        <span class="slide-counter">${_slideIdx+1} of ${flights.length}</span>
+        <button class="slide-arrow" onclick="slideGo(${_slideIdx+1})">›</button>
+      </div>
+      <div class="slide-airline">${esc(f.airline||'')}</div>
+      <div class="slide-route">${esc(f.from||'')} → ${esc(f.to||'')}</div>
+      <div class="slide-times">
+        <div class="slide-t">
+          <div class="big">${timeStr(f.depart)}</div>
+          <div class="label">Depart · ${dateStr(f.depart)}</div>
+        </div>
+        <div class="slide-mid">→</div>
+        <div class="slide-t">
+          <div class="big">${timeStr(f.arrive)}</div>
+          <div class="label">Arrive · ${dateStr(f.arrive)}</div>
+        </div>
+      </div>
+      <div class="slide-price">${f.currency||'£'}${fmt(f.price)}</div>
+      <div class="slide-tags">
+        <span class="stops-tag ${stopsCls}">${stopsLbl}</span>
+        <span class="duration-tag">${esc(f.duration||'')}</span>
+        ${f.source?`<span class="duration-tag">${esc(f.source)}</span>`:''}
+      </div>
+      ${f.details?`<div class="slide-detail">${esc(f.details)}</div>`:''}
+      <div class="slide-btns">
+        <button class="row-btn" onclick="openDetail(${_slideIdx})">Full Details</button>
+        <button class="row-btn tg" onclick="sendTG([${_slideIdx}])">📱 Telegram</button>
+      </div>
+    </div>
+    <div class="slide-dots">${dots}</div>
+  </div>`;
+  document.getElementById('fl-content').innerHTML = html;
+}
+
+function slideGo(idx) {
+  const flights = getSorted();
+  _slideIdx = ((idx % flights.length) + flights.length) % flights.length;
+  renderSlide();
+}
+
+// ── COMPARE VIEW ──
+function renderCompare() {
+  const flights = getSorted();
+  // Use _selected if 2+ selected, else first 2
+  let idxs = [];
+  flights.forEach((f,i) => { if (_selected.has(f.id||'f'+i)) idxs.push(i); });
+  if (idxs.length < 2) idxs = [0,1];
+  idxs = idxs.slice(0,3); // max 3
+
+  const cols = idxs.map(i => flights[i]).filter(Boolean);
+  if (cols.length < 2) {
+    document.getElementById('fl-content').innerHTML = '<div class="empty"><div class="empty-title">Select at least 2 flights to compare</div></div>';
+    return;
+  }
+
+  const numCols = cols.length;
+  const gridTpl = `repeat(${numCols+1}, 1fr)`;
+  const fields = [
+    ['airline','Airline'],['from','From'],['to','To'],
+    ['depart','Depart'],['arrive','Arrive'],['duration','Duration'],
+    ['stops','Stops'],['price','Price'],['details','Details'],
+  ];
+
+  let html = `<div style="margin-bottom:8px;font-size:11px;color:rgba(200,210,230,.4)">Comparing ${numCols} flights — use checkboxes to change selection</div>`;
+  html += `<div class="compare-header" style="grid-template-columns:${gridTpl}; display:grid; gap:12px; margin-bottom:12px;">`;
+  html += `<div></div>`;
+  cols.forEach((f,ci) => {
+    html += `<div class="compare-airline-hdr"><div style="font-weight:800;color:#e8ecf4">${esc(f.airline||'')}</div><div style="font-size:10px;color:rgba(200,210,230,.4)">#${idxs[ci]+1}</div></div>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="compare-grid">`;
+  fields.forEach(([key, label]) => {
+    html += `<div class="compare-row" style="display:grid;grid-template-columns:${gridTpl};gap:12px;">`;
+    html += `<div class="compare-label">${label}</div>`;
+    const vals = cols.map(f => {
+      if (key === 'price') return {raw: f.price||0, display: (f.currency||'£')+fmt(f.price)};
+      if (key === 'stops') return {raw: f.stops||0, display: f.stops===0?'Direct':(f.stops+' stop(s)')};
+      return {raw: f[key]||'', display: f[key]||'—'};
+    });
+    // find best (lowest price, lowest stops, shortest duration)
+    let bestIdx = null;
+    if (key === 'price' || key === 'stops') {
+      const min = Math.min(...vals.map(v=>v.raw));
+      bestIdx = vals.findIndex(v=>v.raw===min);
+    }
+    vals.forEach((v,ci) => {
+      const winner = bestIdx !== null && ci === bestIdx;
+      html += `<div class="compare-val ${winner?'compare-winner':''}">${esc(String(v.display))}</div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+
+  // CTA buttons
+  html += `<div style="display:flex;gap:8px;margin-top:16px;">`;
+  cols.forEach((f,ci) => {
+    html += `<button class="row-btn tg" onclick="sendTG([${idxs[ci]}])">📱 Send #${idxs[ci]+1}</button>`;
+  });
+  html += `</div>`;
+
+  document.getElementById('fl-content').innerHTML = html;
+}
+
+function doCompare() {
+  setView('compare');
+}
+
+// ── DETAIL PANEL ──
+function openDetail(idx) {
+  const flights = getSorted();
+  const f = flights[idx];
+  if (!f) return;
+  const stopsCls = f.stops === 0 ? 'stops-0' : 'stops-n';
+  const stopsLbl = f.stops === 0 ? 'Direct' : f.stops + ' stop(s)';
+  const rows = [
+    ['From', f.from||''],['To', f.to||''],
+    ['Depart', f.depart||''],['Arrive', f.arrive||''],
+    ['Duration', f.duration||''],['Stops', stopsLbl],
+    ['Airline', f.airline||''],['Source', f.source||'JARVIS'],
+  ];
+  const html = `
+    <div class="detail-airline">${esc(f.airline||'')}</div>
+    <div class="detail-route">${esc(f.from||'')} → ${esc(f.to||'')}</div>
+    <div class="detail-price">${f.currency||'£'}${fmt(f.price)}</div>
+    ${rows.map(([k,v])=>`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${esc(String(v))}</span></div>`).join('')}
+    ${f.details?`<div style="margin-top:12px;font-size:11px;color:rgba(200,210,230,.5);line-height:1.6">${esc(f.details)}</div>`:''}
+    <div class="detail-btns">
+      <button class="dbtn dbtn-tg" onclick="sendTG([${idx}])">📱 Send to Telegram</button>
+      <button class="dbtn dbtn-compare" onclick="toggleSel('${f.id||'f'+idx}',null);closeDetail();">⚖ Add to Compare</button>
+      ${f.link?`<a href="${f.link}" target="_blank" style="display:block;text-align:center;padding:10px;background:rgba(63,220,138,.1);color:#3fdc8a;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;">🔗 Book Now</a>`:''}
+    </div>
+  `;
+  document.getElementById('detail-inner').innerHTML = html;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+}
+
+// Close detail on outside click
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('detail-panel');
+  if (panel.classList.contains('open') && !panel.contains(e.target)) closeDetail();
+});
+
+// ── SELECTION ──
+function toggleSel(id, chk, event) {
+  if (event) event.stopPropagation();
+  if (_selected.has(id)) _selected.delete(id);
+  else _selected.add(id);
+  const cmp = document.getElementById('compare-action-btn');
+  if (cmp) cmp.style.display = _selected.size >= 2 ? '' : 'none';
+  if (_view === 'table') renderTable();
+  else if (_view === 'cards') renderCards();
+}
+
+function rowClick(event, id, idx) {
+  // left-click opens detail; middle/ctrl click toggles selection
+  if (event.ctrlKey || event.metaKey) {
+    toggleSel(id, null, event);
+  } else {
+    openDetail(idx);
+  }
+}
+
+// ── TELEGRAM ──
+async function sendTG(idxs) {
+  const flights = getSorted();
+  const selected = idxs.map(i => flights[i]).filter(Boolean);
+  if (!selected.length) { toast('No flights selected'); return; }
+  try {
+    const r = await fetch('/flights/telegram', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ title: _search || 'Flight Info', flights: selected })
+    });
+    const d = await r.json();
+    toast(d.ok ? '✅ Sent to Telegram!' : '❌ Telegram failed');
+  } catch { toast('❌ Request failed'); }
+}
+
+// ── ASK JARVIS ──
+async function askJarvis() {
+  const inp = document.getElementById('ask-input');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  const hint = document.getElementById('ask-hint');
+  if (hint) hint.textContent = '⏳ Thinking…';
+
+  // Handle local view commands instantly
+  const ml = msg.toLowerCase();
+  if (ml.includes('excel') || ml.includes('table') || ml.includes('spreadsheet')) { setView('table'); if(hint) hint.textContent=''; return; }
+  if (ml.includes('card') || ml.includes('grid')) { setView('cards'); if(hint) hint.textContent=''; return; }
+  if (ml.includes('slide') || ml.includes('one at a time')) { setView('slide'); if(hint) hint.textContent=''; return; }
+  if (ml.includes('compare')) {
+    // parse "compare 1 and 3" → select those
+    const nums = [...ml.matchAll(/\d+/g)].map(m=>parseInt(m[0])-1);
+    if (nums.length >= 2) {
+      _selected.clear();
+      const flights = getSorted();
+      nums.forEach(i => { if(flights[i]) _selected.add(flights[i].id||'f'+i); });
+    }
+    setView('compare'); if(hint) hint.textContent=''; return;
+  }
+  if (ml.includes('cheapest') || ml.includes('sort by price')) {
+    document.getElementById('sort-sel').value = 'price'; renderCurrent(); if(hint) hint.textContent=''; return;
+  }
+  if (ml.includes('telegram') || ml.includes('send me')) {
+    sendTG([0,1,2,3,4].slice(0, Math.min(5, _flights.length))); if(hint) hint.textContent=''; return;
+  }
+
+  // Otherwise send to JARVIS agent
+  try {
+    const r = await fetch('/run', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text: msg, model:'Gemini 2.5 Flash', rules:[], auto_execute:true, history:[] })
+    });
+    const d = await r.json();
+    if (hint) hint.textContent = d.task_id ? '✅ JARVIS is working…' : '❌ Error';
+    setTimeout(()=>{ if(hint) hint.textContent=''; }, 3000);
+  } catch { if(hint) hint.textContent='❌ Failed'; }
+}
+
+// ── HELPERS ──
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(n) { return n != null ? parseFloat(n).toFixed(2) : '?'; }
+function timeStr(s) { if(!s) return '—'; const t = s.split(' ')[1]||s; return t.slice(0,5); }
+function dateStr(s) { if(!s) return ''; return (s.split(' ')[0]||'').replace(/^\d{4}-/,''); }
+
+function toast(msg, dur=3000) {
+  if (_toastTimer) clearTimeout(_toastTimer);
+  let el = document.getElementById('_toast');
+  if (!el) { el = document.createElement('div'); el.id='_toast'; el.className='toast'; document.body.appendChild(el); }
+  el.textContent = msg; el.style.opacity='1';
+  _toastTimer = setTimeout(()=>{ el.style.opacity='0'; }, dur);
+}
+
+// ── INIT ──
+async function init() {
+  // Load existing data
+  try {
+    const r = await fetch('/flights/data');
+    const d = await r.json();
+    if (d.flights && d.flights.length) {
+      _flights = d.flights;
+      _search = d.search || '';
+      updateHeader(d);
+      renderCurrent();
+    }
+  } catch {}
+  connectSSE();
+}
+
+init();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

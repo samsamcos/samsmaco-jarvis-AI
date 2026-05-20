@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS — Browser Jobs</title>
+<style>
+:root{--bg:#07080d;--s1:#0d0f17;--s2:#13151f;--b1:#1e2030;--b2:#2a2d42;--tx:#dde1f5;--tm:#7880a0;--tf:#3a3e55;--blue:#6b8cff;--grn:#3fdc8a;--red:#f87171;--orange:#ff9a4a;--pur:#b57aff}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'JetBrains Mono',monospace,system-ui;font-size:13px;min-height:100dvh;display:flex;flex-direction:column}
+.top{background:var(--s1);border-bottom:1px solid var(--b1);padding:11px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.logo{font-size:14px;font-weight:800;color:#fff}.logo span{color:var(--blue)}
+.nav{margin-left:auto;display:flex;gap:14px;font-size:11px;flex-wrap:wrap}
+.nav a{color:var(--tm);text-decoration:none;transition:color .15s}.nav a:hover{color:var(--tx)}.nav a.active{color:var(--blue)}
+.wrap{max-width:900px;margin:0 auto;padding:24px 18px;flex:1}
+
+h1{font-size:18px;font-weight:800;color:#fff;margin-bottom:4px}
+.sub{color:var(--tm);font-size:11px;margin-bottom:22px;line-height:1.6}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+
+.sec{background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:18px;margin-bottom:16px}
+.sec-title{font-size:11px;font-weight:800;color:var(--blue);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px}
+
+/* job cards */
+.job-card{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px;position:relative;transition:border-color .15s}
+.job-card:hover{border-color:var(--b2)}
+.job-name{font-size:14px;font-weight:800;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.job-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:rgba(63,220,138,.12);color:var(--grn);border:1px solid rgba(63,220,138,.2)}
+.job-desc{font-size:11px;color:var(--tm);margin-bottom:8px;line-height:1.5}
+.job-url{font-size:10px;color:var(--blue);font-family:monospace;margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.job-profile{font-size:9px;color:var(--tf);margin-bottom:10px}
+.job-webhook{background:var(--bg);border:1px solid var(--b1);border-radius:6px;padding:6px 10px;font-size:10px;color:var(--blue);font-family:monospace;margin-bottom:10px;cursor:pointer;word-break:break-all}
+.job-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* step list */
+.steps-list{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+.step-row{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--b1);border-radius:6px;padding:6px 10px;font-size:11px}
+.step-num{width:18px;height:18px;border-radius:50%;background:var(--blue);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-action{font-weight:700;color:var(--blue);min-width:70px}
+.step-detail{color:var(--tm);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.step-del{background:none;border:none;color:var(--tf);cursor:pointer;font-size:12px;flex-shrink:0;padding:0 4px}
+.step-del:hover{color:var(--red)}
+
+/* run panel */
+.run-panel{background:var(--bg);border:1px solid var(--b1);border-radius:8px;padding:12px;margin-top:10px}
+.run-result{font-size:11px;color:var(--tm);line-height:1.6;margin-top:8px;max-height:150px;overflow-y:auto;white-space:pre-wrap;background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:8px;display:none}
+
+/* inputs */
+.inp{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:8px 12px;color:var(--tx);font-family:inherit;font-size:12px;outline:none;transition:border-color .15s}
+.inp:focus{border-color:var(--blue)}
+.inp::placeholder{color:var(--tf)}
+.field{margin-bottom:10px}
+.lbl{font-size:10px;font-weight:700;color:var(--tf);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* buttons */
+.btn{padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:opacity .15s;display:inline-flex;align-items:center;gap:5px}
+.btn:hover{opacity:.8}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-grn{background:var(--grn);color:#0a1a10}
+.btn-red{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.25)}
+.btn-dim{background:var(--b1);color:var(--tm);border:1px solid var(--b2)}
+.btn-sm{padding:5px 10px;font-size:10px}
+
+/* step builder */
+.step-builder{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:end;margin-top:6px}
+
+/* info boxes */
+.info{background:rgba(107,140,255,.06);border:1px solid rgba(107,140,255,.15);border-radius:8px;padding:12px 14px;font-size:11px;color:var(--tm);line-height:1.7;margin-bottom:14px}
+.info strong{color:var(--blue)}
+
+.toast{position:fixed;bottom:20px;right:20px;background:var(--b1);border:1px solid var(--b2);border-radius:8px;padding:8px 16px;font-size:12px;color:var(--tx);z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">JARVIS <span>Browser Jobs</span></div>
+  <div class="nav">
+    <a href="/">Agent</a>
+    <a href="/setup">Setup</a>
+    <a href="/webhooks">Webhooks</a>
+    <a href="/browser-jobs" class="active">Browser Jobs</a>
+    <a href="/overlay/rc">RC</a>
+    <a href="/manual" style="color:var(--orange)">Manual</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Browser Jobs</h1>
+  <div class="sub">
+    Named browser automation tasks you can trigger via webhook, n8n, or by saying the job name in chat.<br>
+    Each job opens a browser profile, navigates to a URL, runs steps, and returns the result.<br>
+    <strong>Webhook:</strong> <code>POST http://192.168.0.8:8080/webhook/job/&lt;job-name&gt;</code> with <code>{"query":"your question"}</code>
+  </div>
+
+  <div class="info">
+    <strong>How it works:</strong> Define a job like "gemini-jobs" with URL <code>https://gemini.google.com/app</code> and steps to type your query and extract the response. Then trigger it from n8n with a POST request. The result auto-appears on your overlays.<br><br>
+    <strong>Profiles:</strong> Each job uses a browser profile (separate login session). First run opens a real browser — log in to the site, then close. Future runs reuse the saved session.
+  </div>
+
+  <div class="grid">
+    <!-- Left: Job list -->
+    <div>
+      <div class="sec-title">Active Jobs</div>
+      <div id="jobs-list"><div style="color:var(--tf);font-size:11px">Loading…</div></div>
+    </div>
+
+    <!-- Right: Create new job -->
+    <div class="sec">
+      <div class="sec-title">+ Create New Job</div>
+
+      <div class="field">
+        <label class="lbl">Job Name (used in webhook URL)</label>
+        <input id="j-name" class="inp" placeholder="e.g. gemini-jobs, news-search, monitor-check"/>
+      </div>
+      <div class="field">
+        <label class="lbl">Description</label>
+        <input id="j-desc" class="inp" placeholder="What this job does"/>
+      </div>
+      <div class="field">
+        <label class="lbl">Start URL</label>
+        <input id="j-url" class="inp" placeholder="https://gemini.google.com/app"/>
+      </div>
+      <div class="field">
+        <label class="lbl">Browser Profile</label>
+        <select id="j-profile" class="inp">
+          <option value="default">default</option>
+          <option value="gemini">gemini</option>
+          <option value="work">work</option>
+          <option value="house">house</option>
+          <option value="personal">personal</option>
+        </select>
+      </div>
+
+      <div class="lbl" style="margin-bottom:6px">Steps</div>
+      <div id="steps-list" class="steps-list"></div>
+
+      <!-- Step builder -->
+      <div class="step-builder">
+        <div>
+          <label class="lbl">Action</label>
+          <select id="s-action" class="inp" onchange="updateStepFields()">
+            <option value="wait">wait</option>
+            <option value="type">type</option>
+            <option value="click">click</option>
+            <option value="press">press</option>
+            <option value="navigate">navigate</option>
+            <option value="extract">extract</option>
+            <option value="extract_page">extract page</option>
+            <option value="screenshot">screenshot</option>
+          </select>
+        </div>
+        <div id="sel-field">
+          <label class="lbl">Selector / Value</label>
+          <input id="s-selector" class="inp" placeholder="CSS selector"/>
+        </div>
+        <div id="val-field">
+          <label class="lbl">Value / Text</label>
+          <input id="s-value" class="inp" placeholder="{query} or text"/>
+        </div>
+        <div style="padding-bottom:0">
+          <label class="lbl">&nbsp;</label>
+          <button class="btn btn-dim btn-sm" onclick="addStep()">+ Add</button>
+        </div>
+      </div>
+
+      <div style="margin-top:6px;font-size:10px;color:var(--tf)">
+        Use <code>{query}</code> as placeholder — replaced with query at runtime
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn btn-blue" onclick="createJob()">Create Job</button>
+        <button class="btn btn-dim" onclick="loadPreset('gemini')">Load Gemini Template</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick run panel -->
+  <div class="sec" style="margin-top:16px">
+    <div class="sec-title">Quick Run / Test</div>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <div style="flex:1">
+        <label class="lbl">Job Name</label>
+        <input id="run-job" class="inp" placeholder="e.g. gemini-jobs"/>
+      </div>
+      <div style="flex:2">
+        <label class="lbl">Query (replaces {query} in steps)</label>
+        <input id="run-query" class="inp" placeholder="Find the cheapest flight London to Amsterdam next weekend"/>
+      </div>
+      <button class="btn btn-grn" onclick="runJob()" style="white-space:nowrap">▶ Run</button>
+    </div>
+    <div id="run-result" class="run-result"></div>
+    <div id="run-status" style="font-size:10px;color:var(--tm);margin-top:6px"></div>
+  </div>
+
+  <!-- n8n copy kit -->
+  <div class="sec" style="margin-top:4px">
+    <div class="sec-title">n8n Copy Kit</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div>
+        <div class="lbl">Trigger browser job from n8n</div>
+        <div class="job-webhook" onclick="cp(this.textContent)">POST http://192.168.0.8:8080/webhook/job/gemini-jobs</div>
+        <div style="font-size:10px;color:var(--tf)">Body: {"query":"your search query here"}</div>
+      </div>
+      <div>
+        <div class="lbl">Push result card to overlay</div>
+        <div class="job-webhook" onclick="cp(this.textContent)">POST http://192.168.0.8:8080/overlay/rc/push</div>
+        <div style="font-size:10px;color:var(--tf)">Body: {"title":"Job result","message":"{{result}}","source":"n8n","buttons":["✕ Dismiss"]}</div>
+      </div>
+      <div>
+        <div class="lbl">Full flow: run job then push result to overlay</div>
+        <pre style="font-size:10px;color:var(--blue);background:var(--bg);border:1px solid var(--b1);border-radius:6px;padding:10px;overflow-x:auto;line-height:1.6"
+>n8n HTTP Request → POST /webhook/job/gemini-jobs
+  body: {"query": "{{$json.query}}"}
+  → response: {"ok": true, "result": "Gemini says..."}
+
+n8n HTTP Request → POST /overlay/rc/push
+  body: {
+    "title": "Gemini result",
+    "message": "{{$json.result}}",
+    "source": "gemini-jobs",
+    "reply_url": "https://your-n8n/webhook/reply"
+  }</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let _steps = [];
+
+function toast(msg, dur=2500){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+function cp(text){
+  navigator.clipboard.writeText(text).catch(()=>{});
+  toast('Copied!');
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function updateStepFields(){
+  const a=document.getElementById('s-action').value;
+  const sf=document.getElementById('sel-field');
+  const vf=document.getElementById('val-field');
+  const noSel=['press','extract_page','screenshot','navigate'];
+  const noVal=['wait','extract','click','screenshot','extract_page'];
+  sf.style.opacity=noSel.includes(a)?'.4':'1';
+  vf.style.opacity=noVal.includes(a)?'.4':'1';
+  document.getElementById('s-selector').placeholder=a==='wait'?'selector or leave empty':a==='type'?'CSS selector e.g. textarea':'CSS selector';
+  document.getElementById('s-value').placeholder=a==='type'?'{query} or fixed text':a==='press'?'Enter, Tab, Space':a==='navigate'?'https://...':'';
+}
+
+function addStep(){
+  const action=document.getElementById('s-action').value;
+  const sel=document.getElementById('s-selector').value.trim();
+  const val=document.getElementById('s-value').value.trim();
+  if(!sel&&!val&&!['extract_page','screenshot','press'].includes(action)){toast('Enter selector or value');return;}
+  _steps.push({action,selector:sel,value:val});
+  renderSteps();
+  document.getElementById('s-selector').value='';
+  document.getElementById('s-value').value='';
+}
+
+function removeStep(i){ _steps.splice(i,1); renderSteps(); }
+
+function renderSteps(){
+  const el=document.getElementById('steps-list');
+  if(!_steps.length){el.innerHTML='<div style="font-size:10px;color:var(--tf)">No steps yet — add steps above</div>';return;}
+  el.innerHTML=_steps.map((s,i)=>`
+    <div class="step-row">
+      <div class="step-num">${i+1}</div>
+      <div class="step-action">${esc(s.action)}</div>
+      <div class="step-detail">${esc(s.selector||'')} ${s.value?`<span style="color:var(--grn)">"${esc(s.value)}"</span>`:''}</div>
+      <button class="step-del" onclick="removeStep(${i})">✕</button>
+    </div>`).join('');
+}
+
+async function createJob(){
+  const name=document.getElementById('j-name').value.trim();
+  const url=document.getElementById('j-url').value.trim();
+  if(!name){toast('Enter a job name');return;}
+  if(!url){toast('Enter a start URL');return;}
+  const body={
+    name, url,
+    description:document.getElementById('j-desc').value.trim(),
+    profile:document.getElementById('j-profile').value,
+    steps:_steps,
+  };
+  const r=await fetch(API+'/api/browser-jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(d.ok){
+    toast('✓ Job created: '+name);
+    _steps=[]; renderSteps();
+    document.getElementById('j-name').value='';
+    document.getElementById('j-desc').value='';
+    document.getElementById('j-url').value='';
+    loadJobs();
+  } else { toast('Error: '+(d.error||'?')); }
+}
+
+function loadPreset(type){
+  if(type==='gemini'){
+    document.getElementById('j-name').value='gemini-jobs';
+    document.getElementById('j-desc').value='Search Gemini web UI and return AI response';
+    document.getElementById('j-url').value='https://gemini.google.com/app';
+    document.getElementById('j-profile').value='gemini';
+    _steps=[
+      {action:'wait',selector:'rich-textarea',value:'5'},
+      {action:'type',selector:'rich-textarea',value:'{query}'},
+      {action:'press',selector:'',value:'Enter'},
+      {action:'wait',selector:'',value:'8'},
+      {action:'extract',selector:'message-content',value:''},
+    ];
+    renderSteps();
+  }
+}
+
+async function loadJobs(){
+  try{
+    const d=await fetch(API+'/api/browser-jobs').then(r=>r.json());
+    const jobs=d.jobs||[];
+    const el=document.getElementById('jobs-list');
+    if(!jobs.length){
+      el.innerHTML=`<div class="job-card"><div style="color:var(--tf);font-size:11px">No jobs yet — create one or use the Gemini template →</div></div>`;
+      return;
+    }
+    el.innerHTML=jobs.map(j=>`
+      <div class="job-card" style="margin-bottom:10px">
+        <div class="job-name">
+          ${esc(j.name)}
+          ${j.enabled?'<span class="job-badge">ENABLED</span>':''}
+        </div>
+        <div class="job-desc">${esc(j.description||'No description')}</div>
+        <div class="job-url">🌐 ${esc(j.url)}</div>
+        <div class="job-profile">Profile: ${esc(j.profile||'default')} · ${(j.steps||[]).length} steps</div>
+        <div class="lbl" style="margin-bottom:4px">Webhook URL (click to copy)</div>
+        <div class="job-webhook" onclick="cp('http://192.168.0.8:8080/webhook/job/${esc(j.name)}')">
+          POST http://192.168.0.8:8080/webhook/job/${esc(j.name)}
+        </div>
+        <div class="steps-list" style="margin-bottom:10px">
+          ${(j.steps||[]).map((s,i)=>`
+            <div class="step-row">
+              <div class="step-num">${i+1}</div>
+              <div class="step-action">${esc(s.action)}</div>
+              <div class="step-detail">${esc(s.selector||'')} ${s.value?`<span style="color:var(--grn)">"${esc(s.value)}"</span>`:''}</div>
+            </div>`).join('')}
+        </div>
+        <div class="job-actions">
+          <button class="btn btn-grn btn-sm" onclick="quickRun('${j.id}','${esc(j.name)}')">▶ Run</button>
+          <button class="btn btn-dim btn-sm" onclick="document.getElementById('run-job').value='${esc(j.name)}';document.getElementById('run-result').style.display='none'">Test</button>
+          <button class="btn btn-red btn-sm" onclick="deleteJob('${j.id}')">Delete</button>
+        </div>
+      </div>`).join('');
+  }catch(e){toast('Error loading jobs');}
+}
+
+async function quickRun(jid, name){
+  const query=prompt(`Run "${name}" — enter query (or leave blank):`,'');
+  if(query===null) return;
+  toast('Running '+name+'…');
+  const r=await fetch(API+'/api/browser-jobs/'+jid+'/run',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({query})
+  });
+  const d=await r.json();
+  const res=document.getElementById('run-result');
+  res.textContent=d.result||'Done — check overlay';
+  res.style.display='block';
+  document.getElementById('run-status').textContent='Result pushed to overlay/big and overlay/rc';
+}
+
+async function runJob(){
+  const name=document.getElementById('run-job').value.trim();
+  const query=document.getElementById('run-query').value.trim();
+  if(!name){toast('Enter a job name');return;}
+  const st=document.getElementById('run-status');
+  const res=document.getElementById('run-result');
+  st.textContent='Running…';
+  res.style.display='none';
+  try{
+    const r=await fetch(API+'/webhook/job/'+encodeURIComponent(name),{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({query})
+    });
+    const d=await r.json();
+    if(d.error){st.textContent='Error: '+d.error;return;}
+    st.textContent='✓ Running — result will appear on overlay';
+    toast('Job started: '+name);
+  }catch(e){st.textContent='Error: '+e.message;}
+}
+
+async function deleteJob(id){
+  if(!confirm('Delete this job?')) return;
+  await fetch(API+'/api/browser-jobs/'+id,{method:'DELETE'});
+  loadJobs();
+  toast('Deleted');
+}
+
+updateStepFields();
+renderSteps();
+loadJobs();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

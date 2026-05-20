@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home Assistant Setup</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100dvh}
+#hdr{background:#0a0c14;border-bottom:1px solid #1e2030;padding:11px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#hdr h1{font-size:15px;font-weight:700;color:#38bdf8}
+#hdr .sub{font-size:11px;color:#475569}
+#hdr .links{margin-left:auto;display:flex;gap:8px}
+#hdr a{font-size:11px;color:#475569;text-decoration:none;padding:4px 12px;border:1px solid #1e2030;border-radius:6px}
+#hdr a:hover{color:#e2e8f0;border-color:#2d3a52}
+#tabs{background:#0a0c14;border-bottom:1px solid #1e2030;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap}
+#content{max-width:1100px;margin:0 auto;padding:20px 16px}
+.btn{border:1px solid #2d3a52;background:transparent;color:#94a3b8;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:#6b8cff;color:#e2e8f0}
+.btn-grn{background:#16532d;border-color:#166534;color:#4ade80}
+.btn-grn:hover{background:#14532d}
+.btn-blue{background:#0d2a3a;border-color:#0e7490;color:#38bdf8}
+.btn-blue:hover{background:#0a2030}
+.btn-ghost{background:transparent;border-color:#1e2030;color:#64748b}
+.btn-red{background:#3a0d0d;border-color:#7f1d1d;color:#f87171}
+input.fe,textarea.fe,select.fe{width:100%;background:#020305;border:1px solid #1e2030;color:#e2e8f0;border-radius:6px;padding:7px 10px;font-size:11px;font-family:monospace;outline:none}
+input.fe:focus,textarea.fe:focus,select.fe:focus{border-color:#38bdf8}
+.card{background:#07080d;border:1px solid #1e2030;border-radius:10px;padding:14px;margin-bottom:12px}
+.label{font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:600px){.grid2,.grid3{grid-template-columns:1fr}}
+.chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700}
+.chip-on{background:#16532d;color:#4ade80}
+.chip-off{background:#3a0d0d;color:#f87171}
+.chip-uk{background:#1a1a2a;color:#64748b}
+.domain-chip{padding:2px 7px;border-radius:8px;font-size:9px;cursor:pointer;border:1px solid transparent}
+.domain-chip:hover,.domain-chip.active{border-color:#38bdf8;color:#38bdf8}
+.entity-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #0d0f1a;font-size:11px}
+.entity-row:hover{background:#0a0c14}
+.entity-row .eid{font-family:monospace;color:#64748b;font-size:10px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entity-row .fname{color:#e2e8f0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entity-row .state{font-size:10px;min-width:50px;text-align:right}
+.st{font-size:10px;min-height:14px;margin-top:5px}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <h1>🏠 Home Assistant Setup</h1>
+  <div class="sub">5 HA instances · IP + Token · Auto-scan all entities</div>
+  <div class="links">
+    <a href="/n8nflow">n8n Flow</a>
+    <a href="/ai-router">AI Router</a>
+    <a href="/links">Links</a>
+  </div>
+</div>
+
+<div id="tabs">
+  <button class="btn btn-grn" id="tab-instances" onclick="switchTab('instances')">🏠 HA Instances</button>
+  <button class="btn btn-ghost" id="tab-entities" onclick="switchTab('entities')">📋 Entities</button>
+  <button class="btn btn-ghost" id="tab-call" onclick="switchTab('call')">⚡ Call Service</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+const BASE = location.origin;
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('#tabs button').forEach(b =>
+    b.className = b.id==='tab-'+name ? 'btn btn-grn' : 'btn btn-ghost');
+  const fns = {instances: buildInstances, entities: buildEntities, call: buildCall};
+  document.getElementById('content').innerHTML = fns[name]();
+  if (name==='instances') { setTimeout(loadInstances, 50); }
+  if (name==='entities')  { setTimeout(()=>loadEntities(), 50); }
+}
+
+// ══ INSTANCES TAB ═════════════════════════════════════════════════════════════
+function buildInstances() {
+  return `
+  <!-- Add form -->
+  <div class="card" style="border-color:#38bdf8">
+    <div style="font-size:12px;font-weight:700;color:#38bdf8;margin-bottom:12px">➕ Add HA Instance</div>
+    <div class="grid3" style="margin-bottom:10px">
+      <div>
+        <div class="label">Name (optional)</div>
+        <input id="ha-name" class="fe" placeholder="Living Room HA, Office HA…">
+      </div>
+      <div>
+        <div class="label">IP Address</div>
+        <input id="ha-ip" class="fe" placeholder="192.168.0.3">
+      </div>
+      <div>
+        <div class="label">Port (default 8123)</div>
+        <input id="ha-port" class="fe" placeholder="8123" value="8123">
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div class="label">Long-Lived Access Token</div>
+      <textarea id="ha-token" class="fe" rows="2" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="addInstance()" class="btn btn-grn" style="padding:7px 18px;font-size:12px">💾 Add Instance</button>
+      <button onclick="addAll5()" class="btn btn-blue" style="padding:7px 14px;font-size:11px">📋 Paste 5 at Once</button>
+      <div id="add-st" class="st" style="margin-top:0;margin-left:auto"></div>
+    </div>
+  </div>
+
+  <!-- Bulk add 5 PCs -->
+  <div id="bulk-panel" style="display:none" class="card" style="border-color:#38bdf8">
+    <div style="font-size:12px;font-weight:700;color:#38bdf8;margin-bottom:10px">📋 Bulk Add — 5 HA PCs</div>
+    <div style="font-size:10px;color:#64748b;margin-bottom:10px">One per line: <code style="color:#94a3b8">IP | Token | Name (optional)</code><br>e.g. <code style="color:#475569">192.168.0.3 | eyJ... | Main HA</code></div>
+    <textarea id="bulk-input" class="fe" rows="6" placeholder="192.168.0.3 | eyJhbGc... | Main HA&#10;192.168.0.8 | eyJhbGc... | Office&#10;192.168.0.9 | eyJhbGc... | HA 3&#10;192.168.0.10 | eyJhbGc... | HA 4&#10;192.168.0.11 | eyJhbGc... | HA 5"></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button onclick="bulkAdd()" class="btn btn-grn" style="padding:7px 18px;font-size:12px">Add All</button>
+      <button onclick="document.getElementById('bulk-panel').style.display='none'" class="btn btn-ghost" style="font-size:11px">Cancel</button>
+      <div id="bulk-st" class="st" style="margin-top:0;margin-left:auto"></div>
+    </div>
+  </div>
+
+  <!-- Actions bar -->
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <div style="font-size:11px;font-weight:700;color:#94a3b8">🏠 Registered Instances <span id="inst-count" style="color:#475569"></span></div>
+    <button onclick="loadInstances()" class="btn" style="font-size:10px">↺ Refresh</button>
+    <button onclick="scanAll()" class="btn btn-blue" style="padding:5px 14px;font-size:11px;margin-left:auto">🔍 Scan All Entities</button>
+  </div>
+  <div id="inst-scan-st" class="st" style="margin-bottom:8px"></div>
+  <div id="instances-list"><div style="color:#475569;font-size:11px">Loading…</div></div>`;
+}
+
+async function loadInstances() {
+  const list = document.getElementById('instances-list');
+  const cnt  = document.getElementById('inst-count');
+  if (!list) return;
+  try {
+    const d = await (await fetch('/api/ha/instances')).json();
+    if (cnt) cnt.textContent = `(${d.count})`;
+    if (!d.instances?.length) {
+      list.innerHTML = '<div style="color:#475569;font-size:11px;padding:20px 0">No HA instances yet. Add one above.</div>';
+      return;
+    }
+    list.innerHTML = d.instances.map(inst => instanceCard(inst)).join('');
+  } catch(e) { if(list) list.innerHTML=`<div style="color:#f87171;font-size:11px">${e.message}</div>`; }
+}
+
+function instanceCard(i) {
+  const stColor = i.Status==='online' ? '#4ade80' : i.Status?.startsWith('error') ? '#f87171' : '#f5c518';
+  const stBg    = i.Status==='online' ? '#0d2a1a' : i.Status?.startsWith('error') ? '#1a0d0d' : '#1a1a0d';
+  return `<div class="card" id="inst-${i.Id}" style="border-color:${stColor}30">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:#38bdf8">${i.Name||i.IP}</div>
+        <div style="font-family:monospace;font-size:10px;color:#475569">${i.IP}:${i.Port||8123}</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;flex-shrink:0">
+        <span style="background:${stBg};color:${stColor};font-size:10px;padding:3px 9px;border-radius:10px">${i.Status||'unknown'}</span>
+        <span style="font-size:10px;color:#475569;background:#0d0f1a;padding:2px 8px;border-radius:10px">${i.Entity_Count||0} entities</span>
+        <button onclick="scanInstance(${i.Id})" class="btn btn-blue" style="font-size:10px;padding:4px 10px">🔍 Scan</button>
+        <button onclick="deleteInstance(${i.Id})" class="btn btn-red" style="font-size:10px;padding:4px 8px">✕</button>
+      </div>
+    </div>
+    <div style="font-size:9px;color:#334155">Token: <code style="color:#475569">${i.Token}</code>  |  Last scan: ${i.Last_Scan||'never'}</div>
+    <div id="scan-st-${i.Id}" class="st"></div>
+  </div>`;
+}
+
+function addAll5() {
+  const p = document.getElementById('bulk-panel');
+  if (p) p.style.display = p.style.display==='none' ? '' : 'none';
+}
+
+async function bulkAdd() {
+  const inp = document.getElementById('bulk-input');
+  const st  = document.getElementById('bulk-st');
+  const lines = (inp?.value||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  if (!lines.length) return;
+  let ok=0, fail=0;
+  for (const line of lines) {
+    const parts = line.split('|').map(p=>p.trim());
+    const [ip, token, name] = parts;
+    if (!ip || !token) { fail++; continue; }
+    try {
+      const d = await (await fetch('/api/ha/instances',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ip, token, name: name||ip, port:8123})
+      })).json();
+      if (d.ok) ok++; else fail++;
+    } catch { fail++; }
+  }
+  if (st) { st.textContent=`✓ Added ${ok} | Failed ${fail}`; st.style.color=fail?'#f5c518':'#4ade80'; }
+  if (inp) inp.value='';
+  document.getElementById('bulk-panel').style.display='none';
+  setTimeout(loadInstances, 500);
+}
+
+async function addInstance() {
+  const ip    = document.getElementById('ha-ip')?.value.trim();
+  const token = document.getElementById('ha-token')?.value.trim();
+  const name  = document.getElementById('ha-name')?.value.trim();
+  const port  = document.getElementById('ha-port')?.value.trim() || '8123';
+  const st    = document.getElementById('add-st');
+  if (!ip || !token) { if(st){st.textContent='IP and token required';st.style.color='#f87171';} return; }
+  if(st){st.textContent='Adding…';st.style.color='#f5c518';}
+  try {
+    const d = await (await fetch('/api/ha/instances',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ip,token,name:name||ip,port:parseInt(port)})
+    })).json();
+    if(st){st.textContent=`✓ Added — status: ${d.status}`;st.style.color=d.status==='online'?'#4ade80':'#f5c518';}
+    document.getElementById('ha-ip').value='';
+    document.getElementById('ha-token').value='';
+    document.getElementById('ha-name').value='';
+    setTimeout(loadInstances, 400);
+  } catch(e){if(st){st.textContent='Error: '+e.message;st.style.color='#f87171';}}
+}
+
+async function deleteInstance(id) {
+  if (!confirm('Remove this HA instance?')) return;
+  const card = document.getElementById('inst-'+id);
+  await fetch(`/api/ha/instances/${id}`,{method:'DELETE'});
+  if (card) { card.style.opacity='0.3'; setTimeout(()=>card.remove(),400); }
+}
+
+async function scanInstance(id) {
+  const st = document.getElementById('scan-st-'+id);
+  if(st){st.textContent='🔍 Scanning…';st.style.color='#f5c518';}
+  try {
+    const d = await (await fetch('/api/ha/scan',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({instance_id:id})
+    })).json();
+    const r = d.results?.[0]||{};
+    if(st){
+      st.textContent = r.ok ? `✓ ${r.entities} entities scanned` : `✗ ${r.error}`;
+      st.style.color = r.ok ? '#4ade80' : '#f87171';
+    }
+    setTimeout(loadInstances, 500);
+  } catch(e){if(st){st.textContent='Error: '+e.message;st.style.color='#f87171';}}
+}
+
+async function scanAll() {
+  const st = document.getElementById('inst-scan-st');
+  if(st){st.textContent='🔍 Scanning all instances…';st.style.color='#f5c518';}
+  try {
+    const d = await (await fetch('/api/ha/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+    const ok  = d.results?.filter(r=>r.ok).length||0;
+    const tot = d.total_entities||0;
+    if(st){st.textContent=`✓ Scanned ${ok}/${d.scanned} instances — ${tot} total entities`;st.style.color='#4ade80';}
+    setTimeout(loadInstances, 500);
+  } catch(e){if(st){st.textContent='Error: '+e.message;st.style.color='#f87171';}}
+}
+
+// ══ ENTITIES TAB ══════════════════════════════════════════════════════════════
+let _allEntities = [];
+let _activeDomain = '';
+let _activeIP = '';
+
+function buildEntities() {
+  return `
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+    <input id="ent-search" class="fe" style="width:220px;font-size:12px;padding:6px 10px" placeholder="Search entities…" oninput="filterEntities()">
+    <select id="ent-ip" class="fe" style="width:180px;font-size:11px" onchange="filterEntities()">
+      <option value="">All HA instances</option>
+    </select>
+    <button onclick="loadEntities()" class="btn btn-blue" style="font-size:11px">↺ Refresh</button>
+    <span id="ent-count" style="font-size:10px;color:#475569;margin-left:auto"></span>
+  </div>
+  <div id="domain-bar" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px"></div>
+  <div id="entities-table" style="background:#020305;border:1px solid #1e2030;border-radius:8px;overflow:hidden;max-height:65vh;overflow-y:auto">
+    <div style="color:#475569;font-size:11px;padding:20px">Loading entities…</div>
+  </div>`;
+}
+
+async function loadEntities() {
+  const tbl  = document.getElementById('entities-table');
+  const cnt  = document.getElementById('ent-count');
+  const ipSel= document.getElementById('ent-ip');
+  if (!tbl) return;
+
+  // Load instances for IP filter
+  try {
+    const id = await (await fetch('/api/ha/instances')).json();
+    if (ipSel) {
+      ipSel.innerHTML = '<option value="">All HA instances</option>' +
+        (id.instances||[]).map(i=>`<option value="${i.IP}">${i.Name||i.IP}</option>`).join('');
+    }
+  } catch {}
+
+  try {
+    const ip = document.getElementById('ent-ip')?.value || '';
+    const url = '/api/ha/entities' + (ip ? `?ip=${ip}` : '');
+    const d = await (await fetch(url)).json();
+    _allEntities = d.entities || [];
+    if (cnt) cnt.textContent = `${_allEntities.length} entities`;
+
+    // Build domain bar
+    const domains = [...new Set(_allEntities.map(e=>e.Domain).filter(Boolean))].sort();
+    const dbar = document.getElementById('domain-bar');
+    if (dbar) {
+      dbar.innerHTML = `<span class="domain-chip ${!_activeDomain?'active':''}" onclick="setDomain('')" style="background:#0d0f1a;color:#94a3b8;padding:3px 9px;border-radius:8px;font-size:10px;cursor:pointer">All</span>` +
+        domains.map(dm=>`<span class="domain-chip ${_activeDomain===dm?'active':''}" onclick="setDomain('${dm}')" style="background:#0d0f1a;color:#64748b;padding:3px 9px;border-radius:8px;font-size:10px;cursor:pointer">${dm}</span>`).join('');
+    }
+    renderEntities(_allEntities);
+  } catch(e) { if(tbl) tbl.innerHTML=`<div style="color:#f87171;font-size:11px;padding:12px">${e.message}</div>`; }
+}
+
+function setDomain(d) {
+  _activeDomain = d;
+  document.querySelectorAll('.domain-chip').forEach(c=>{
+    c.classList.toggle('active', c.textContent===d||(d===''&&c.textContent==='All'));
+  });
+  filterEntities();
+}
+
+function filterEntities() {
+  const q  = (document.getElementById('ent-search')?.value||'').toLowerCase();
+  const ip = document.getElementById('ent-ip')?.value||'';
+  let rows = _allEntities;
+  if (ip) rows = rows.filter(e=>e.HA_IP===ip);
+  if (_activeDomain) rows = rows.filter(e=>e.Domain===_activeDomain);
+  if (q) rows = rows.filter(e=>(e.Friendly_Name+' '+e.Entity_ID).toLowerCase().includes(q));
+  renderEntities(rows);
+  const cnt = document.getElementById('ent-count');
+  if (cnt) cnt.textContent = `${rows.length} / ${_allEntities.length} entities`;
+}
+
+const DOMAIN_COLORS = {light:'#f5c518',switch:'#38bdf8',sensor:'#a78bfa',binary_sensor:'#22d3ee',
+  automation:'#fb923c',script:'#4ade80',button:'#f87171',input_boolean:'#818cf8',
+  scene:'#fbbf24',media_player:'#e879f9',climate:'#34d399',cover:'#fdba74'};
+
+function renderEntities(rows) {
+  const tbl = document.getElementById('entities-table');
+  if (!tbl) return;
+  if (!rows.length) { tbl.innerHTML='<div style="color:#475569;font-size:11px;padding:20px">No entities match.</div>'; return; }
+  tbl.innerHTML = `<div style="display:grid;grid-template-columns:180px 1fr 140px 80px 80px;background:#0a0c14;border-bottom:1px solid #1e2030;padding:5px 10px;font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.4px">
+    <div>Entity ID</div><div>Name</div><div>HA</div><div>State</div><div>Action</div>
+  </div>` + rows.map(e => {
+    const domColor = DOMAIN_COLORS[e.Domain]||'#64748b';
+    const stateColor = e.State==='on'?'#4ade80':e.State==='off'?'#f87171':'#64748b';
+    return `<div class="entity-row" style="display:grid;grid-template-columns:180px 1fr 140px 80px 80px;align-items:center">
+      <div class="eid" style="font-size:9px">
+        <span style="color:${domColor};font-weight:700">${e.Domain}</span>
+        <span style="color:#334155">.${(e.Entity_ID||'').split('.')[1]||''}</span>
+      </div>
+      <div class="fname">${e.Friendly_Name||e.Entity_ID}</div>
+      <div style="font-size:9px;color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.HA_Name||e.HA_IP}</div>
+      <div class="state" style="color:${stateColor}">${e.State||'—'}</div>
+      <div>${['light','switch','button','input_boolean','cover','media_player','fan','climate'].includes(e.Domain)
+        ? `<button onclick="callEntity('${e.HA_IP}','${e.Entity_ID}','toggle')" class="btn" style="font-size:9px;padding:2px 8px;border-color:${domColor}30;color:${domColor}">⚡</button>`
+        : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+async function callEntity(ip, eid, state) {
+  try {
+    const d = await (await fetch('/api/ha/call',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ip, entity_id:eid, state})
+    })).json();
+    if (d.ok) setTimeout(loadEntities, 1500);
+    else alert('Error: '+d.error);
+  } catch(e){alert('Error: '+e.message);}
+}
+
+// ══ CALL SERVICE TAB ══════════════════════════════════════════════════════════
+function buildCall() {
+  return `
+  <div class="card" style="border-color:#f97316;max-width:600px">
+    <div style="font-size:12px;font-weight:700;color:#f97316;margin-bottom:12px">⚡ Call HA Service</div>
+    <div class="grid2" style="margin-bottom:10px">
+      <div>
+        <div class="label">HA Instance IP</div>
+        <input id="call-ip" class="fe" placeholder="192.168.0.3">
+      </div>
+      <div>
+        <div class="label">Entity ID</div>
+        <input id="call-eid" class="fe" placeholder="light.living_room">
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:12px">
+      <div>
+        <div class="label">Action</div>
+        <select id="call-state" class="fe">
+          <option value="toggle">Toggle</option>
+          <option value="on">Turn On</option>
+          <option value="off">Turn Off</option>
+          <option value="press">Press (button)</option>
+          <option value="trigger">Trigger (automation)</option>
+        </select>
+      </div>
+      <div>
+        <div class="label">Custom Service (optional)</div>
+        <input id="call-svc" class="fe" placeholder="light.turn_on">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="callService()" class="btn btn-grn" style="padding:7px 18px;font-size:12px">⚡ Call</button>
+      <div id="call-st" class="st" style="margin-top:0;margin-left:auto"></div>
+    </div>
+    <div id="call-result" style="display:none;margin-top:10px;background:#020305;border:1px solid #1e2030;border-radius:6px;padding:10px;font-family:monospace;font-size:10px;color:#94a3b8;max-height:200px;overflow-y:auto"></div>
+  </div>
+
+  <div class="card" style="max-width:600px;margin-top:0">
+    <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:10px">Quick entity search</div>
+    <input id="qs-search" class="fe" style="margin-bottom:8px" placeholder="Search entity ID or name…" oninput="qsFilter()">
+    <div id="qs-list" style="max-height:250px;overflow-y:auto;background:#020305;border:1px solid #1e2030;border-radius:6px">
+      <div style="color:#475569;font-size:10px;padding:8px">Type to search entities</div>
+    </div>
+  </div>`;
+}
+
+async function callService() {
+  const ip   = document.getElementById('call-ip')?.value.trim();
+  const eid  = document.getElementById('call-eid')?.value.trim();
+  const state= document.getElementById('call-state')?.value;
+  const svc  = document.getElementById('call-svc')?.value.trim();
+  const st   = document.getElementById('call-st');
+  const res  = document.getElementById('call-result');
+  if (!ip||!eid){if(st){st.textContent='IP and entity required';st.style.color='#f87171';}return;}
+  if(st){st.textContent='Calling…';st.style.color='#f5c518';}
+  try {
+    const d = await (await fetch('/api/ha/call',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ip, entity_id:eid, state, service:svc||undefined})
+    })).json();
+    if(st){st.textContent=d.ok?`✓ ${d.service} called`:`✗ ${d.error}`;st.style.color=d.ok?'#4ade80':'#f87171';}
+    if(res){res.style.display='';res.textContent=JSON.stringify(d.result||d,null,2);}
+  } catch(e){if(st){st.textContent='Error: '+e.message;st.style.color='#f87171';}}
+}
+
+async function qsFilter() {
+  const q   = (document.getElementById('qs-search')?.value||'').toLowerCase();
+  const list= document.getElementById('qs-list');
+  if (!q||!list) return;
+  const rows= _allEntities.filter(e=>(e.Friendly_Name+' '+e.Entity_ID).toLowerCase().includes(q)).slice(0,30);
+  if (!rows.length){list.innerHTML='<div style="color:#475569;font-size:10px;padding:8px">No match</div>';return;}
+  list.innerHTML = rows.map(e=>`<div style="padding:5px 10px;border-bottom:1px solid #0d0f1a;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:8px"
+    onclick="document.getElementById('call-ip').value='${e.HA_IP}';document.getElementById('call-eid').value='${e.Entity_ID}'">
+    <span style="font-family:monospace;color:#64748b;flex:1">${e.Entity_ID}</span>
+    <span style="color:#e2e8f0">${e.Friendly_Name}</span>
+    <span style="font-size:9px;color:${e.State==='on'?'#4ade80':e.State==='off'?'#f87171':'#64748b'}">${e.State}</span>
+    <span style="font-size:9px;color:#475569">${e.HA_Name||e.HA_IP}</span>
+  </div>`).join('');
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+switchTab('instances');
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

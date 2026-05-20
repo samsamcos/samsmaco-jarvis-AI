@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS WORKER</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#090b12;--panel:#0d0f1a;--border:rgba(255,255,255,.07);--accent:#00d4ff;--green:#3fdc8a;--red:#f87171;--yellow:#facc15;--text:#c8d2e6;--dim:rgba(200,210,230,.35);}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace,system-ui;font-size:12px;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+
+/* TOP BAR */
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:10px;height:42px;flex-shrink:0;}
+.topbar .logo{color:var(--accent);font-weight:800;font-size:13px;letter-spacing:1px;}
+.topbar .sep{width:1px;height:20px;background:var(--border);}
+.stat-pill{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--dim);}
+.stat-val{font-weight:700;color:var(--text);}
+.topbar .spacer{flex:1;}
+.top-nav a{color:var(--dim);font-size:10px;text-decoration:none;transition:color .2s;}
+.top-nav a:hover{color:var(--accent);}
+.top-nav{display:flex;gap:12px;}
+.settings-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--dim);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:10px;font-family:inherit;}
+
+/* TAB BAR */
+.tabbar{background:var(--panel);border-bottom:1px solid var(--border);display:flex;padding:0 16px;gap:0;flex-shrink:0;}
+.tab{padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;color:var(--dim);transition:all .2s;letter-spacing:.5px;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* MAIN LAYOUT */
+.workspace{display:grid;grid-template-columns:240px 1fr 220px;flex:1;overflow:hidden;}
+
+/* LEFT: Job list */
+.job-list{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.job-search{padding:8px;border-bottom:1px solid var(--border);}
+.job-search input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-family:inherit;font-size:11px;outline:none;}
+.job-items{flex:1;overflow-y:auto;}
+.job-item{padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.job-item:hover{background:rgba(0,212,255,.05);}
+.job-item.active{background:rgba(0,212,255,.08);border-left:2px solid var(--accent);}
+.job-item-name{font-weight:700;color:var(--text);font-size:12px;margin-bottom:2px;}
+.job-item-desc{font-size:10px;color:var(--dim);line-height:1.3;}
+.job-item-meta{font-size:9px;color:rgba(200,210,230,.2);margin-top:3px;}
+.new-job-btn{padding:10px 12px;border-top:1px solid var(--border);}
+.new-job-btn button{width:100%;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--accent);padding:7px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;transition:all .2s;}
+.new-job-btn button:hover{background:rgba(0,212,255,.2);}
+
+/* MIDDLE: Job editor */
+.editor{display:flex;flex-direction:column;overflow:hidden;}
+.editor-top{background:var(--panel);border-bottom:1px solid var(--border);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.editor-top input{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-family:inherit;font-size:12px;outline:none;}
+.editor-top input:focus{border-color:rgba(0,212,255,.4);}
+.job-name-inp{width:160px;font-weight:700;}
+.job-desc-inp{flex:1;}
+.editor-btns{display:flex;gap:5px;}
+.ebtn{padding:5px 10px;border-radius:5px;border:none;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;}
+.ebtn:hover{opacity:.85;}
+.ebtn-blue{background:rgba(0,212,255,.15);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+.ebtn-grn{background:var(--green);color:#0a1a10;}
+.ebtn-dim{background:rgba(255,255,255,.06);color:var(--dim);border:1px solid var(--border);}
+.ebtn-del{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.25);}
+
+/* Webhook bar */
+.webhook-bar{padding:6px 12px;background:rgba(0,212,255,.04);border-bottom:1px solid var(--border);font-size:10px;color:var(--dim);flex-shrink:0;}
+.webhook-bar strong{color:var(--accent);}
+.webhook-url{color:rgba(0,212,255,.6);cursor:pointer;transition:color .2s;}
+.webhook-url:hover{color:var(--accent);}
+
+/* Variables bar */
+.vars-bar{padding:6px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0;}
+.var-chip{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:9px;display:flex;align-items:center;gap:4px;}
+.var-chip span{color:var(--yellow);}
+.var-chip input{background:none;border:none;color:var(--text);font-family:inherit;font-size:9px;width:80px;outline:none;padding:0;}
+.add-var-btn{background:none;border:1px dashed rgba(255,255,255,.1);color:var(--dim);padding:2px 7px;border-radius:4px;cursor:pointer;font-size:9px;font-family:inherit;}
+.add-var-btn:hover{border-color:rgba(0,212,255,.3);color:var(--accent);}
+.vars-label{font-size:9px;color:var(--dim);flex-shrink:0;}
+
+/* Steps area */
+.steps-area{flex:1;overflow-y:auto;padding:12px;}
+.steps-header{font-size:9px;font-weight:700;letter-spacing:1px;color:var(--dim);text-transform:uppercase;margin-bottom:10px;}
+.step-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;transition:border-color .2s;}
+.step-card:hover{border-color:rgba(255,255,255,.12);}
+.step-card.drag-over{border-color:var(--accent);background:rgba(0,212,255,.05);}
+.step-head{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:grab;background:rgba(255,255,255,.02);}
+.step-num{width:18px;height:18px;border-radius:4px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--dim);flex-shrink:0;}
+.step-icon{font-size:13px;flex-shrink:0;}
+.step-type{font-size:11px;font-weight:700;color:var(--text);flex:1;}
+.step-del{background:none;border:none;color:rgba(248,113,113,.3);cursor:pointer;font-size:13px;padding:0 2px;transition:color .2s;}
+.step-del:hover{color:var(--red);}
+.step-body{padding:8px 10px 10px;display:grid;gap:6px;}
+.step-field{display:grid;gap:3px;}
+.field-lbl{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:.5px;text-transform:uppercase;}
+.field-inp{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--text);padding:5px 8px;border-radius:5px;font-family:inherit;font-size:11px;outline:none;width:100%;}
+.field-inp:focus{border-color:rgba(0,212,255,.35);}
+textarea.field-inp{resize:vertical;min-height:50px;line-height:1.5;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.placeholder-hint{font-size:9px;color:rgba(200,210,230,.2);margin-top:1px;}
+
+/* Empty state */
+.empty-editor{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--dim);gap:8px;}
+.empty-editor .icon{font-size:40px;opacity:.3;}
+
+/* RIGHT: Palette */
+.palette{border-left:1px solid var(--border);overflow-y:auto;padding:10px 0;}
+.pal-section{margin-bottom:2px;}
+.pal-title{font-size:9px;font-weight:700;letter-spacing:1px;color:var(--dim);text-transform:uppercase;padding:6px 12px 4px;}
+.pal-item{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;transition:background .15s;}
+.pal-item:hover{background:rgba(0,212,255,.07);}
+.pal-icon{font-size:14px;width:20px;flex-shrink:0;}
+.pal-name{font-size:11px;color:var(--text);}
+.pal-sep{height:1px;background:var(--border);margin:4px 0;}
+
+/* Run panel / logs */
+.run-panel{display:none;flex-direction:column;}
+.run-panel.visible{display:flex;}
+.run-header{background:var(--panel);border-bottom:1px solid var(--border);padding:6px 12px;font-size:10px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.run-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.run-log{flex:1;overflow-y:auto;padding:10px 12px;font-size:10px;line-height:1.6;font-family:monospace;}
+.run-log .log-ok{color:var(--green);}
+.run-log .log-err{color:var(--red);}
+.run-log .log-info{color:var(--dim);}
+.run-log .log-step{color:var(--accent);}
+
+/* Variables modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;}
+.modal{background:#0e1120;border:1px solid rgba(0,212,255,.2);border-radius:12px;padding:24px;min-width:380px;max-width:500px;}
+.modal h2{font-size:14px;font-weight:800;color:#e8ecf4;margin-bottom:16px;}
+.modal-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+.modal-inp{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);padding:6px 9px;border-radius:5px;font-family:inherit;font-size:11px;outline:none;}
+.modal-inp:focus{border-color:rgba(0,212,255,.35);}
+.modal-btns{display:flex;gap:6px;margin-top:16px;justify-content:flex-end;}
+.mbtn{padding:6px 14px;border-radius:6px;border:none;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;}
+.mbtn-grn{background:var(--green);color:#0a1a10;}
+.mbtn-dim{background:rgba(255,255,255,.07);color:var(--dim);}
+
+/* LOGS tab */
+.logs-view{flex:1;overflow-y:auto;padding:12px;}
+.log-entry{padding:8px 10px;border-bottom:1px solid var(--border);font-size:10px;line-height:1.5;}
+.log-entry .time{color:rgba(200,210,230,.25);}
+.log-entry .name{color:var(--accent);font-weight:700;}
+.log-entry .status-ok{color:var(--green);}
+.log-entry .status-err{color:var(--red);}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1f2e;border:1px solid rgba(0,212,255,.3);border-radius:8px;padding:8px 14px;font-size:11px;color:#e8ecf4;z-index:9999;transition:opacity .3s;pointer-events:none;}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="logo">⚡ JARVIS WORKER</span>
+  <div class="sep"></div>
+  <div class="stat-pill">Running <span class="stat-val" id="stat-running">0</span></div>
+  <div class="stat-pill">OK <span class="stat-val" id="stat-ok">0</span></div>
+  <div class="stat-pill">Err <span class="stat-val" id="stat-err">0</span></div>
+  <div class="spacer"></div>
+  <div class="top-nav">
+    <a href="/">Agent</a>
+    <a href="/search">Search</a>
+    <a href="/flights">Flights</a>
+    <a href="/browser-jobs">Jobs</a>
+    <a href="/overlay/rc">RC</a>
+    <a href="/manual">Docs</a>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tabbar">
+  <div class="tab active" id="tab-jobs"  onclick="switchTab('jobs')">TASKS</div>
+  <div class="tab"        id="tab-rooms" onclick="switchTab('rooms')">🌡 ROOMS & AC</div>
+  <div class="tab"        id="tab-chat"  onclick="switchTab('chat')">💬 JARVIS CHAT</div>
+  <div class="tab"        id="tab-logs"  onclick="switchTab('logs')">LOGS</div>
+</div>
+
+<!-- WORKSPACE -->
+<div class="workspace" id="workspace">
+
+  <!-- LEFT: Job list -->
+  <div class="job-list">
+    <div class="job-search"><input id="job-search" placeholder="Search jobs…" oninput="filterJobs(this.value)"/></div>
+    <div class="job-items" id="job-items">
+      <div style="padding:16px;color:var(--dim);font-size:11px">Loading…</div>
+    </div>
+    <div class="new-job-btn"><button onclick="newJob()">+ New Task</button></div>
+  </div>
+
+  <!-- MIDDLE: Editor -->
+  <div class="editor" id="editor">
+    <div class="editor-top">
+      <input class="job-name-inp" id="job-name" placeholder="task-name" oninput="markDirty()"/>
+      <input class="job-desc-inp" id="job-desc" placeholder="Description — what does this task do?" oninput="markDirty()"/>
+      <div class="editor-btns">
+        <button class="ebtn ebtn-dim" onclick="loadJob()">Load</button>
+        <button class="ebtn ebtn-blue" onclick="saveJob()">Save</button>
+        <button class="ebtn ebtn-grn" onclick="runJob()">▶ Run</button>
+        <button class="ebtn ebtn-dim" onclick="showWebhook()">Webhook</button>
+        <button class="ebtn ebtn-dim" onclick="inspectVNC()">Inspect</button>
+        <button class="ebtn ebtn-del" onclick="deleteJob()">Del</button>
+      </div>
+    </div>
+    <div class="webhook-bar" id="webhook-bar" style="display:none">
+      <strong>Trigger Webhook</strong> &nbsp;
+      <span class="webhook-url" id="webhook-url" onclick="copyWebhook()"></span>
+      <span style="margin-left:8px;font-size:9px;color:rgba(200,210,230,.2)">(click to copy)</span>
+    </div>
+    <div class="vars-bar" id="vars-bar">
+      <span class="vars-label">Variables:</span>
+      <div id="var-chips"></div>
+      <button class="add-var-btn" onclick="addVar()">+ Add</button>
+    </div>
+
+    <div class="steps-area" id="steps-area">
+      <div class="empty-editor" id="empty-editor">
+        <div class="icon">⚡</div>
+        <div style="font-size:13px;font-weight:700;color:rgba(200,210,230,.5)">Select or create a task</div>
+        <div style="font-size:11px">Pick from the left, or click "+ New Task"</div>
+        <div style="font-size:11px;margin-top:8px">Then drag step blocks from the right →</div>
+      </div>
+      <div id="steps-header" class="steps-header" style="display:none">STEPS <span id="steps-count">0</span></div>
+      <div id="steps-list"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Palette -->
+  <div class="palette" id="palette">
+    <div class="pal-section">
+      <div class="pal-title">Basic Actions</div>
+      <div class="pal-item" onclick="addStep('goto')"><span class="pal-icon">🌐</span><span class="pal-name">Go to URL</span></div>
+      <div class="pal-item" onclick="addStep('click')"><span class="pal-icon">👆</span><span class="pal-name">Click</span></div>
+      <div class="pal-item" onclick="addStep('type')"><span class="pal-icon">⌨️</span><span class="pal-name">Type</span></div>
+      <div class="pal-item" onclick="addStep('wait')"><span class="pal-icon">⏳</span><span class="pal-name">Wait selector</span></div>
+      <div class="pal-item" onclick="addStep('wait_ms')"><span class="pal-icon">⏱️</span><span class="pal-name">Wait ms</span></div>
+      <div class="pal-item" onclick="addStep('screenshot')"><span class="pal-icon">📷</span><span class="pal-name">Screenshot</span></div>
+      <div class="pal-item" onclick="addStep('scroll')"><span class="pal-icon">📜</span><span class="pal-name">Scroll</span></div>
+      <div class="pal-item" onclick="addStep('select')"><span class="pal-icon">📋</span><span class="pal-name">Select</span></div>
+      <div class="pal-item" onclick="addStep('extract')"><span class="pal-icon">🔎</span><span class="pal-name">Extract text</span></div>
+      <div class="pal-item" onclick="addStep('run_js')"><span class="pal-icon">⚡</span><span class="pal-name">Run JS</span></div>
+    </div>
+    <div class="pal-sep"></div>
+    <div class="pal-section">
+      <div class="pal-title">AI / Approval</div>
+      <div class="pal-item" onclick="addStep('gemini')"><span class="pal-icon">🧠</span><span class="pal-name">Gemini Vision</span></div>
+      <div class="pal-item" onclick="addStep('confirm')"><span class="pal-icon">✅</span><span class="pal-name">Confirm (ask me)</span></div>
+      <div class="pal-item" onclick="addStep('done')"><span class="pal-icon">🏁</span><span class="pal-name">Done</span></div>
+    </div>
+    <div class="pal-sep"></div>
+    <div class="pal-section">
+      <div class="pal-title">🌡 Rooms & AC</div>
+      <div class="pal-item" onclick="addStep('room_check')"><span class="pal-icon">🌡</span><span class="pal-name">Room Temp Check</span></div>
+      <div class="pal-item" onclick="addStep('home_set')"><span class="pal-icon">❄️</span><span class="pal-name">AC / Heat Control</span></div>
+      <div class="pal-item" onclick="addStep('if_var')"><span class="pal-icon">🔀</span><span class="pal-name">If Variable</span></div>
+    </div>
+    <div class="pal-sep"></div>
+    <div class="pal-section">
+      <div class="pal-title">🏠 JARVIS Hub (3080)</div>
+      <div class="pal-item" onclick="addStep('hub_message')"><span class="pal-icon">🏠</span><span class="pal-name">Hub Message</span></div>
+      <div class="pal-item" onclick="addStep('hub_job')"><span class="pal-icon">📋</span><span class="pal-name">Hub Trigger Job</span></div>
+      <div class="pal-item" onclick="addStep('staff_call')"><span class="pal-icon">👤</span><span class="pal-name">Call Staff Member</span></div>
+      <div class="pal-item" onclick="addStep('brain_ask')"><span class="pal-icon">🧠</span><span class="pal-name">Ask a Brain (0-4)</span></div>
+      <div class="pal-item" onclick="addStep('jarvis_chat')"><span class="pal-icon">💬</span><span class="pal-name">JARVIS Chat Post</span></div>
+      <div class="pal-item" onclick="addStep('worker_call')"><span class="pal-icon">🔁</span><span class="pal-name">Run Worker Job</span></div>
+    </div>
+    <div class="pal-sep"></div>
+    <div class="pal-section">
+      <div class="pal-title">Security / Finance</div>
+      <div class="pal-item" onclick="addStep('financial_guard')"><span class="pal-icon">🔥</span><span class="pal-name">Financial Guard</span></div>
+      <div class="pal-item" onclick="addStep('totp')"><span class="pal-icon">🔑</span><span class="pal-name">TOTP 2FA</span></div>
+      <div class="pal-item" onclick="addStep('email_otp')"><span class="pal-icon">📧</span><span class="pal-name">Email OTP</span></div>
+    </div>
+    <div class="pal-sep"></div>
+    <div class="pal-section">
+      <div class="pal-title">From Task Library</div>
+      <div id="pal-library"><div style="padding:6px 12px;font-size:10px;color:var(--dim)">None yet</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGS VIEW (hidden) -->
+<div class="workspace" id="logs-workspace" style="display:none;flex:1;overflow:hidden;">
+  <div class="logs-view" id="logs-list">
+    <div style="color:var(--dim);font-size:11px">No recent runs</div>
+  </div>
+</div>
+
+<!-- ROOMS & AC VIEW -->
+<div id="rooms-workspace" style="display:none;flex:1;overflow-y:auto;padding:16px;background:var(--bg)">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <span style="font-size:18px">🌡</span>
+    <span style="font-size:14px;font-weight:700;color:#fff;letter-spacing:.04em">Rooms & AC Control</span>
+    <button onclick="loadRoomsTab()" style="margin-left:auto;padding:5px 12px;background:#0d0f1a;border:1px solid #2a2d42;color:#aaa;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">↺ Refresh</button>
+    <a href="/api/rooms" target="_blank" style="padding:5px 12px;background:#0d0f1a;border:1px solid #2a2d42;color:#aaa;border-radius:6px;font-size:11px;text-decoration:none">↗ API</a>
+    <button onclick="showAddRoomForm()" style="padding:5px 12px;background:#3fdc8a22;border:1px solid #3fdc8a55;color:#3fdc8a;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">+ Add Room</button>
+  </div>
+  <!-- HA status pill -->
+  <div id="ha-status" style="font-size:10px;padding:5px 12px;border-radius:6px;background:#0d0f1a;border:1px solid #1e2030;color:#555;display:inline-block;margin-bottom:14px">Checking HA…</div>
+  <!-- Room cards grid -->
+  <div id="rooms-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px">
+    <div style="color:var(--dim);font-size:11px">Loading rooms…</div>
+  </div>
+  <!-- Add room form (hidden) -->
+  <div id="add-room-form" style="display:none;background:#0d0f1a;border:1px solid #2a2d42;border-radius:8px;padding:14px;max-width:500px;margin-bottom:16px">
+    <div style="font-size:12px;font-weight:700;color:#ddd;margin-bottom:10px">Add / Update Room</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><label style="font-size:10px;color:#888;display:block;margin-bottom:3px">Room ID*</label>
+        <input id="ri-id" style="width:100%;padding:6px 8px;background:#090b12;border:1px solid #2a2d42;border-radius:5px;color:#ddd;font-size:11px;font-family:inherit" placeholder="office"></div>
+      <div><label style="font-size:10px;color:#888;display:block;margin-bottom:3px">Name*</label>
+        <input id="ri-name" style="width:100%;padding:6px 8px;background:#090b12;border:1px solid #2a2d42;border-radius:5px;color:#ddd;font-size:11px;font-family:inherit" placeholder="Office"></div>
+      <div><label style="font-size:10px;color:#888;display:block;margin-bottom:3px">Temp Sensor (HA entity)</label>
+        <input id="ri-sensor" style="width:100%;padding:6px 8px;background:#090b12;border:1px solid #2a2d42;border-radius:5px;color:#ddd;font-size:11px;font-family:inherit" placeholder="sensor.office_temperature"></div>
+      <div><label style="font-size:10px;color:#888;display:block;margin-bottom:3px">Cooling Device (HA entity)</label>
+        <input id="ri-cool" style="width:100%;padding:6px 8px;background:#090b12;border:1px solid #2a2d42;border-radius:5px;color:#ddd;font-size:11px;font-family:inherit" placeholder="climate.office_ac"></div>
+      <div><label style="font-size:10px;color:#888;display:block;margin-bottom:3px">Heating Device (HA entity)</label>
+        <input id="ri-heat" style="width:100%;padding:6px 8px;background:#090b12;border:1px solid #2a2d42;border-radius:5px;color:#ddd;font-size:11px;font-family:inherit" placeholder="climate.office_heating"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label style="font-size:10px;color:#888;display:block;margin-bottom:3px">Too Hot °C</label>
+          <input id="ri-hot" type="number" value="24" style="width:100%;padding:6px 8px;background:#090b12;border:1px solid #2a2d42;border-radius:5px;color:#ddd;font-size:11px;font-family:inherit"></div>
+        <div><label style="font-size:10px;color:#888;display:block;margin-bottom:3px">Too Cold °C</label>
+          <input id="ri-cold" type="number" value="18" style="width:100%;padding:6px 8px;background:#090b12;border:1px solid #2a2d42;border-radius:5px;color:#ddd;font-size:11px;font-family:inherit"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="saveRoom()" style="padding:6px 16px;background:#3fdc8a22;border:1px solid #3fdc8a55;color:#3fdc8a;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">Save Room</button>
+      <button onclick="document.getElementById('add-room-form').style.display='none'" style="padding:6px 14px;background:#0d0f1a;border:1px solid #2a2d42;color:#aaa;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">Cancel</button>
+    </div>
+  </div>
+  <!-- Step type reference -->
+  <div style="border-top:1px solid #1e2030;padding-top:14px">
+    <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:8px">Worker Step Types for Rooms</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px">
+      <div style="background:#0d0f1a;border:1px solid #1e2030;border-radius:5px;padding:8px">
+        <div style="font-size:11px;color:#6b8cff;font-weight:700">room_check</div>
+        <div style="font-size:10px;color:#555;margin-top:2px">value: room_id → sets {ROOM_TEMP} {ROOM_HOT} {ROOM_COLD}</div>
+      </div>
+      <div style="background:#0d0f1a;border:1px solid #1e2030;border-radius:5px;padding:8px">
+        <div style="font-size:11px;color:#6b8cff;font-weight:700">home_set</div>
+        <div style="font-size:10px;color:#555;margin-top:2px">selector: room_id, value: cool|heat|off, temp: 21</div>
+      </div>
+      <div style="background:#0d0f1a;border:1px solid #1e2030;border-radius:5px;padding:8px">
+        <div style="font-size:11px;color:#6b8cff;font-weight:700">if_var</div>
+        <div style="font-size:10px;color:#555;margin-top:2px">selector: ROOM_HOT, value: yes → skip if not matching</div>
+      </div>
+      <div style="background:#0d0f1a;border:1px solid #1e2030;border-radius:5px;padding:8px">
+        <div style="font-size:11px;color:#6b8cff;font-weight:700">staff_call</div>
+        <div style="font-size:10px;color:#555;margin-top:2px">value: staff-name or webhook URL, goal: message</div>
+      </div>
+      <div style="background:#0d0f1a;border:1px solid #1e2030;border-radius:5px;padding:8px">
+        <div style="font-size:11px;color:#6b8cff;font-weight:700">brain_ask</div>
+        <div style="font-size:10px;color:#555;margin-top:2px">goal: query, selector: 3 (brain num) → {BRAIN_RESULT}</div>
+      </div>
+      <div style="background:#0d0f1a;border:1px solid #1e2030;border-radius:5px;padding:8px">
+        <div style="font-size:11px;color:#6b8cff;font-weight:700">worker_call</div>
+        <div style="font-size:10px;color:#555;margin-top:2px">value: job-name → run another worker job inline</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JARVIS CHAT VIEW -->
+<div id="chat-workspace" style="display:none;flex:1;flex-direction:column;overflow:hidden;background:var(--bg)">
+  <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+    <span style="font-size:16px">💬</span>
+    <span style="font-size:13px;font-weight:700;color:#fff">JARVIS Chat</span>
+    <!-- Target toggle -->
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      <span style="font-size:10px;color:#555">Send to:</span>
+      <button id="chat-target-08" onclick="setChatTarget('08')" style="padding:3px 10px;border-radius:4px;border:1px solid #6b8cff;background:#6b8cff22;color:#6b8cff;font-size:10px;cursor:pointer;font-family:inherit">⚡ 0.8</button>
+      <button id="chat-target-03" onclick="setChatTarget('03')" style="padding:3px 10px;border-radius:4px;border:1px solid #2a2d42;background:transparent;color:#555;font-size:10px;cursor:pointer;font-family:inherit">⚡ 0.3</button>
+      <button id="chat-target-both" onclick="setChatTarget('both')" style="padding:3px 10px;border-radius:4px;border:1px solid #2a2d42;background:transparent;color:#555;font-size:10px;cursor:pointer;font-family:inherit">📡 Both</button>
+      <select id="chat-brain-sel" style="padding:3px 6px;background:#0d0f1a;border:1px solid #2a2d42;color:#888;border-radius:4px;font-size:10px;font-family:inherit">
+        <option value="">Auto</option>
+        <option value="0">Brain 0 Gemini Web</option>
+        <option value="1">Brain 1 LiteLLM</option>
+        <option value="2">Brain 2 Browser</option>
+        <option value="3">Brain 3 Home/AC</option>
+        <option value="4">Brain 4 Staff</option>
+      </select>
+    </div>
+  </div>
+  <!-- Messages -->
+  <div id="chat-messages" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px"></div>
+  <!-- Input -->
+  <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0">
+    <textarea id="chat-input" placeholder="Message JARVIS… (Enter to send, Shift+Enter for newline)"
+      style="flex:1;padding:8px 10px;background:#0d0f1a;border:1px solid #2a2d42;border-radius:6px;color:#ddd;font-size:12px;font-family:inherit;resize:none;height:40px;line-height:1.4;outline:none"
+      onkeydown="chatKeydown(event)"></textarea>
+    <button onclick="sendChatMessage()" style="padding:8px 18px;background:#6b8cff22;border:1px solid #6b8cff55;color:#6b8cff;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:700">Send</button>
+  </div>
+</div>
+
+<!-- Run panel overlay -->
+<div id="run-panel" class="run-panel" style="position:fixed;bottom:0;left:240px;right:220px;height:200px;background:#0a0c14;border-top:1px solid rgba(0,212,255,.2);z-index:50;flex-direction:column;">
+  <div class="run-header">
+    <div class="run-dot"></div>
+    Running: <span id="run-job-name"></span>
+    <span style="flex:1"></span>
+    <button style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:12px;" onclick="closeRunPanel()">✕</button>
+  </div>
+  <div class="run-log" id="run-log"></div>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+
+<!-- Variables Modal -->
+<div class="modal-bg" id="var-modal" style="display:none">
+  <div class="modal">
+    <h2>Add Variable</h2>
+    <div class="modal-row">
+      <input class="modal-inp" id="var-name-inp" placeholder="NAME (e.g. USERNAME)"/>
+      <input class="modal-inp" id="var-val-inp" placeholder="value"/>
+    </div>
+    <div style="font-size:10px;color:var(--dim)">Use as {NAME} in step fields</div>
+    <div class="modal-btns">
+      <button class="mbtn mbtn-dim" onclick="closeVarModal()">Cancel</button>
+      <button class="mbtn mbtn-grn" onclick="confirmAddVar()">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let _jobs = [];
+let _active = null;  // current job object
+let _steps = [];     // current step list
+let _vars = {};      // current variable map
+let _dirty = false;
+let _running = false;
+let _runLogs = [];
+
+const STEP_ICONS = {
+  goto:'🌐',click:'👆',type:'⌨️',wait:'⏳',wait_ms:'⏱️',screenshot:'📷',
+  scroll:'📜',select:'📋',extract:'🔎',run_js:'⚡',gemini:'🧠',confirm:'✅',
+  done:'🏁',financial_guard:'🔥',totp:'🔑',email_otp:'📧',
+  // Smart-home & multi-brain
+  room_check:'🌡',home_set:'❄️',if_var:'🔀',staff_call:'👤',brain_ask:'🧠',
+  worker_call:'🔁',hub_message:'🏠',hub_job:'📋',jarvis_chat:'💬',
+};
+const STEP_LABELS = {
+  goto:'goto',click:'click',type:'type',wait:'wait',wait_ms:'wait ms',
+  screenshot:'screenshot',scroll:'scroll',select:'select',extract:'extract',
+  run_js:'run JS',gemini:'gemini',confirm:'confirm',done:'done',
+  financial_guard:'Financial Guard',totp:'TOTP 2FA',email_otp:'Email OTP',
+  // Smart-home & multi-brain
+  room_check:'room check',home_set:'AC/Heat',if_var:'if var',
+  staff_call:'staff call',brain_ask:'brain ask',worker_call:'worker call',
+  hub_message:'Hub message',hub_job:'Hub job',jarvis_chat:'JARVIS chat',
+};
+
+// ── Utils ──
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+let _toastT;
+function toast(msg,dur=2500){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.style.display='block';el.style.opacity='1';
+  clearTimeout(_toastT);_toastT=setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.style.display='none',400);},dur);
+}
+
+// ── Tab switch ──
+function switchTab(t){
+  ['jobs','logs','rooms','chat'].forEach(n=>{
+    document.getElementById('tab-'+n).classList.toggle('active',t===n);
+  });
+  document.getElementById('workspace').style.display       = t==='jobs'  ? 'grid'  : 'none';
+  document.getElementById('logs-workspace').style.display  = t==='logs'  ? 'grid'  : 'none';
+  document.getElementById('rooms-workspace').style.display = t==='rooms' ? 'flex'  : 'none';
+  document.getElementById('chat-workspace').style.display  = t==='chat'  ? 'flex'  : 'none';
+  if(t==='logs')  loadLogs();
+  if(t==='rooms') loadRoomsTab();
+  if(t==='chat')  initChat();
+}
+
+// ── Load jobs ──
+async function loadJobs(){
+  try{
+    const d=await fetch('/api/worker-jobs').then(r=>r.json());
+    _jobs=d.jobs||[];
+    renderJobList();
+    updateStats();
+    loadLibraryPalette();
+  }catch(e){console.error(e);}
+}
+
+function filterJobs(q){
+  document.querySelectorAll('.job-item').forEach(el=>{
+    el.style.display=el.dataset.name.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+}
+
+function renderJobList(){
+  const el=document.getElementById('job-items');
+  if(!_jobs.length){
+    el.innerHTML='<div style="padding:16px;color:var(--dim);font-size:11px">No tasks yet — click + New Task</div>';
+    return;
+  }
+  el.innerHTML=_jobs.map(j=>`
+    <div class="job-item ${_active&&_active.id===j.id?'active':''}" data-name="${esc(j.name)}" onclick="selectJob('${j.id}')">
+      <div class="job-item-name">${esc(j.name)}</div>
+      <div class="job-item-desc">${esc(j.description||'No description')} · ${(j.steps||[]).length} steps</div>
+      <div class="job-item-meta">Runs: ${j.runs||0} OK: ${j.ok||0} Err: ${j.err||0}</div>
+    </div>
+  `).join('');
+}
+
+function updateStats(){
+  document.getElementById('stat-ok').textContent=_jobs.reduce((a,j)=>a+(j.ok||0),0);
+  document.getElementById('stat-err').textContent=_jobs.reduce((a,j)=>a+(j.err||0),0);
+}
+
+// ── Select job ──
+function selectJob(id){
+  const job=_jobs.find(j=>j.id===id);
+  if(!job) return;
+  _active=job;
+  _steps=JSON.parse(JSON.stringify(job.steps||[]));
+  _vars=JSON.parse(JSON.stringify(job.variables||{}));
+  _dirty=false;
+  document.getElementById('job-name').value=job.name||'';
+  document.getElementById('job-desc').value=job.description||'';
+  document.getElementById('empty-editor').style.display='none';
+  document.getElementById('steps-header').style.display='block';
+  const wh=`http://${location.host}/webhook/worker/${encodeURIComponent(job.name)}`;
+  document.getElementById('webhook-bar').style.display='block';
+  document.getElementById('webhook-url').textContent=`POST ${wh}`;
+  document.getElementById('webhook-url').dataset.url=wh;
+  renderVars();
+  renderSteps();
+  renderJobList();
+}
+
+// ── New job ──
+function newJob(){
+  _active=null;
+  _steps=[];
+  _vars={USERNAME:'',PASSWORD:'',DATE:'',TIME:''};
+  _dirty=false;
+  document.getElementById('job-name').value='';
+  document.getElementById('job-desc').value='';
+  document.getElementById('empty-editor').style.display='none';
+  document.getElementById('steps-header').style.display='block';
+  document.getElementById('webhook-bar').style.display='none';
+  renderVars();
+  renderSteps();
+  renderJobList();
+  document.getElementById('job-name').focus();
+}
+
+function markDirty(){_dirty=true;}
+
+// ── Variables ──
+function renderVars(){
+  const el=document.getElementById('var-chips');
+  el.innerHTML=Object.entries(_vars).map(([k,v])=>`
+    <div class="var-chip">
+      <span>{${esc(k)}}</span>
+      <input value="${esc(v)}" placeholder="value" onchange="setVar('${esc(k)}',this.value)" title="Value for {${esc(k)}}"/>
+      <span style="cursor:pointer;color:rgba(248,113,113,.4);margin-left:2px" onclick="delVar('${esc(k)}')">✕</span>
+    </div>
+  `).join('');
+}
+function setVar(k,v){_vars[k]=v;markDirty();}
+function delVar(k){delete _vars[k];renderVars();markDirty();}
+function addVar(){document.getElementById('var-modal').style.display='flex';}
+function closeVarModal(){document.getElementById('var-modal').style.display='none';}
+function confirmAddVar(){
+  const k=document.getElementById('var-name-inp').value.trim().toUpperCase();
+  const v=document.getElementById('var-val-inp').value;
+  if(!k){toast('Enter a variable name');return;}
+  _vars[k]=v;
+  renderVars();
+  closeVarModal();
+  document.getElementById('var-name-inp').value='';
+  document.getElementById('var-val-inp').value='';
+  markDirty();
+}
+
+// ── Steps ──
+function renderSteps(){
+  document.getElementById('steps-count').textContent=_steps.length;
+  const el=document.getElementById('steps-list');
+  if(!_steps.length){
+    el.innerHTML='<div style="text-align:center;padding:30px;color:var(--dim);font-size:11px">No steps — drag from the palette →</div>';
+    return;
+  }
+  el.innerHTML=_steps.map((s,i)=>buildStepCard(s,i)).join('');
+}
+
+function buildStepCard(s,i){
+  const icon=STEP_ICONS[s.action]||'❓';
+  const label=STEP_LABELS[s.action]||s.action;
+  let fields='';
+
+  if(s.action==='goto'){
+    fields=`<div class="step-field"><div class="field-lbl">URL</div>
+      <input class="field-inp" value="${esc(s.url||s.value||'')}" placeholder="https://..." onchange="setStepField(${i},'url',this.value)"/>
+      <div class="placeholder-hint">Use {QUERY}, {DATE}, {TIME}</div></div>`;
+  } else if(s.action==='type'){
+    fields=`<div class="field-row">
+      <div class="step-field"><div class="field-lbl">CSS Selector</div>
+        <input class="field-inp" value="${esc(s.selector||'')}" placeholder="#email, input[type=email]" onchange="setStepField(${i},'selector',this.value)"/></div>
+      <div class="step-field"><div class="field-lbl">Text</div>
+        <input class="field-inp" value="${esc(s.value||'')}" placeholder="{USERNAME}" onchange="setStepField(${i},'value',this.value)"/></div>
+    </div>`;
+  } else if(s.action==='click'){
+    fields=`<div class="step-field"><div class="field-lbl">CSS Selector</div>
+      <input class="field-inp" value="${esc(s.selector||'')}" placeholder="button[type=submit], #login" onchange="setStepField(${i},'selector',this.value)"/></div>`;
+  } else if(s.action==='wait'){
+    fields=`<div class="step-field"><div class="field-lbl">CSS Selector</div>
+      <input class="field-inp" value="${esc(s.selector||'')}" placeholder="#username, .booking-form" onchange="setStepField(${i},'selector',this.value)"/></div>`;
+  } else if(s.action==='wait_ms'){
+    fields=`<div class="step-field"><div class="field-lbl">Milliseconds</div>
+      <input class="field-inp" type="number" value="${esc(s.value||'2000')}" onchange="setStepField(${i},'value',this.value)"/></div>`;
+  } else if(s.action==='gemini'){
+    fields=`<div class="step-field"><div class="field-lbl">Goal</div>
+      <textarea class="field-inp" onchange="setStepField(${i},'goal',this.value)">${esc(s.goal||'')}</textarea>
+      <div class="placeholder-hint">e.g. "Find the gym booking section. Select date {DATE} and time {TIME}."</div></div>
+    <div class="step-field"><div class="field-lbl">Max Loops</div>
+      <input class="field-inp" type="number" value="${esc(s.max_loops||10)}" onchange="setStepField(${i},'max_loops',this.value)" style="width:80px"/></div>`;
+  } else if(s.action==='confirm'){
+    fields=`<div class="step-field"><div class="field-lbl">Message</div>
+      <textarea class="field-inp" onchange="setStepField(${i},'message',this.value)">${esc(s.message||'')}</textarea>
+      <div class="placeholder-hint">e.g. "Ready to confirm booking for {DATE} at {TIME}. Proceed?"</div></div>`;
+  } else if(s.action==='extract'){
+    fields=`<div class="step-field"><div class="field-lbl">CSS Selector (optional)</div>
+      <input class="field-inp" value="${esc(s.selector||'')}" placeholder="leave blank for full page" onchange="setStepField(${i},'selector',this.value)"/></div>`;
+  } else if(s.action==='scroll'){
+    fields=`<div class="step-field"><div class="field-lbl">Pixels</div>
+      <input class="field-inp" type="number" value="${esc(s.value||500)}" onchange="setStepField(${i},'value',this.value)" style="width:100px"/></div>`;
+  } else if(s.action==='run_js'){
+    fields=`<div class="step-field"><div class="field-lbl">JavaScript</div>
+      <textarea class="field-inp" onchange="setStepField(${i},'value',this.value)">${esc(s.value||'document.title')}</textarea></div>`;
+  } else if(s.action==='select'){
+    fields=`<div class="field-row">
+      <div class="step-field"><div class="field-lbl">CSS Selector</div>
+        <input class="field-inp" value="${esc(s.selector||'')}" onchange="setStepField(${i},'selector',this.value)"/></div>
+      <div class="step-field"><div class="field-lbl">Option value</div>
+        <input class="field-inp" value="${esc(s.value||'')}" onchange="setStepField(${i},'value',this.value)"/></div>
+    </div>`;
+  } else if(s.action==='financial_guard'){
+    fields=`<div class="step-field"><div class="field-lbl">Max amount (£) — auto-approve under this</div>
+      <input class="field-inp" type="number" value="${esc(s.value||0)}" onchange="setStepField(${i},'value',this.value)" style="width:120px"/></div>`;
+  } else if(s.action==='done'){
+    fields=`<div class="step-field"><div class="field-lbl">Result message</div>
+      <input class="field-inp" value="${esc(s.value||'Job complete')}" onchange="setStepField(${i},'value',this.value)"/></div>`;
+  } else if(s.action==='totp'){
+    fields=`<div class="step-field"><div class="field-lbl">TOTP Secret key ({TOTP_SECRET})</div>
+      <input class="field-inp" value="${esc(s.value||'{TOTP_SECRET}')}" onchange="setStepField(${i},'value',this.value)"/></div>`;
+  } else if(s.action==='email_otp'){
+    fields=`<div class="step-field"><div class="field-lbl">Check email and paste OTP automatically</div>
+      <input class="field-inp" value="${esc(s.selector||'')}" placeholder="OTP input selector" onchange="setStepField(${i},'selector',this.value)"/></div>`;
+  } else if(s.action==='room_check'){
+    fields=`<div class="step-field"><div class="field-lbl">Room ID</div>
+      <input class="field-inp" value="${esc(s.value||'')}" placeholder="e.g. office, living_room" onchange="setStepField(${i},'value',this.value)"/>
+      <div class="placeholder-hint">Sets {ROOM_TEMP} {ROOM_HOT} {ROOM_COLD} {ROOM_NAME} for next steps</div></div>`;
+  } else if(s.action==='home_set'){
+    fields=`<div class="field-row">
+      <div class="step-field"><div class="field-lbl">Room ID (selector)</div>
+        <input class="field-inp" value="${esc(s.selector||'')}" placeholder="office" onchange="setStepField(${i},'selector',this.value)"/></div>
+      <div class="step-field"><div class="field-lbl">State (value)</div>
+        <select class="field-inp" onchange="setStepField(${i},'value',this.value)">
+          <option value="cool" ${(s.value||'')==='cool'?'selected':''}>❄ cool</option>
+          <option value="heat" ${(s.value||'')==='heat'?'selected':''}>🔥 heat</option>
+          <option value="off"  ${(s.value||'')==='off'?'selected':''}>⏹ off</option>
+          <option value="auto" ${(s.value||'')==='auto'?'selected':''}>⚙ auto</option>
+        </select></div>
+      <div class="step-field"><div class="field-lbl">Target °C (optional)</div>
+        <input class="field-inp" type="number" value="${esc(s.temp||'')}" placeholder="21" onchange="setStepField(${i},'temp',this.value)" style="width:80px"/></div>
+    </div>`;
+  } else if(s.action==='if_var'){
+    fields=`<div class="field-row">
+      <div class="step-field"><div class="field-lbl">Variable name (selector)</div>
+        <input class="field-inp" value="${esc(s.selector||'ROOM_HOT')}" placeholder="ROOM_HOT" onchange="setStepField(${i},'selector',this.value)"/></div>
+      <div class="step-field"><div class="field-lbl">Expected value</div>
+        <input class="field-inp" value="${esc(s.value||'yes')}" placeholder="yes" onchange="setStepField(${i},'value',this.value)"/></div>
+    </div>
+    <div class="step-field"><div class="placeholder-hint">If variable ≠ expected, skip remaining steps</div></div>`;
+  } else if(s.action==='hub_message'){
+    fields=`<div class="step-field"><div class="field-lbl">Message to JARVIS Hub (3080)</div>
+      <textarea class="field-inp" onchange="setStepField(${i},'goal',this.value)">${esc(s.goal||'')}</textarea>
+      <div class="placeholder-hint">Sends to Hub /api/chat — result stored in {BRAIN_RESULT}</div></div>
+    <div class="field-row">
+      <div class="step-field"><div class="field-lbl">Target (selector)</div>
+        <select class="field-inp" onchange="setStepField(${i},'selector',this.value)">
+          <option value="hub" ${(s.selector||'hub')==='hub'?'selected':''}>Hub 3080</option>
+          <option value="03"  ${(s.selector||'')==='03'?'selected':''}>JARVIS 0.3:8080</option>
+          <option value="08"  ${(s.selector||'')==='08'?'selected':''}>JARVIS 0.8:8080</option>
+          <option value="both" ${(s.selector||'')==='both'?'selected':''}>Both 0.3+0.8</option>
+        </select></div>
+      <div class="step-field"><div class="field-lbl">Brain (optional)</div>
+        <select class="field-inp" onchange="setStepField(${i},'value',this.value)">
+          <option value="">Auto</option>
+          <option value="0">0: Gemini Web</option>
+          <option value="1">1: LiteLLM</option>
+          <option value="2">2: Browser</option>
+          <option value="3">3: Home/AC</option>
+          <option value="4">4: Staff</option>
+        </select></div>
+    </div>`;
+  } else if(s.action==='hub_job'){
+    fields=`<div class="step-field"><div class="field-lbl">Hub Job / Staff name to trigger</div>
+      <input class="field-inp" value="${esc(s.value||'')}" placeholder="e.g. gym-booker or staff name" onchange="setStepField(${i},'value',this.value)"/>
+      <div class="placeholder-hint">Triggers a Hub staff webhook or worker job by name</div></div>
+    <div class="step-field"><div class="field-lbl">Query / Context (goal)</div>
+      <textarea class="field-inp" onchange="setStepField(${i},'goal',this.value)">${esc(s.goal||'')}</textarea></div>`;
+  } else if(s.action==='staff_call'){
+    fields=`<div class="step-field"><div class="field-lbl">Staff name or webhook URL (value)</div>
+      <input class="field-inp" value="${esc(s.value||'')}" placeholder="gym-booker or http://…" onchange="setStepField(${i},'value',this.value)"/></div>
+    <div class="step-field"><div class="field-lbl">Message / Query (goal)</div>
+      <textarea class="field-inp" onchange="setStepField(${i},'goal',this.value)">${esc(s.goal||'')}</textarea>
+      <div class="placeholder-hint">Can use {ROOM_TEMP} {DATE} {TIME} variables — result in {STAFF_RESULT}</div></div>`;
+  } else if(s.action==='brain_ask'){
+    fields=`<div class="step-field"><div class="field-lbl">Query (goal)</div>
+      <textarea class="field-inp" onchange="setStepField(${i},'goal',this.value)">${esc(s.goal||'')}</textarea>
+      <div class="placeholder-hint">Result stored in {BRAIN_RESULT}</div></div>
+    <div class="step-field"><div class="field-lbl">Brain number (selector, blank = auto)</div>
+      <select class="field-inp" onchange="setStepField(${i},'selector',this.value)">
+        <option value="" ${!s.selector?'selected':''}>Auto-route</option>
+        <option value="0" ${s.selector==='0'?'selected':''}>0: Gemini Web</option>
+        <option value="1" ${s.selector==='1'?'selected':''}>1: LiteLLM</option>
+        <option value="2" ${s.selector==='2'?'selected':''}>2: Playwright</option>
+        <option value="3" ${s.selector==='3'?'selected':''}>3: Home/AC</option>
+        <option value="4" ${s.selector==='4'?'selected':''}>4: Staff</option>
+      </select></div>`;
+  } else if(s.action==='jarvis_chat'){
+    fields=`<div class="step-field"><div class="field-lbl">Message to post to JARVIS chat</div>
+      <textarea class="field-inp" onchange="setStepField(${i},'goal',this.value)">${esc(s.goal||'')}</textarea>
+      <div class="placeholder-hint">Posts to /api/chat — result shown in JARVIS Chat tab + stored in {BRAIN_RESULT}</div></div>
+    <div class="step-field"><div class="field-lbl">Target (value)</div>
+      <select class="field-inp" onchange="setStepField(${i},'value',this.value)">
+        <option value="08"   ${(s.value||'08')==='08'?'selected':''}>JARVIS 0.8</option>
+        <option value="03"   ${(s.value||'')==='03'?'selected':''}>JARVIS 0.3</option>
+        <option value="both" ${(s.value||'')==='both'?'selected':''}>Both</option>
+      </select></div>`;
+  } else if(s.action==='worker_call'){
+    fields=`<div class="step-field"><div class="field-lbl">Worker job name (value)</div>
+      <input class="field-inp" value="${esc(s.value||'')}" placeholder="e.g. book-gym-session" onchange="setStepField(${i},'value',this.value)"/>
+      <div class="placeholder-hint">Runs another worker job inline — result in {WORKER_RESULT}</div></div>`;
+  }
+
+  return `<div class="step-card" id="step-${i}" draggable="true" ondragstart="dragStart(${i})" ondragover="dragOver(event,${i})" ondrop="drop(event,${i})">
+    <div class="step-head">
+      <div class="step-num">${i+1}</div>
+      <div class="step-icon">${icon}</div>
+      <div class="step-type">${label}</div>
+      <button class="step-del" onclick="removeStep(${i})">✕</button>
+    </div>
+    <div class="step-body">${fields}</div>
+  </div>`;
+}
+
+function addStep(action){
+  if(!document.getElementById('job-name').value.trim()){
+    toast('Set a task name first'); return;
+  }
+  const defaults={action};
+  if(action==='wait_ms') defaults.value='2000';
+  if(action==='scroll') defaults.value='500';
+  if(action==='gemini') defaults.goal=''; defaults.max_loops=10;
+  if(action==='financial_guard') defaults.value='0';
+  _steps.push(defaults);
+  renderSteps();
+  markDirty();
+  // Scroll to bottom
+  const sa=document.getElementById('steps-area');
+  sa.scrollTop=sa.scrollHeight;
+}
+
+function setStepField(i,field,val){
+  if(_steps[i]) _steps[i][field]=val;
+  markDirty();
+}
+
+function removeStep(i){
+  _steps.splice(i,1);
+  renderSteps();
+  markDirty();
+}
+
+// Drag-to-reorder
+let _dragIdx=null;
+function dragStart(i){_dragIdx=i;}
+function dragOver(e,i){e.preventDefault();document.getElementById('step-'+i)?.classList.add('drag-over');}
+function drop(e,i){
+  e.preventDefault();
+  document.querySelectorAll('.step-card').forEach(c=>c.classList.remove('drag-over'));
+  if(_dragIdx===null||_dragIdx===i) return;
+  const moved=_steps.splice(_dragIdx,1)[0];
+  _steps.splice(i,0,moved);
+  _dragIdx=null;
+  renderSteps();
+  markDirty();
+}
+
+// ── Save ──
+async function saveJob(){
+  const name=document.getElementById('job-name').value.trim();
+  const desc=document.getElementById('job-desc').value.trim();
+  if(!name){toast('Task name required');return;}
+  const body={
+    name, description:desc, steps:_steps, variables:_vars,
+    ..._active?{id:_active.id}:{},
+  };
+  try{
+    const r=await fetch('/api/worker-jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.ok){
+      toast('✓ Saved: '+name);
+      _dirty=false;
+      if(d.job) _active=d.job;
+      const wh=`http://${location.host}/webhook/worker/${encodeURIComponent(name)}`;
+      document.getElementById('webhook-bar').style.display='block';
+      document.getElementById('webhook-url').textContent=`POST ${wh}`;
+      document.getElementById('webhook-url').dataset.url=wh;
+      await loadJobs();
+      if(_active) selectJob(_active.id);
+    }else toast('Error: '+(d.error||'?'));
+  }catch(e){toast('Error: '+e.message);}
+}
+
+// ── Load (prompt) ──
+async function loadJob(){
+  const name=prompt('Load job by name:');
+  if(!name) return;
+  const job=_jobs.find(j=>j.name.toLowerCase()===name.toLowerCase());
+  if(job) selectJob(job.id);
+  else toast('Not found: '+name);
+}
+
+// ── Run ──
+async function runJob(){
+  const name=document.getElementById('job-name').value.trim();
+  if(!name){toast('Save the task first');return;}
+  if(_dirty) await saveJob();
+
+  const job=_jobs.find(j=>j.name===name)||_active;
+  if(!job){toast('Save first');return;}
+
+  // Collect any runtime variable overrides
+  const runtimeVars={};
+  Object.entries(_vars).forEach(([k,v])=>{if(v) runtimeVars[k]=v;});
+
+  // Show run panel
+  document.getElementById('run-panel').style.display='flex';
+  document.getElementById('run-job-name').textContent=name;
+  document.getElementById('run-log').innerHTML='<div class="log-info">Starting…</div>';
+  _running=true;
+  document.getElementById('stat-running').textContent='1';
+
+  try{
+    const r=await fetch('/api/worker-jobs/'+job.id+'/run',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({variables:runtimeVars})
+    });
+    const d=await r.json();
+    _running=false;
+    document.getElementById('stat-running').textContent='0';
+    if(d.error){
+      document.getElementById('run-log').innerHTML+=`<div class="log-err">✗ ${esc(d.error)}</div>`;
+    } else {
+      const lines=(d.result||'Done').split('\n');
+      document.getElementById('run-log').innerHTML=lines.map(l=>
+        `<div class="${l.startsWith('✗')?'log-err':l.startsWith('→')?'log-ok':'log-info'}">${esc(l)}</div>`
+      ).join('');
+    }
+    await loadJobs();
+  }catch(e){
+    _running=false;
+    document.getElementById('stat-running').textContent='0';
+    document.getElementById('run-log').innerHTML+=`<div class="log-err">✗ ${esc(e.message)}</div>`;
+  }
+}
+
+function closeRunPanel(){document.getElementById('run-panel').style.display='none';}
+
+// ── Delete ──
+async function deleteJob(){
+  if(!_active){toast('No job selected');return;}
+  if(!confirm('Delete "'+_active.name+'"?')) return;
+  await fetch('/api/worker-jobs/'+_active.id,{method:'DELETE'});
+  _active=null; _steps=[]; _vars={};
+  document.getElementById('job-name').value='';
+  document.getElementById('job-desc').value='';
+  document.getElementById('steps-header').style.display='none';
+  document.getElementById('empty-editor').style.display='flex';
+  document.getElementById('webhook-bar').style.display='none';
+  renderSteps();
+  await loadJobs();
+  toast('Deleted');
+}
+
+// ── Webhook copy ──
+function copyWebhook(){
+  const url=document.getElementById('webhook-url').dataset.url;
+  if(url) navigator.clipboard.writeText(url).then(()=>toast('✓ Copied: '+url));
+}
+function showWebhook(){
+  const url=document.getElementById('webhook-url').dataset.url;
+  if(url) alert(`Webhook URL:\n${url}\n\nPOST body:\n{\n  "variables": {\n    "USERNAME": "user@email.com",\n    "DATE": "2026-04-25",\n    "TIME": "09:00"\n  }\n}`);
+}
+
+// ── VNC Inspect ──
+function inspectVNC(){
+  window.open('/vnc/snap','_blank');
+}
+
+// ── Logs ──
+async function loadLogs(){
+  const el=document.getElementById('logs-list');
+  try{
+    const jobs=_jobs;
+    if(!jobs.length){el.innerHTML='<div style="padding:16px;color:var(--dim);font-size:11px">No jobs</div>';return;}
+    el.innerHTML=jobs.filter(j=>j.runs).map(j=>`
+      <div class="log-entry">
+        <span class="time">${(j.last_run||'').slice(0,16)} </span>
+        <span class="name">${esc(j.name)}</span> ·
+        <span class="status-ok">OK: ${j.ok||0}</span> ·
+        <span class="status-err">Err: ${j.err||0}</span> ·
+        Total: ${j.runs||0}
+      </div>
+    `).join('') || '<div style="padding:16px;color:var(--dim)">No runs yet</div>';
+  }catch{}
+}
+
+// ── Library palette (from saved jobs) ──
+function loadLibraryPalette(){
+  const el=document.getElementById('pal-library');
+  if(!_jobs.length){
+    el.innerHTML='<div style="padding:6px 12px;font-size:10px;color:var(--dim)">None yet</div>';
+    return;
+  }
+  el.innerHTML=_jobs.slice(0,8).map(j=>`
+    <div class="pal-item" onclick="selectJob('${j.id}')">
+      <span class="pal-icon">📋</span>
+      <span class="pal-name">${esc(j.name)}</span>
+    </div>
+  `).join('');
+}
+
+// ── Preload templates ──
+async function loadTemplate(name){
+  const templates={
+    'book-gym':{
+      name:'book-gym',
+      description:'Book a gym session — log in, find available slot, confirm booking',
+      variables:{USERNAME:'',PASSWORD:'',DATE:'',TIME:'09:00',GYM_URL:'https://your-gym-booking-site.com'},
+      steps:[
+        {action:'goto',url:'{GYM_URL}'},
+        {action:'wait',selector:'#username, input[name="username"], input[type="email"]'},
+        {action:'type',selector:'#username, input[name="username"], input[type="email"]',value:'{USERNAME}'},
+        {action:'type',selector:'#password, input[name="password"], input[type="password"]',value:'{PASSWORD}'},
+        {action:'click',selector:'button[type="submit"], input[type="submit"], #login'},
+        {action:'screenshot'},
+        {action:'gemini',goal:'Find the gym booking section. Select date {DATE} and time {TIME}. Take a screenshot before confirming.',max_loops:15},
+        {action:'confirm',message:'Ready to confirm the gym booking for {DATE} at {TIME}. Shall I proceed?'},
+        {action:'gemini',goal:'Complete the booking by clicking the final confirm/book button.',max_loops:5},
+        {action:'screenshot'},
+        {action:'done',value:'Gym booking completed for {DATE} at {TIME}'},
+      ]
+    },
+    'search-flight':{
+      name:'search-flight',
+      description:'Search Skyscanner for cheapest flight',
+      variables:{FROM:'London',TO:'Amsterdam',DATE:'',RETURN_DATE:''},
+      steps:[
+        {action:'goto',url:'https://www.skyscanner.net'},
+        {action:'gemini',goal:'Search for flights from {FROM} to {TO} departing {DATE} returning {RETURN_DATE}. Extract the top 5 cheapest results.',max_loops:20},
+        {action:'extract',selector:''},
+        {action:'done',value:'Flight results extracted'},
+      ]
+    },
+    'rightmove':{
+      name:'search-rightmove',
+      description:'Search Rightmove for properties',
+      variables:{LOCATION:'London',MIN_BEDS:'2',MAX_PRICE:'500000'},
+      steps:[
+        {action:'goto',url:'https://www.rightmove.co.uk'},
+        {action:'gemini',goal:'Search for {MIN_BEDS}+ bed properties for sale in {LOCATION} under £{MAX_PRICE}. Extract the first 5 results with price and address.',max_loops:15},
+        {action:'extract',selector:''},
+        {action:'done',value:'Property search complete'},
+      ]
+    },
+    'amazon-buy':{
+      name:'amazon-buy',
+      description:'Find and order product on Amazon',
+      variables:{PRODUCT:'',MAX_PRICE:'50',USERNAME:'',PASSWORD:''},
+      steps:[
+        {action:'goto',url:'https://www.amazon.co.uk'},
+        {action:'wait',selector:'#twotabsearchtextbox'},
+        {action:'type',selector:'#twotabsearchtextbox',value:'{PRODUCT}'},
+        {action:'click',selector:'#nav-search-submit-button'},
+        {action:'screenshot'},
+        {action:'gemini',goal:'Find the best result for "{PRODUCT}" under £{MAX_PRICE}. Click on it.',max_loops:10},
+        {action:'screenshot'},
+        {action:'gemini',goal:'Click "Add to Basket" or "Buy Now".',max_loops:5},
+        {action:'confirm',message:'Ready to proceed with checkout for {PRODUCT}. Shall I continue?'},
+        {action:'screenshot'},
+        {action:'done',value:'Product added to cart'},
+      ]
+    },
+  };
+  if(templates[name]){
+    const t=templates[name];
+    _active=null; _steps=JSON.parse(JSON.stringify(t.steps)); _vars={...t.variables};
+    document.getElementById('job-name').value=t.name;
+    document.getElementById('job-desc').value=t.description;
+    document.getElementById('empty-editor').style.display='none';
+    document.getElementById('steps-header').style.display='block';
+    document.getElementById('webhook-bar').style.display='none';
+    renderVars(); renderSteps(); markDirty();
+    toast('Template loaded: '+t.name);
+  }
+}
+
+// Add template buttons to palette
+document.getElementById('pal-library').innerHTML=`
+  <div class="pal-item" onclick="loadTemplate('book-gym')"><span class="pal-icon">🏋️</span><span class="pal-name">Book gym</span></div>
+  <div class="pal-item" onclick="loadTemplate('search-flight')"><span class="pal-icon">✈️</span><span class="pal-name">Search flights</span></div>
+  <div class="pal-item" onclick="loadTemplate('rightmove')"><span class="pal-icon">🏠</span><span class="pal-name">Rightmove search</span></div>
+  <div class="pal-item" onclick="loadTemplate('amazon-buy')"><span class="pal-icon">📦</span><span class="pal-name">Amazon order</span></div>
+`;
+
+// ── Init ──
+loadJobs();
+
+// ═══════════════════════════════════════════════════════════
+// ROOMS & AC
+// ═══════════════════════════════════════════════════════════
+async function loadRoomsTab(){
+  // Check HA status
+  try{
+    const b=await fetch('/api/brains/status').then(r=>r.json());
+    const ha=b.brains&&b.brains[3];
+    const pill=document.getElementById('ha-status');
+    if(ha){
+      pill.innerHTML=ha.ha_ok
+        ?`<span style="color:#3fdc8a">● Home Assistant online</span> · ${ha.rooms} rooms · <a href="${ha.ha_url}" target="_blank" style="color:#6b8cff">${ha.ha_url}</a>`
+        :`<span style="color:#f0a500">○ HA not configured</span> — set HA_URL + HA_TOKEN in config/.env · ${ha.rooms} rooms ready`;
+    }
+  }catch(e){}
+  // Load rooms
+  try{
+    const d=await fetch('/api/rooms').then(r=>r.json());
+    const rooms=d.rooms||[];
+    const grid=document.getElementById('rooms-grid');
+    if(!rooms.length){grid.innerHTML='<div style="color:var(--dim);font-size:11px">No rooms configured. Add a room above.</div>';return;}
+    grid.innerHTML=rooms.map(r=>{
+      const temp=r.current_temp;
+      const hot=r.too_hot; const cold=r.too_cold;
+      const col=hot?'#ff4d6d':cold?'#6b8cff':'#3fdc8a';
+      const icon=hot?'🔥':cold?'🧊':'✓';
+      const status=hot?'TOO HOT':cold?'TOO COLD':'OK';
+      return `<div style="background:#0d0f1a;border:1px solid ${col}33;border-radius:8px;padding:12px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <span style="font-size:20px">${icon}</span>
+    <div>
+      <div style="font-size:13px;font-weight:700;color:#fff">${r.name}</div>
+      <div style="font-size:9px;color:#555">Floor ${r.floor||0} · ${r.id}</div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div style="font-size:22px;font-weight:800;color:${col}">${temp!=null?temp+'°':'—'}</div>
+      <div style="font-size:9px;color:${col}">${status}</div>
+    </div>
+  </div>
+  <div style="font-size:10px;color:#444;margin-bottom:8px">
+    Hot &gt;${r.too_hot_threshold}° · Cold &lt;${r.too_cold_threshold}°
+  </div>
+  <div style="display:flex;gap:4px">
+    <button onclick="roomAction('${r.id}','cool')" style="flex:1;padding:5px;background:#6b8cff11;border:1px solid #6b8cff44;color:#6b8cff;border-radius:5px;cursor:pointer;font-size:10px;font-family:inherit">❄ Cool</button>
+    <button onclick="roomAction('${r.id}','heat')" style="flex:1;padding:5px;background:#f0a50011;border:1px solid #f0a50044;color:#f0a500;border-radius:5px;cursor:pointer;font-size:10px;font-family:inherit">🔥 Heat</button>
+    <button onclick="roomAction('${r.id}','off')"  style="flex:1;padding:5px;background:#ff4d6d11;border:1px solid #ff4d6d44;color:#ff4d6d;border-radius:5px;cursor:pointer;font-size:10px;font-family:inherit">⏹ Off</button>
+  </div>
+</div>`;}).join('');
+  }catch(e){document.getElementById('rooms-grid').innerHTML=`<span style="color:#f87171">Error: ${e.message}</span>`;}
+}
+
+async function roomAction(roomId, action){
+  try{
+    const r=await fetch(`/api/rooms/${roomId}/${action}`,{method:'POST'});
+    const d=await r.json();
+    toast(`${roomId} → ${action}: ${d.error||'OK'}`);
+    setTimeout(loadRoomsTab,1000);
+  }catch(e){toast('Error: '+e.message);}
+}
+
+function showAddRoomForm(){
+  document.getElementById('add-room-form').style.display='block';
+  document.getElementById('add-room-form').scrollIntoView({behavior:'smooth'});
+}
+
+async function saveRoom(){
+  const id=document.getElementById('ri-id').value.trim().replace(/\s+/g,'_');
+  const name=document.getElementById('ri-name').value.trim();
+  if(!id||!name){toast('Room ID and Name are required');return;}
+  const data={
+    id, name,
+    temp_sensor: document.getElementById('ri-sensor').value.trim(),
+    cooling_device: document.getElementById('ri-cool').value.trim(),
+    heating_device: document.getElementById('ri-heat').value.trim(),
+    too_hot_threshold: parseFloat(document.getElementById('ri-hot').value)||24,
+    too_cold_threshold: parseFloat(document.getElementById('ri-cold').value)||18,
+  };
+  try{
+    await fetch('/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    toast('Room saved!');
+    document.getElementById('add-room-form').style.display='none';
+    loadRoomsTab();
+  }catch(e){toast('Error: '+e.message);}
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// JARVIS CHAT — talks to 0.8, 0.3, or both
+// ═══════════════════════════════════════════════════════════
+const CHAT_URLS={
+  '08':'http://192.168.0.8:8080',
+  '03':'http://192.168.0.3:8080',
+};
+let _chatTarget='08';
+let _chatInit=false;
+let _chatMessages=[];
+
+function initChat(){
+  if(_chatInit) return;
+  _chatInit=true;
+  // Welcome message
+  addChatBubble('system','💬 JARVIS Chat ready. You can talk to Brain 3 (Home/AC) or Brain 4 (Staff). Send to 0.8, 0.3, or both at once.');
+}
+
+function setChatTarget(t){
+  _chatTarget=t;
+  ['08','03','both'].forEach(n=>{
+    const btn=document.getElementById('chat-target-'+n);
+    if(!btn) return;
+    const active=n===t;
+    const colors={'08':'#6b8cff','03':'#3fdc8a','both':'#f0a500'};
+    const col=colors[n]||'#6b8cff';
+    btn.style.background=active?col+'22':'transparent';
+    btn.style.borderColor=active?col:'#2a2d42';
+    btn.style.color=active?col:'#555';
+  });
+}
+
+function addChatBubble(role, text, label){
+  const msgs=document.getElementById('chat-messages');
+  if(!msgs) return;
+  const isUser=role==='user';
+  const isSystem=role==='system';
+  const colors={'08':'#6b8cff','03':'#3fdc8a','both':'#f0a500','system':'#555'};
+  const col=colors[role]||'#aaa';
+  const div=document.createElement('div');
+  div.style.cssText=`display:flex;flex-direction:column;align-items:${isUser?'flex-end':'flex-start'};gap:2px`;
+  if(label) div.innerHTML=`<div style="font-size:9px;color:#555;padding:0 4px">${label}</div>`;
+  div.innerHTML+= `<div style="max-width:80%;padding:9px 13px;border-radius:${isUser?'12px 12px 3px 12px':'12px 12px 12px 3px'};
+    background:${isUser?'#6b8cff22':'#0d0f1a'};border:1px solid ${isUser?'#6b8cff44':'#1e2030'};
+    color:${isUser?'#ddd':'#ccc'};font-size:12px;line-height:1.5;white-space:pre-wrap">${esc(text)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function chatKeydown(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatMessage();}
+}
+
+async function sendChatMessage(){
+  const inp=document.getElementById('chat-input');
+  const msg=inp?.value?.trim();
+  if(!msg) return;
+  inp.value='';
+  inp.style.height='40px';
+
+  addChatBubble('user', msg);
+
+  const brain=document.getElementById('chat-brain-sel')?.value;
+  const body=brain?{message:msg,brain:parseInt(brain)}:{message:msg};
+  const targets=_chatTarget==='both'?['08','03']:[[_chatTarget][0]];
+
+  for(const t of targets){
+    const url=CHAT_URLS[t];
+    if(!url) continue;
+    const thinkDiv=document.createElement('div');
+    thinkDiv.style.cssText='padding:8px 12px;color:#555;font-size:11px';
+    thinkDiv.textContent=`⚡ ${t} thinking…`;
+    document.getElementById('chat-messages').appendChild(thinkDiv);
+    document.getElementById('chat-messages').scrollTop=9999;
+    try{
+      const r=await fetch(url+'/api/chat',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(body)
+      });
+      const d=await r.json();
+      thinkDiv.remove();
+      const reply=d.reply||d.text||JSON.stringify(d);
+      const brain_n=d.brain!=null?` · Brain ${d.brain}`:'';
+      addChatBubble(t, reply, `⚡ JARVIS ${t}${brain_n}`);
+    }catch(e){
+      thinkDiv.remove();
+      addChatBubble(t, `✗ Error: ${e.message}`, `⚡ JARVIS ${t}`);
+    }
+  }
+}
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

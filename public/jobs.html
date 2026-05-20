@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JARVIS Jobs</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100dvh}
+
+#hdr{background:#0a0c14;border-bottom:1px solid #1e2030;padding:12px 20px;display:flex;align-items:center;gap:12px}
+#hdr h1{font-size:16px;font-weight:700;color:#f5c518}
+#hdr .sub{font-size:11px;color:#475569}
+#hdr a{margin-left:auto;font-size:11px;color:#475569;text-decoration:none;padding:4px 12px;border:1px solid #1e2030;border-radius:6px}
+#hdr a:hover{color:#e2e8f0;border-color:#2d3a52}
+
+main{max-width:1000px;margin:0 auto;padding:24px 20px;display:flex;flex-direction:column;gap:20px}
+
+.card{background:#0a0c14;border:1px solid #1e2030;border-radius:12px;padding:20px}
+.card-title{font-size:13px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+
+/* ── Send to FullPipeline ── */
+.fp-row{display:flex;gap:8px}
+#fp-inp{flex:1;background:#020305;border:1px solid #2d3a52;color:#e2e8f0;border-radius:8px;padding:10px 14px;font-size:13px;outline:none;font-family:inherit}
+#fp-inp:focus{border-color:#6b8cff}
+#fp-btn{background:#6b8cff;border:none;color:#fff;border-radius:8px;padding:10px 22px;font-size:13px;cursor:pointer;font-weight:600}
+#fp-btn:hover{background:#8ba3ff}
+#fp-result{margin-top:12px;background:#020305;border:1px solid #1e2030;border-radius:8px;padding:12px;font-size:12px;color:#94a3b8;min-height:48px;white-space:pre-wrap;display:none}
+
+/* ── Dispatch channels ── */
+.dp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.dp-card{background:#07080d;border:1px solid #1e2030;border-radius:8px;padding:12px 14px}
+.dp-label{font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.dp-url{font-size:10px;color:#475569;font-family:monospace;word-break:break-all;margin-bottom:8px}
+.dp-actions{display:flex;gap:6px}
+.btn{border:1px solid #2d3a52;background:transparent;color:#94a3b8;border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer}
+.btn:hover{border-color:#6b8cff;color:#e2e8f0}
+.btn-grn{background:#16532d;border-color:#166534;color:#4ade80}
+.btn-grn:hover{background:#14532d}
+.dp-status{font-size:10px;margin-top:6px;min-height:13px;color:#475569}
+
+/* ── Routing table ── */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#07080d;padding:8px 12px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #1e2030}
+td{padding:8px 12px;border-bottom:1px solid #0d0f17;vertical-align:top}
+tr:last-child td{border-bottom:none}
+td:first-child{color:#e2e8f0;font-weight:600}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;margin:1px}
+.t-k{background:#0d2a3a;color:#38bdf8}
+.t-s{background:#1a2f1a;color:#4ade80}
+.t-j{background:#2a1a3a;color:#c084fc}
+.t-b{background:#2a1a0a;color:#fb923c}
+.t-d{background:#1e2030;color:#94a3b8}
+
+/* ── Latest result ── */
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rk{font-size:9px;color:#94a3b8;text-transform:uppercase;margin-bottom:3px}
+.rv{font-size:12px;color:#cbd5e1}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <h1>⚙️ JARVIS Jobs</h1>
+  <div class="sub">n8n dispatch · routing · latest result</div>
+  <a href="/Pipeline">💬 Pipeline</a>
+  <a href="/masterclass">📖 Masterclass</a>
+</div>
+
+<main>
+
+  <!-- Send to FullPipeline -->
+  <div class="card" style="border-color:#6b8cff">
+    <div class="card-title">🚀 Send to FullPipeline</div>
+    <div class="fp-row">
+      <input id="fp-inp" placeholder="Type a task or question…" onkeydown="if(event.key==='Enter')fpSend()">
+      <button id="fp-btn" onclick="fpSend()">Send</button>
+    </div>
+    <div id="fp-result"></div>
+  </div>
+
+  <!-- Dispatch Channels -->
+  <div class="card">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <div class="card-title" style="margin:0">📡 Outgoing Dispatch Channels — Site fires these n8n webhooks</div>
+      <button class="btn" onclick="dpLoad()" style="margin-left:auto">↺ Refresh URLs</button>
+    </div>
+    <div class="dp-grid" id="dp-grid">
+      <div style="color:#475569;font-size:11px">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Routing Table -->
+  <div class="card">
+    <div class="card-title">🗺️ Classification → Dispatch Routing</div>
+    <table>
+      <thead><tr><th>Type</th><th>Door 1 (JSON reply)</th><th>Door 2 (Telegram)</th><th>n8n Hooks fired</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="tag t-k">knowledge_question</span></td>
+          <td style="color:#4ade80">answer in reply</td>
+          <td style="color:#475569">—</td>
+          <td style="color:#475569">none</td>
+        </tr>
+        <tr>
+          <td><span class="tag t-s">smart_home</span></td>
+          <td style="color:#4ade80">answer in reply</td>
+          <td style="color:#4ade80">answer sent</td>
+          <td><span class="tag t-d">Execute</span><span class="tag t-d">TTS</span><span class="tag t-d">Mitos</span></td>
+        </tr>
+        <tr>
+          <td><span class="tag t-j">jobs</span></td>
+          <td style="color:#4ade80">answer in reply</td>
+          <td style="color:#4ade80">answer sent</td>
+          <td><span class="tag t-d">Execute/Jobs</span><span class="tag t-d">TTS</span><span class="tag t-d">Mitos</span></td>
+        </tr>
+        <tr>
+          <td><span class="tag t-b">browser_task</span></td>
+          <td style="color:#4ade80">answer in reply</td>
+          <td style="color:#4ade80">answer sent</td>
+          <td><span class="tag t-d">Execute/Browser</span><span class="tag t-d">TTS</span><span class="tag t-d">Mitos</span><span class="tag t-d">Telegram</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Latest Result -->
+  <div class="card">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <div class="card-title" style="margin:0">📋 Latest Completed Job</div>
+      <button class="btn" onclick="loadResult()" style="margin-left:auto">↺</button>
+    </div>
+    <div id="result-body" style="color:#475569;font-size:12px">Loading…</div>
+  </div>
+
+</main>
+
+<script>
+const BASE = 'http://'+location.host;
+
+// ── FullPipeline send ────────────────────────────────────────────────────────
+async function fpSend() {
+  const inp = document.getElementById('fp-inp');
+  const res = document.getElementById('fp-result');
+  const text = inp.value.trim();
+  if (!text) return;
+  res.style.display='block'; res.textContent='Sending…'; res.style.color='#f5c518';
+  try {
+    const r = await fetch('/api/jarvis/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text})
+    });
+    const d = r.ok ? await r.json() : {};
+    const reply = d.reply || d.answer || JSON.stringify(d);
+    const type = d.type ? ` [${d.type}]` : '';
+    res.textContent = reply + (type ? '\n\nType: '+d.type : '');
+    res.style.color = '#e2e8f0';
+  } catch(e) {
+    res.textContent = 'Error: '+e.message; res.style.color='#f87171';
+  }
+}
+document.getElementById('fp-inp').addEventListener('keydown', e => {
+  if (e.key==='Enter') { e.preventDefault(); fpSend(); }
+});
+
+// ── Dispatch channels ────────────────────────────────────────────────────────
+const CHANNEL_ICONS = {execute:'⚡',telegram:'✈️',tts:'🔊',mitos:'📱',execute_browser:'🌐',execute_jobs:'🧩'};
+const CHANNEL_COLORS = {execute:'#6b8cff',telegram:'#38bdf8',tts:'#f5c518',mitos:'#fb923c',execute_browser:'#4ade80',execute_jobs:'#c084fc'};
+
+async function dpLoad() {
+  const grid = document.getElementById('dp-grid');
+  try {
+    const r = await fetch('/api/dispatch/hooks');
+    const d = await r.json();
+    const hooks = d.hooks || {};
+    grid.innerHTML = Object.entries(hooks).map(([key, url]) => `
+      <div class="dp-card">
+        <div class="dp-label" style="color:${CHANNEL_COLORS[key]||'#94a3b8'}">${CHANNEL_ICONS[key]||'•'} ${key.replace('_',' ')}</div>
+        <div class="dp-url" id="dp-url-${key}">${url}</div>
+        <div class="dp-actions">
+          <button class="btn" onclick="dpCopy('${key}')">Copy URL</button>
+          <button class="btn btn-grn" onclick="dpTest('${key}')">Test</button>
+        </div>
+        <div class="dp-status" id="dp-st-${key}"></div>
+      </div>`).join('');
+  } catch(e) {
+    grid.innerHTML = '<div style="color:#f87171;font-size:11px">'+e.message+'</div>';
+  }
+}
+
+function dpCopy(key) {
+  const el = document.getElementById('dp-url-'+key);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent.trim());
+  const st = document.getElementById('dp-st-'+key);
+  if (st) { st.textContent='✓ Copied'; st.style.color='#4ade80'; setTimeout(()=>st.textContent='',2000); }
+}
+
+async function dpTest(key) {
+  const st = document.getElementById('dp-st-'+key);
+  const urlEl = document.getElementById('dp-url-'+key);
+  if (!urlEl) return;
+  const url = urlEl.textContent.trim();
+  if (st) { st.textContent='Testing…'; st.style.color='#f5c518'; }
+  try {
+    const r = await fetch(url, {method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({test:true,source:'jobs-page'})});
+    if (st) { st.textContent=`✓ ${r.status} ${r.statusText}`; st.style.color='#4ade80'; }
+  } catch(e) {
+    if (st) { st.textContent='✗ '+e.message; st.style.color='#f87171'; }
+  }
+}
+
+// ── Latest result ────────────────────────────────────────────────────────────
+async function loadResult() {
+  const el = document.getElementById('result-body');
+  try {
+    const r = await fetch('/api/webhook/latest-result');
+    const d = await r.json();
+    if (!d.session_id) { el.innerHTML='<span style="color:#334155">No completed jobs yet.</span>'; return; }
+    const ts = d.completed_at ? new Date(d.completed_at).toLocaleString() : '';
+    el.innerHTML = `
+      <div class="result-grid" style="margin-bottom:10px">
+        <div><div class="rk">Task</div><div class="rv">${d.task||'—'}</div></div>
+        <div><div class="rk">Summary</div><div class="rv">${d.summary||'—'}</div></div>
+        <div><div class="rk">Session</div><div class="rv" style="font-family:monospace;font-size:10px">${d.session_id||'—'}</div></div>
+        <div><div class="rk">Completed</div><div class="rv">${ts}</div></div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = '<span style="color:#f87171">'+e.message+'</span>';
+  }
+}
+
+dpLoad();
+loadResult();
+setInterval(loadResult, 15000);
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

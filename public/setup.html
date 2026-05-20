@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS Agent — Setup</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#07080d;color:#dde1f5;font-family:'JetBrains Mono',monospace,monospace;font-size:13px;min-height:100vh;padding:0;}
+a{color:#6b8cff;text-decoration:none;}
+.top{background:#0d0f17;border-bottom:1px solid #1e2030;padding:12px 24px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.logo span{color:#6b8cff;}
+.badge{font-size:10px;background:#1a1c28;border:1px solid #2a2d42;padding:2px 8px;border-radius:99px;color:#7880a0;}
+.wrap{max-width:760px;margin:0 auto;padding:32px 20px;}
+h1{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;}
+.sub{color:#7880a0;font-size:12px;margin-bottom:32px;}
+
+/* sections */
+.sec{background:#0d0f17;border:1px solid #1e2030;border-radius:10px;margin-bottom:20px;overflow:hidden;}
+.sec-hd{padding:14px 18px;border-bottom:1px solid #1e2030;display:flex;align-items:center;gap:10px;}
+.sec-title{font-size:12px;font-weight:700;color:#fff;letter-spacing:.04em;text-transform:uppercase;}
+.sec-badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:600;}
+.ok{background:rgba(63,220,138,.12);color:#3fdc8a;border:1px solid rgba(63,220,138,.25);}
+.err{background:rgba(255,95,109,.1);color:#ff5f6d;border:1px solid rgba(255,95,109,.2);}
+.warn{background:rgba(255,154,74,.1);color:#ff9a4a;border:1px solid rgba(255,154,74,.2);}
+.sec-body{padding:18px;}
+
+/* rows */
+.row{display:grid;grid-template-columns:180px 1fr auto;gap:10px;align-items:center;margin-bottom:12px;}
+.row:last-child{margin-bottom:0;}
+.lbl{font-size:11px;color:#7880a0;white-space:nowrap;}
+.inp{background:#13151f;border:1px solid #2a2d42;border-radius:6px;padding:8px 12px;color:#dde1f5;font-family:inherit;font-size:12px;width:100%;transition:border-color .15s;}
+.inp:focus{outline:none;border-color:#6b8cff;}
+.inp.ok-val{border-color:rgba(63,220,138,.4);}
+.inp.err-val{border-color:rgba(255,95,109,.4);}
+.btn{padding:7px 14px;border-radius:6px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;border:none;white-space:nowrap;transition:opacity .15s;}
+.btn:hover{opacity:.85;}
+.btn-save{background:#6b8cff;color:#fff;}
+.btn-test{background:#1e2030;color:#7880a0;border:1px solid #2a2d42;}
+.btn-test:hover{color:#dde1f5;border-color:#3a3e55;}
+.hint{font-size:10px;color:#3a3e55;margin-top:3px;grid-column:2;}
+
+/* status bar */
+.status{font-size:11px;padding:8px 12px;border-radius:6px;margin-top:10px;display:none;}
+.status.show{display:block;}
+.status.ok-st{background:rgba(63,220,138,.1);color:#3fdc8a;border:1px solid rgba(63,220,138,.2);}
+.status.err-st{background:rgba(255,95,109,.08);color:#ff5f6d;border:1px solid rgba(255,95,109,.15);}
+.status.inf-st{background:rgba(107,140,255,.1);color:#6b8cff;border:1px solid rgba(107,140,255,.2);}
+
+/* test result */
+.test-out{background:#0a0b11;border:1px solid #1e2030;border-radius:6px;padding:10px 12px;font-size:11px;color:#7880a0;margin-top:10px;min-height:36px;white-space:pre-wrap;display:none;}
+.test-out.show{display:block;}
+
+/* summary cards */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.card{background:#0d0f17;border:1px solid #1e2030;border-radius:8px;padding:14px;}
+.card-label{font-size:9px;color:#3a3e55;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;}
+.card-val{font-size:13px;font-weight:700;color:#dde1f5;}
+.card-val.on{color:#3fdc8a;}
+.card-val.off{color:#ff5f6d;}
+
+/* account cards */
+.acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;}
+@media(max-width:600px){.acct-grid{grid-template-columns:1fr;}}
+.acct-card{background:#13151f;border:1px solid #1e2030;border-radius:8px;padding:12px 14px;transition:border-color .15s;}
+.acct-card.acct-safe{border-color:rgba(63,220,138,.25);}
+.acct-card.acct-live{border-color:rgba(107,140,255,.6);box-shadow:0 0 12px rgba(107,140,255,.15);}
+.acct-card.acct-cooldown{border-color:rgba(248,113,113,.25);}
+.acct-card.acct-empty{border-color:#1e2030;opacity:.7;}
+.acct-hd{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.acct-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.acct-dot.safe{background:#3fdc8a;box-shadow:0 0 6px rgba(63,220,138,.6);}
+.acct-dot.live{background:#6b8cff;box-shadow:0 0 8px rgba(107,140,255,.8);animation:livepulse 1s infinite;}
+.acct-dot.cooldown{background:#f87171;}
+.acct-dot.dim{background:#3a3e55;}
+@keyframes livepulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+.acct-name{font-size:11px;font-weight:700;color:#fff;letter-spacing:.04em;text-transform:uppercase;}
+.acct-email{font-size:10px;color:#7880a0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* status badge */
+.acct-status{font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:.5px;flex-shrink:0;}
+.acct-status.safe{background:rgba(63,220,138,.12);color:#3fdc8a;border:1px solid rgba(63,220,138,.25);}
+.acct-status.live{background:rgba(107,140,255,.15);color:#6b8cff;border:1px solid rgba(107,140,255,.4);}
+.acct-status.cooldown{background:rgba(248,113,113,.1);color:#f87171;border:1px solid rgba(248,113,113,.25);}
+/* slot timing pill */
+.acct-slot{font-size:9px;color:#3a3e55;margin-left:auto;font-family:monospace;}
+.acct-inp-row{display:flex;gap:6px;margin-bottom:10px;}
+.acct-inp-row .inp{font-size:11px;padding:6px 10px;}
+.acct-inp-row .btn{font-size:10px;padding:6px 10px;white-space:nowrap;flex-shrink:0;}
+.acct-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.stat-box{background:#0d0f17;border:1px solid #1e2030;border-radius:5px;padding:7px 6px;text-align:center;}
+.stat-box-lbl{font-size:8px;color:#3a3e55;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.stat-box-val{font-size:15px;font-weight:800;color:#6b8cff;line-height:1;}
+.stat-box-val.green{color:#3fdc8a;}
+.stat-box-val.orange{color:#ff9a4a;}
+.acct-cooldown{font-size:10px;color:#f87171;margin-top:6px;text-align:center;}
+.acct-slot-bar{height:2px;background:#1e2030;border-radius:1px;margin-top:8px;overflow:hidden;}
+.acct-slot-fill{height:2px;background:linear-gradient(90deg,#6b8cff,#3fdc8a);border-radius:1px;transition:width .5s;}
+
+/* launch bar */
+.launch{background:#0d0f17;border:1px solid #1e2030;border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.launch-lbl{color:#7880a0;font-size:11px;}
+.launch-url{color:#6b8cff;font-size:12px;font-weight:600;}
+.btn-launch{background:linear-gradient(135deg,#6b8cff,#b57aff);color:#fff;padding:8px 18px;border-radius:6px;font-size:12px;font-weight:700;}
+@media(max-width:600px){.row{grid-template-columns:1fr;}.cards{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">JARVIS <span>AGENT</span></div>
+  <div class="badge">Setup & Config</div>
+  <div style="flex:1"></div>
+  <a href="/" class="badge" style="color:#6b8cff">← Back to Agent</a>
+</div>
+
+<div class="wrap">
+  <h1>Setup</h1>
+  <p class="sub">Connect to your master broker to use its keys everywhere.</p>
+
+
+  <!-- 3 Master Model Keys -->
+  <div class="sec">
+    <div class="sec-hd" style="gap:10px">
+      <div class="sec-title">🤖 3 Master Model Keys</div>
+      <div class="sec-badge warn" id="mk-badge">—</div>
+      <div style="flex:1"></div>
+      <a id="mk-broker-link" href="http://192.168.0.3:8080/gemini-fleet" target="_blank"
+         style="font-size:10px;color:#6b8cff;text-decoration:none;white-space:nowrap">
+        🔑 Manage Keys →
+      </a>
+    </div>
+    <div class="sec-body">
+
+      <!-- Broker URL -->
+      <div class="row" style="margin-bottom:18px">
+        <div class="lbl">Master Broker URL</div>
+        <input class="inp" id="mk-broker-url" value="http://192.168.0.3:8080"
+               placeholder="http://192.168.0.3:8080"
+               oninput="updateBrokerLinks()" style="font-family:monospace"/>
+        <button class="btn btn-test" onclick="loadModelKeys()">🔄 Check</button>
+      </div>
+
+      <!-- 3 status cards — no inputs, read-only from pool -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px">
+
+        <div style="background:#0a0c14;border:1px solid #1e2030;border-radius:8px;padding:14px;border-top:2px solid #06b6d4">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:16px">⚡</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700;color:#e2e8f0">Gemini 2.5 Flash</div>
+              <div style="font-size:9px;color:#334155;font-family:monospace">gemini-2.5-flash</div>
+            </div>
+          </div>
+          <div id="mk-card-gemini-2.5-flash" style="font-size:11px;color:#334155">—</div>
+          <div id="mk-key-gemini-2.5-flash"  style="font-size:10px;color:#475569;font-family:monospace;margin-top:4px"></div>
+        </div>
+
+        <div style="background:#0a0c14;border:1px solid #1e2030;border-radius:8px;padding:14px;border-top:2px solid #a855f7">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:16px">🧠</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700;color:#e2e8f0">Gemini 2.5 Pro</div>
+              <div style="font-size:9px;color:#334155;font-family:monospace">gemini-2.5-pro</div>
+            </div>
+          </div>
+          <div id="mk-card-gemini-2.5-pro" style="font-size:11px;color:#334155">—</div>
+          <div id="mk-key-gemini-2.5-pro"  style="font-size:10px;color:#475569;font-family:monospace;margin-top:4px"></div>
+        </div>
+
+        <div style="background:#0a0c14;border:1px solid #1e2030;border-radius:8px;padding:14px;border-top:2px solid #22c55e">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:16px">🔹</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700;color:#e2e8f0">Flash-Lite</div>
+              <div style="font-size:9px;color:#334155;font-family:monospace">gemini-2.0-flash-lite</div>
+            </div>
+          </div>
+          <div id="mk-card-gemini-2.0-flash-lite" style="font-size:11px;color:#334155">—</div>
+          <div id="mk-key-gemini-2.0-flash-lite"  style="font-size:10px;color:#475569;font-family:monospace;margin-top:4px"></div>
+        </div>
+
+      </div>
+      <div class="status" id="mk-status"></div>
+    </div>
+  </div>
+
+  <!-- Clear Cooldowns -->
+  <div class="sec">
+    <div class="sec-hd">
+      <div class="sec-title">⏳ 429 Cooldowns</div>
+      <div class="sec-badge" id="cd-badge" style="background:rgba(71,85,105,.15);color:#475569;border-color:#1e2030">—</div>
+    </div>
+    <div class="sec-body" style="display:flex;align-items:center;gap:14px">
+      <div style="font-size:11px;color:#475569;flex:1">
+        Keys that hit a 429 rate-limit are cooled down for 90 s then auto-return to the pool.
+        Click to clear all cooldowns immediately and return every key to the free pool.
+      </div>
+      <button class="btn btn-save" onclick="clearCooldowns()" style="white-space:nowrap;flex-shrink:0">
+        ⚡ Clear All Cooldowns
+      </button>
+    </div>
+  </div>
+
+  <!-- This PC Identity -->
+  <div class="sec">
+    <div class="sec-hd">
+      <div class="sec-title">🖥️ This PC</div>
+      <div class="sec-badge ok" id="pc-badge">—</div>
+    </div>
+    <div class="sec-body">
+      <div class="row">
+        <div class="lbl">PC Name / Label</div>
+        <input class="inp" id="pc-name" placeholder="Main AI · 192.168.0.3"/>
+        <button class="btn btn-save" onclick="savePcInfo()">💾 Save</button>
+      </div>
+      <div class="row">
+        <div class="lbl">Role</div>
+        <select class="inp" id="pc-role">
+          <option value="master">Master Broker (this PC hosts the key pool)</option>
+          <option value="worker">Worker Node (syncs from master)</option>
+          <option value="clone">Clone (reads keys from master broker)</option>
+        </select>
+        <div></div>
+      </div>
+      <div class="row">
+        <div class="lbl">Local IP</div>
+        <input class="inp ok-val" id="pc-ip" readonly style="font-family:monospace"/>
+        <div></div>
+      </div>
+      <div class="status" id="pc-status"></div>
+    </div>
+  </div>
+
+  <!-- Telegram 4 Bots -->
+  <div class="sec">
+    <div class="sec-hd">
+      <div class="sec-title">📨 Telegram — 4 Bots</div>
+      <div class="sec-badge warn" id="tg-badge">loading…</div>
+    </div>
+    <div class="sec-body">
+      <div style="font-size:11px;color:#475569;margin-bottom:16px;line-height:1.6">
+        Each bot is separate. <strong style="color:#e2e8f0">Bot 1 (Site)</strong> sends you notifications — one-way only.
+        <strong style="color:#e2e8f0">Bots 2–4</strong> are two-way: send any message and JARVIS runs it as a task, then replies.
+        The <em>Context</em> field tells JARVIS who is talking so it can tailor responses.
+      </div>
+      <div id="tg-bots-grid" style="display:flex;flex-direction:column;gap:12px">
+        <div style="color:#334155;font-size:11px">Loading…</div>
+      </div>
+      <div class="status" id="tg-status" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- Network Sync -->
+  <div class="sec">
+    <div class="sec-hd">
+      <div class="sec-title">🔄 Sync to Other PCs</div>
+      <div class="sec-badge warn" id="sync-badge">scanning…</div>
+      <div style="flex:1"></div>
+      <button class="btn btn-save btn-sm" onclick="syncAll()" style="font-size:10px;padding:4px 12px">⬆ Sync All</button>
+    </div>
+    <div class="sec-body">
+      <div style="font-size:11px;color:#475569;margin-bottom:14px;line-height:1.6">
+        SSH into each PC, check if it's running the latest code, and push updates.
+        Adds this PC's <code>/root/ai-browser/</code> to the remote PC and restarts its service.
+      </div>
+      <div id="sync-nodes" style="display:flex;flex-direction:column;gap:8px">
+        <div style="color:#334155;font-size:11px">Loading nodes…</div>
+      </div>
+      <div class="status" id="sync-status"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = '';
+
+// ── Model Key Badge styles (inline) ────────────────────────────────────────
+const _MK_CSS = `.mk-key-badge{padding:2px 7px;border-radius:10px;font-size:9px;font-weight:700;border:1px solid}
+.mk-set{border-color:rgba(63,220,138,.4);color:#3fdc8a;background:rgba(63,220,138,.08)}
+.mk-unset{border-color:#1e2030;color:#334155;background:#07080d}
+.mk-active{border-color:rgba(255,154,74,.4);color:#ff9a4a;background:rgba(255,154,74,.08)}`;
+const _mkStyle = document.createElement('style');
+_mkStyle.textContent = _MK_CSS;
+document.head.appendChild(_mkStyle);
+
+function getBrokerUrl() {
+  return (document.getElementById('mk-broker-url')?.value || 'http://192.168.0.3:8080').replace(/\/$/, '');
+}
+
+function updateBrokerLinks() {
+  const b = getBrokerUrl();
+  const el = document.getElementById('mk-broker-link');
+  if (el) el.href = b + '/gemini-keys';
+  const disp = document.getElementById('mk-broker-display');
+  if (disp) disp.textContent = b.replace('http://', '');
+  ['mk-ep-lease','mk-ep-release','mk-ep-status'].forEach(id => {
+    const e = document.getElementById(id);
+    if (!e) return;
+    if (id === 'mk-ep-lease')    e.textContent = b + '/api/gemini-key/model-lease';
+    if (id === 'mk-ep-release')  e.textContent = b + '/api/gemini-key/model-release';
+    if (id === 'mk-ep-status')   e.textContent = b + '/api/gemini-key/models';
+  });
+}
+
+const MODEL_CARDS = [
+  {id:'gemini-2.5-flash'},
+  {id:'gemini-2.5-pro'},
+  {id:'gemini-2.0-flash-lite'},
+];
+
+async function loadModelKeys() {
+  const b = getBrokerUrl();
+  updateBrokerLinks();
+  const badge = document.getElementById('mk-badge');
+  try {
+    const st = await fetch(b + '/api/gemini-key/status').then(r => r.json());
+    const free   = st.free   || 0;
+    const leased = st.leased || 0;
+    const cool   = st.cooling|| 0;
+    const total  = st.total  || 0;
+    const leases = st.leases || {};
+
+    // update cooldown badge
+    const cdBadge = document.getElementById('cd-badge');
+    if (cdBadge) {
+      cdBadge.textContent = cool > 0 ? cool + ' cooling' : 'none';
+      cdBadge.className = 'sec-badge ' + (cool > 0 ? 'warn' : 'ok');
+    }
+
+    // each model has its own isolated pool — flash/pro/lite keys are separate
+    const modelPools = st.model_pools || {};
+    MODEL_CARDS.forEach(m => {
+      const card = document.getElementById('mk-card-' + m.id);
+      const hint = document.getElementById('mk-key-' + m.id);
+      if (!card) return;
+      const mp     = modelPools[m.id] || {};
+      const mFree  = mp.free    || 0;
+      const mUsed  = mp.leased  || 0;
+      const mCool  = mp.cooling || 0;
+      const mTotal = mp.total   || 0;
+      if (mFree > 0) {
+        card.innerHTML = '<span style="color:#3fdc8a;font-weight:700">✅ ' + mFree + ' free</span>' + (mUsed ? ' · ' + mUsed + ' in use' : '') + ' · round-robin per VM';
+        if (hint) hint.textContent = mCool > 0 ? mCool + ' cooling' : '';
+      } else if (mUsed > 0) {
+        card.innerHTML = '<span style="color:#ff9a4a;font-weight:700">⚡ All ' + mUsed + ' in use</span> · waiting…';
+        if (hint) hint.textContent = mCool > 0 ? mCool + ' cooling' : '';
+      } else if (mCool > 0) {
+        card.innerHTML = '<span style="color:#475569;font-weight:700">⏳ All ' + mCool + ' cooling</span> · ~90s';
+        if (hint) hint.textContent = '';
+      } else {
+        const shortName = m.id === 'gemini-2.5-flash' ? 'flash' : m.id === 'gemini-2.5-pro' ? 'pro' : 'lite';
+        card.innerHTML = '<span style="color:#334155">No ' + shortName + ' keys — add at /gemini-fleet</span>';
+        if (hint) hint.textContent = '';
+      }
+    });
+
+    if (badge) {
+      const fp = modelPools['gemini-2.5-flash'] || {};
+      const pp = modelPools['gemini-2.5-pro']   || {};
+      const lp = modelPools['gemini-2.0-flash-lite'] || {};
+      if (total === 0) {
+        badge.textContent = 'no keys'; badge.className = 'sec-badge err';
+      } else {
+        badge.textContent = 'Flash ' + (fp.free||0) + ' · Pro ' + (pp.free||0) + ' · Lite ' + (lp.free||0) + ' free';
+        badge.className = 'sec-badge ' + (free > 0 ? 'ok' : 'warn');
+      }
+    }
+    showMkStatus('✅ Broker connected · ' + total + ' keys total', 'ok');
+  } catch(e) {
+    if (badge) { badge.textContent = 'offline'; badge.className = 'sec-badge err'; }
+    MODEL_CARDS.forEach(m => {
+      const card = document.getElementById('mk-card-' + m.id);
+      if (card) card.innerHTML = '<span style="color:#ef4444">Cannot reach broker</span>';
+    });
+    showMkStatus('Cannot reach broker: ' + getBrokerUrl(), 'err');
+  }
+}
+
+async function clearCooldowns() {
+  const b = getBrokerUrl();
+  try {
+    await fetch(b + '/gemini-keys/reset', {method:'POST'});
+    showMkStatus('✅ All cooldowns cleared — keys returned to pool', 'ok');
+    loadModelKeys();
+  } catch(e) {
+    showMkStatus('Failed to reach broker', 'err');
+  }
+}
+
+function showMkStatus(msg, type) {
+  const el = document.getElementById('mk-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'status show ' + (type === 'ok' ? 'ok-st' : type === 'err' ? 'err-st' : 'inf-st');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = 'status', 4000);
+}
+
+// ── load current config on startup ──────────────────────────────────────────
+async function loadConfig(){
+  try{
+    const r = await fetch(API+'/config');
+    const d = await r.json();
+    const fields = ['LITELLM_BASE_URL','LITELLM_API_KEY','LITELLM_DEFAULT_MODEL',
+                    'TELEGRAM_BOT_TOKEN','TELEGRAM_CHAT_ID',
+                    'TELEGRAM_BOT_TOKEN_2','TELEGRAM_CHAT_ID_2',
+                    'GEMINI_API_KEY','GEMINI_API_KEY_1','GEMINI_API_KEY_2',
+                    'GEMINI_API_KEY_3','GEMINI_API_KEY_4','GEMINI_API_KEY_5'];
+    fields.forEach(k=>{
+      const el = document.getElementById(k);
+      if(el && d[k]) el.value = d[k];
+    });
+    await loadKeyPool();
+    // update NanoBrowser fields
+    const url = d['LITELLM_BASE_URL'] || 'http://192.168.0.3:3080/api/llm/v1';
+    const key = d['LITELLM_API_KEY'] || 'sk-jarvis-admin';
+    document.getElementById('nb-url').value = url;
+    document.getElementById('nb-key').value = key;
+    // update model select
+    const ms = document.getElementById('LITELLM_DEFAULT_MODEL');
+    if(d['LITELLM_DEFAULT_MODEL']) ms.value = d['LITELLM_DEFAULT_MODEL'];
+  }catch(e){}
+  await loadHealth();
+}
+
+async function loadHealth(){
+  try{
+    const r = await fetch(API+'/health');
+    const d = await r.json();
+    // LiteLLM
+    const llmOk = d.litellm_proxy;
+    document.getElementById('cs-llm').textContent = llmOk ? '✓ connected' : '✗ not set';
+    document.getElementById('cs-llm').className = 'card-val ' + (llmOk ? 'on' : 'off');
+    // Telegram
+    const tgOk = d.telegram;
+    document.getElementById('cs-tg').textContent = tgOk ? '✓ set' : '✗ not set';
+    document.getElementById('cs-tg').className = 'card-val ' + (tgOk ? 'on' : 'off');
+    // Gemini
+    const gmOk = d.gemini;
+    document.getElementById('cs-gem').textContent = gmOk ? '✓ set' : 'optional';
+    document.getElementById('cs-gem').className = 'card-val ' + (gmOk ? 'on' : 'warn');
+  }catch(e){}
+}
+
+function showStatus(id, msg, type){
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status show ' + type + '-st';
+  setTimeout(()=>el.classList.remove('show'), 5000);
+}
+
+function setBadge(id, text, cls){
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'sec-badge ' + cls;
+}
+
+async function save(fields, statusId, badgeId){
+  const data = {};
+  fields.forEach(k=>{
+    const el = document.getElementById(k);
+    if(el) data[k] = el.value;
+  });
+  try{
+    const r = await fetch(API+'/config', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+    if(r.ok){
+      showStatus(statusId, '✓ Saved to .env', 'ok');
+      setBadge(badgeId, 'saved', 'ok');
+      await loadHealth();
+    } else {
+      showStatus(statusId, '✗ Save failed', 'err');
+    }
+  }catch(e){ showStatus(statusId, '✗ '+e.message, 'err'); }
+}
+
+function saveLLM(){ save(['LITELLM_BASE_URL','LITELLM_API_KEY','LITELLM_DEFAULT_MODEL'], 'llm-status', 'llm-badge'); }
+function saveTG(){ save(['TELEGRAM_BOT_TOKEN','TELEGRAM_CHAT_ID'], 'tg-status', 'tg-badge'); }
+function saveTG2(){ save(['TELEGRAM_BOT_TOKEN_2','TELEGRAM_CHAT_ID_2'], 'tg2-status', 'tg2-badge'); }
+async function saveGemini(){
+  const updates = {};
+  for(let i=1;i<=5;i++){
+    const v = document.getElementById(`GEMINI_API_KEY_${i}`)?.value.trim();
+    if(v) updates[`GEMINI_API_KEY_${i}`] = v;
+  }
+  if(Object.keys(updates).length){
+    await fetch(API+'/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(updates)});
+  }
+  const emails = {};
+  for(let i=1;i<=5;i++){
+    const v = document.getElementById(`EMAIL_${i}`)?.value.trim();
+    if(v) emails[`email_${i}`] = v;
+  }
+  if(Object.keys(emails).length){
+    await fetch(API+'/gemini-keys/meta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(emails)});
+  }
+  showStatus('gem-status','✓ All keys & emails saved','ok');
+  setBadge('gem-badge','saved','ok');
+  setTimeout(loadKeyPool, 800);
+}
+
+function renderKeyPool(data){
+  const grid = document.getElementById('acct-grid');
+  const allCards = [];
+  const keyMap = {};
+  (data.keys||[]).forEach(k => keyMap[k.index] = k);
+  const slotSec = data.slot_sec || 12;
+  const totalSec = slotSec * 5;
+
+  for(let i = 1; i <= 5; i++){
+    const info = keyMap[i];
+    if(!info){
+      allCards.push(`
+        <div class="acct-card acct-empty">
+          <div class="acct-hd">
+            <div class="acct-dot dim"></div>
+            <div class="acct-name">Account #${i}</div>
+            <div class="acct-email" style="color:#3a3e55">— empty —</div>
+            <div class="acct-slot">slot +${(i-1)*slotSec}s</div>
+          </div>
+          <div class="acct-inp-row">
+            <input class="inp" id="GEMINI_API_KEY_${i}" type="password" placeholder="AIza… (paste key)"/>
+            <input class="inp" id="EMAIL_${i}" type="email" placeholder="email" style="max-width:160px"/>
+            <button class="btn btn-save" onclick="saveOneKey(${i})">Save</button>
+          </div>
+          <div class="acct-stats">
+            <div class="stat-box"><div class="stat-box-lbl">Lifetime</div><div class="stat-box-val">—</div></div>
+            <div class="stat-box"><div class="stat-box-lbl">Today</div><div class="stat-box-val green">—</div></div>
+            <div class="stat-box"><div class="stat-box-lbl">Avg/Day</div><div class="stat-box-val orange">—</div></div>
+          </div>
+        </div>`);
+    } else {
+      const st = info.stats || {lifetime:0, today:0, avg_d:0};
+      const status = info.status || (info.active ? 'safe' : 'cooldown');
+      const dotCls = status;
+      const cardCls = `acct-${status}`;
+      const slotOffset = info.slot !== undefined ? info.slot : (i-1)*slotSec;
+      const statusLabel = status === 'live' ? '⚡ LIVE' : status === 'cooldown' ? '⏳ COOLDOWN' : '✓ SAFE';
+
+      let bottomHtml = '';
+      if(status === 'cooldown' && info.cooldown_remaining > 0){
+        const secs = info.cooldown_remaining;
+        const mm = Math.floor(secs/60), ss = secs%60;
+        bottomHtml = `<div class="acct-cooldown">⏳ 429 cooldown — ${mm > 0 ? mm+'m ' : ''}${ss}s left</div>`;
+      } else if(status === 'live'){
+        bottomHtml = `<div class="acct-cooldown" style="color:#6b8cff">⚡ Processing request now…</div>`;
+      }
+
+      // Slot timing progress bar (position in 60s cycle)
+      const now = Date.now()/1000;
+      const cyclePos = (now % totalSec);
+      const slotProgress = Math.min(100, Math.max(0, ((cyclePos - slotOffset + totalSec) % totalSec) / slotSec * 100));
+      const isCurrentSlot = info.is_current_slot;
+
+      allCards.push(`
+        <div class="acct-card ${cardCls}">
+          <div class="acct-hd">
+            <div class="acct-dot ${dotCls}"></div>
+            <div class="acct-name">Account #${i}</div>
+            <div class="acct-email" title="${info.email||''}">${info.email||'<span style="color:#3a3e55">no email</span>'}</div>
+            <span class="acct-status ${status}">${statusLabel}</span>
+          </div>
+          <div class="acct-inp-row">
+            <input class="inp" id="GEMINI_API_KEY_${i}" type="password" placeholder="${info.key_preview}" value=""/>
+            <input class="inp" id="EMAIL_${i}" type="email" placeholder="email" value="${info.email||''}" style="max-width:160px"/>
+            <button class="btn btn-save" onclick="saveOneKey(${i})">Save</button>
+          </div>
+          <div class="acct-stats">
+            <div class="stat-box"><div class="stat-box-lbl">Lifetime</div><div class="stat-box-val">${st.lifetime}</div></div>
+            <div class="stat-box"><div class="stat-box-lbl">Today</div><div class="stat-box-val green">${st.today}</div></div>
+            <div class="stat-box"><div class="stat-box-lbl">Avg/Day</div><div class="stat-box-val orange">${st.avg_d}</div></div>
+          </div>
+          ${bottomHtml}
+          <div class="acct-slot-bar" title="Fires at +${slotOffset}s in 60s cycle">
+            <div class="acct-slot-fill" style="width:${isCurrentSlot?100:0}%"></div>
+          </div>
+          <div style="font-size:9px;color:#3a3e55;margin-top:3px">slot +${slotOffset}s · fires every 60s</div>
+        </div>`);
+    }
+  }
+  grid.innerHTML = allCards.join('');
+}
+
+let _keyPoolTimer = null;
+async function loadKeyPool(){
+  try{
+    const d = await fetch(API+'/gemini-keys').then(r=>r.json());
+    const badge = document.getElementById('gem-badge');
+    const safeCount = (d.keys||[]).filter(k=>k.status==='safe'||k.status==='live').length;
+    badge.textContent = `${safeCount} / ${d.total} active`;
+    badge.className = 'sec-badge ' + (safeCount > 0 ? 'ok' : (d.total > 0 ? 'warn' : 'err'));
+    renderKeyPool(d);
+  }catch(e){}
+  // Auto-refresh every 5s while on the page
+  clearTimeout(_keyPoolTimer);
+  _keyPoolTimer = setTimeout(loadKeyPool, 5000);
+}
+
+async function saveOneKey(idx){
+  const keyVal = document.getElementById(`GEMINI_API_KEY_${idx}`)?.value.trim();
+  const emailVal = document.getElementById(`EMAIL_${idx}`)?.value.trim();
+  const updates = {};
+  if(keyVal) updates[`GEMINI_API_KEY_${idx}`] = keyVal;
+  if(Object.keys(updates).length){
+    await fetch(API+'/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(updates)});
+  }
+  if(emailVal){
+    await fetch(API+'/gemini-keys/meta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[`email_${idx}`]:emailVal})});
+  }
+  showStatus('gem-status',`✓ Account #${idx} saved`,'ok');
+  setTimeout(loadKeyPool, 600);
+}
+
+async function resetKeyPool(){
+  try{
+    await fetch(API+'/gemini-keys/reset',{method:'POST'});
+    await loadKeyPool();
+    showStatus('gem-status','✓ All cooldowns cleared','ok');
+  }catch(e){ showStatus('gem-status','✗ Failed','err'); }
+}
+
+async function loadStats(){
+  try{
+    const d = await fetch(API+'/stats').then(r=>r.json());
+    document.getElementById('stat-lifetime').textContent = d.lifetime.toLocaleString();
+    document.getElementById('stat-today').textContent = d.today.toLocaleString();
+    const weekTotal = Object.values(d.week||{}).reduce((a,b)=>a+b,0);
+    document.getElementById('stat-week').textContent = weekTotal.toLocaleString();
+    document.getElementById('stats-badge').textContent = `${d.lifetime} total`;
+    document.getElementById('stats-badge').className = 'sec-badge ok';
+    // mini bar chart
+    const chartEl = document.getElementById('stats-chart');
+    const labelsEl = document.getElementById('stats-chart-labels');
+    const days = Object.entries(d.week||{}).sort((a,b)=>a[0]<b[0]?-1:1);
+    const maxVal = Math.max(...days.map(d=>d[1]), 1);
+    chartEl.innerHTML = days.map(([date, count])=>{
+      const pct = Math.max(4, Math.round((count/maxVal)*56));
+      const isToday = date === new Date().toISOString().slice(0,10);
+      const color = isToday ? '#3fdc8a' : '#6b8cff';
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+        <span style="font-size:9px;color:#3a3e55">${count||''}</span>
+        <div style="width:100%;height:${pct}px;background:${color};border-radius:3px 3px 0 0;min-height:4px;opacity:${isToday?1:.7}"></div>
+      </div>`;
+    }).join('');
+    labelsEl.innerHTML = days.map(([date])=>{
+      const d=new Date(date+'T12:00:00Z');
+      const isToday = date === new Date().toISOString().slice(0,10);
+      return `<div style="flex:1;text-align:center;font-size:8.5px;color:${isToday?'#3fdc8a':'#3a3e55'}">${d.toLocaleDateString('en-GB',{weekday:'short'})}</div>`;
+    }).join('');
+  }catch(e){
+    document.getElementById('stats-badge').textContent='unavailable';
+  }
+}
+
+async function testLLM(){
+  const url = document.getElementById('LITELLM_BASE_URL').value.trim();
+  const key = document.getElementById('LITELLM_API_KEY').value.trim();
+  const model = document.getElementById('LITELLM_DEFAULT_MODEL').value;
+  const out = document.getElementById('llm-out');
+  out.className = 'test-out show';
+  out.textContent = 'Testing…';
+  try{
+    const r = await fetch(url+'/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body: JSON.stringify({model, messages:[{role:'user',content:'Reply with exactly: JARVIS ONLINE'}], max_tokens:10})
+    });
+    const d = await r.json();
+    if(d.choices){
+      const msg = d.choices[0].message.content;
+      out.textContent = '✓ Response: '+msg+'\n  Model: '+d.model+'\n  Tokens: '+JSON.stringify(d.usage);
+      out.style.color='#3fdc8a';
+      setBadge('llm-badge','✓ working','ok');
+    } else {
+      out.textContent = '✗ Error: '+(d.error?.message||JSON.stringify(d));
+      out.style.color='#ff5f6d';
+      setBadge('llm-badge','✗ error','err');
+    }
+  }catch(e){
+    out.textContent = '✗ Connection failed: '+e.message;
+    out.style.color='#ff5f6d';
+    setBadge('llm-badge','✗ unreachable','err');
+  }
+}
+
+async function testTG(){
+  const token = document.getElementById('TELEGRAM_BOT_TOKEN').value.trim();
+  const chat  = document.getElementById('TELEGRAM_CHAT_ID').value.trim();
+  if(!token||!chat){ showStatus('tg-status','Enter token and chat ID first','err'); return; }
+  showStatus('tg-status','Sending test message…','inf');
+  try{
+    const r = await fetch('https://api.telegram.org/bot'+token+'/sendMessage',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id:chat, text:'✅ JARVIS Agent connected! Test message from setup page.'})
+    });
+    const d = await r.json();
+    if(d.ok){
+      showStatus('tg-status','✓ Message sent! Check Telegram.','ok');
+      setBadge('tg-badge','✓ working','ok');
+    } else {
+      showStatus('tg-status','✗ '+JSON.stringify(d.description),'err');
+    }
+  }catch(e){ showStatus('tg-status','✗ '+e.message,'err'); }
+}
+
+async function testTG2(){
+  const token = document.getElementById('TELEGRAM_BOT_TOKEN_2').value.trim();
+  const chat  = document.getElementById('TELEGRAM_CHAT_ID_2').value.trim();
+  if(!token||!chat){ showStatus('tg2-status','Enter Bot 2 token and chat ID first','err'); return; }
+  showStatus('tg2-status','Sending test message…','inf');
+  try{
+    const r = await fetch('https://api.telegram.org/bot'+token+'/sendMessage',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id:chat, text:'✅ JARVIS Bot 2 connected!\n\nSend me any message and JARVIS will run it as a task.\n\nCommands:\n/status — check system\n/auto — enable auto mode\n/stop — disable auto mode'})
+    });
+    const d = await r.json();
+    if(d.ok){
+      showStatus('tg2-status','✓ Bot 2 active! Two-way messaging enabled.','ok');
+      setBadge('tg2-badge','✓ working','ok');
+    } else {
+      showStatus('tg2-status','✗ '+JSON.stringify(d.description),'err');
+    }
+  }catch(e){ showStatus('tg2-status','✗ '+e.message,'err'); }
+}
+
+function copy(text){
+  navigator.clipboard.writeText(text).then(()=>{
+    // flash feedback
+    const el = event.target;
+    const orig = el.textContent;
+    el.textContent = '✓';
+    setTimeout(()=>el.textContent=orig, 1200);
+  });
+}
+
+// ── This PC ──────────────────────────────────────────────────────────────────
+async function loadPcInfo() {
+  try {
+    const d = await fetch('/api/setup/pc-info').then(r => r.json());
+    if (d.name)  document.getElementById('pc-name').value = d.name;
+    if (d.role)  document.getElementById('pc-role').value = d.role;
+    if (d.ip)    document.getElementById('pc-ip').value   = d.ip;
+    const b = document.getElementById('pc-badge');
+    b.textContent = d.name || d.ip || 'unnamed';
+    b.className = 'sec-badge ok';
+  } catch(e) {}
+}
+async function savePcInfo() {
+  const payload = {
+    name: document.getElementById('pc-name').value.trim(),
+    role: document.getElementById('pc-role').value,
+  };
+  const r = await fetch('/api/setup/pc-info', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  }).then(r => r.json());
+  showStatus('pc-status', r.ok ? '✅ Saved' : r.error||'Failed', r.ok ? 'ok' : 'err');
+  if (r.ok) loadPcInfo();
+}
+
+// ── Telegram 4 Bots ───────────────────────────────────────────────────────────
+const BOT_COLORS = {1:'#6b8cff', 2:'#3fdc8a', 3:'#f472b6', 4:'#f97316'};
+const BOT_ICONS  = {1:'🌐', 2:'👤', 3:'💕', 4:'💼'};
+
+async function loadTG() {
+  try {
+    const d = await fetch('/api/telegram/bots').then(r => r.json());
+    const bots = d.bots || [];
+    const badge = document.getElementById('tg-badge');
+    const configured = bots.filter(b => b.token_set).length;
+    badge.textContent = configured + ' / 4 configured';
+    badge.className = 'sec-badge ' + (configured > 0 ? 'ok' : 'warn');
+
+    const grid = document.getElementById('tg-bots-grid');
+    grid.innerHTML = bots.map(b => {
+      const col = BOT_COLORS[b.id] || '#6b8cff';
+      const ico = BOT_ICONS[b.id] || '📨';
+      const isSite = b.id === 1;
+      return `<div style="background:#0a0c14;border:1px solid #1e2030;border-radius:8px;padding:14px;border-left:3px solid ${col}">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:18px">${ico}</span>
+          <div style="flex:1">
+            <input class="inp" id="tg-label-${b.id}" value="${esc(b.label)}"
+                   style="font-size:13px;font-weight:700;color:#e2e8f0;background:transparent;border:none;padding:0;width:auto;max-width:120px"
+                   placeholder="Bot name"/>
+            <div style="font-size:10px;color:#475569;margin-top:1px">${esc(b.description)}</div>
+          </div>
+          <span style="font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;border:1px solid;
+                ${b.token_set ? 'border-color:rgba(63,220,138,.4);color:#3fdc8a;background:rgba(63,220,138,.08)' : 'border-color:#1e2030;color:#334155;background:#07080d'}">
+            ${b.token_set ? '✅ ' + b.token_hint : 'not set'}
+          </span>
+          ${!isSite ? `<span style="font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid rgba(107,140,255,.3);color:#6b8cff;background:rgba(107,140,255,.08)">↕ two-way</span>` : `<span style="font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid #1e2030;color:#475569">→ send only</span>`}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <div class="lbl" style="margin-bottom:3px">Bot Token</div>
+            <input class="inp" id="tg-tok-${b.id}" type="password" placeholder="${b.token_set ? '(unchanged)' : '1234567890:ABCdef…'}" style="font-size:11px;padding:6px 9px"/>
+          </div>
+          <div>
+            <div class="lbl" style="margin-bottom:3px">Chat ID</div>
+            <input class="inp" id="tg-cid-${b.id}" placeholder="-100123456789" value="${esc(b.chat_id||'')}" style="font-size:11px;padding:6px 9px;font-family:monospace"/>
+          </div>
+        </div>
+        ${!isSite ? `<div style="margin-bottom:8px">
+          <div class="lbl" style="margin-bottom:3px">Message Context <span style="font-weight:400;color:#334155">— tells JARVIS who is talking</span></div>
+          <textarea class="inp" id="tg-ctx-${b.id}" rows="2"
+                    placeholder="e.g. You are talking to the owner's girlfriend. Be warm and helpful."
+                    style="font-size:11px;padding:6px 9px;resize:vertical">${esc(b.context||'')}</textarea>
+        </div>` : ''}
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-save" style="font-size:11px;padding:5px 12px" onclick="saveTGBot(${b.id})">💾 Save</button>
+          <button class="btn btn-test" style="font-size:11px;padding:5px 12px" onclick="testTGBot(${b.id})">⚡ Test</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('tg-bots-grid').innerHTML = '<div style="color:#ef4444;font-size:11px">Could not load bots</div>';
+  }
+}
+
+async function saveTGBot(botId) {
+  const tok = (document.getElementById('tg-tok-'+botId)?.value||'').trim();
+  const cid = (document.getElementById('tg-cid-'+botId)?.value||'').trim();
+  const ctx = (document.getElementById('tg-ctx-'+botId)?.value||'').trim();
+  const lbl = (document.getElementById('tg-label-'+botId)?.value||'').trim();
+  const payload = {id: botId, chat_id: cid, context: ctx, label: lbl};
+  if (tok) payload.token = tok;
+  const r = await fetch('/api/telegram/bots', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  }).then(r => r.json());
+  showStatus('tg-status', r.ok ? `✅ Bot ${botId} (${lbl}) saved` : r.error||'Failed', r.ok?'ok':'err');
+  if (r.ok) { if (tok) document.getElementById('tg-tok-'+botId).value=''; loadTG(); }
+}
+
+async function testTGBot(botId) {
+  showStatus('tg-status', 'Sending test to Bot '+botId+'…', 'inf');
+  const r = await fetch('/api/telegram/test/'+botId, {method:'POST'}).then(r=>r.json()).catch(()=>({}));
+  showStatus('tg-status', r.ok ? `✅ Bot ${botId} — message sent!` : r.error||'Failed — check token/chat_id', r.ok?'ok':'err');
+}
+
+// ── Sync ──────────────────────────────────────────────────────────────────────
+async function loadSyncNodes() {
+  try {
+    const d = await fetch('/api/sync/nodes').then(r => r.json());
+    const nodes = d.nodes || [];
+    const badge = document.getElementById('sync-badge');
+    const online = nodes.filter(n => n.online).length;
+    badge.textContent = online + ' / ' + nodes.length + ' online';
+    badge.className = 'sec-badge ' + (online > 0 ? 'ok' : 'warn');
+    const grid = document.getElementById('sync-nodes');
+    if (!nodes.length) {
+      grid.innerHTML = '<div style="color:#334155;font-size:11px">No nodes in fleet — add PCs at <a href="/gemini-fleet" style="color:#6b8cff">/gemini-fleet</a></div>';
+      return;
+    }
+    grid.innerHTML = nodes.map(n => {
+      const sc = n.online ? '#3fdc8a' : '#475569';
+      const vc = n.up_to_date===true ? '#3fdc8a' : n.up_to_date===false ? '#ef4444' : '#475569';
+      const vt = n.up_to_date===true ? '✅ up to date' : n.up_to_date===false ? '⚠ needs update' : '— not checked';
+      return `<div style="background:#0a0c14;border:1px solid #1e2030;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="width:8px;height:8px;border-radius:50%;background:${sc};flex-shrink:0"></div>
+        <div style="flex:1;min-width:120px">
+          <div style="font-size:12px;font-weight:700;color:#e2e8f0">${esc(n.name||'Node '+n.id)}</div>
+          <div style="font-size:10px;color:#475569;font-family:monospace">${esc(n.ip||'')}</div>
+        </div>
+        <div style="font-size:10px;color:${vc};font-weight:600;min-width:110px">${vt}</div>
+        ${n.version ? `<div style="font-size:9px;color:#334155;font-family:monospace">${esc(n.version)}</div>` : ''}
+        <button class="btn btn-test" onclick="checkNode(${n.id})" style="font-size:10px;padding:4px 10px">🔍 Check</button>
+        <button class="btn btn-save" onclick="syncNode(${n.id})" style="font-size:10px;padding:4px 10px"${!n.online?' disabled':''}>⬆ Sync</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('sync-nodes').innerHTML = '<div style="color:#ef4444;font-size:11px">Could not load nodes</div>';
+  }
+}
+async function checkNode(nodeId) {
+  showStatus('sync-status','Checking…','inf');
+  const r = await fetch('/api/sync/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({node_id:nodeId})}).then(r=>r.json());
+  showStatus('sync-status', r.ok ? '✅ '+r.message : '✗ '+(r.error||'Failed'), r.ok?'ok':'err');
+  loadSyncNodes();
+}
+async function syncNode(nodeId) {
+  showStatus('sync-status','Syncing — this may take ~30s…','inf');
+  const r = await fetch('/api/sync/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({node_id:nodeId})}).then(r=>r.json());
+  showStatus('sync-status', r.ok ? '✅ '+r.message : '✗ '+(r.error||'Failed'), r.ok?'ok':'err');
+  loadSyncNodes();
+}
+async function syncAll() {
+  showStatus('sync-status','Syncing all online nodes…','inf');
+  const r = await fetch('/api/sync/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({all:true})}).then(r=>r.json());
+  showStatus('sync-status', r.ok ? '✅ '+r.message : '✗ '+(r.error||'Failed'), r.ok?'ok':'err');
+  loadSyncNodes();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'status show '+(type==='ok'?'ok-st':type==='err'?'err-st':'inf-st');
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.className='status', 5000);
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadModelKeys();
+loadPcInfo();
+loadTG();
+loadSyncNodes();
+
+async function loadProxmoxConfig(){
+  try{
+    const d=await fetch('/api/proxmox/config').then(r=>r.json());
+    if(d.host) document.getElementById('pmx-host').value=d.host;
+    if(d.token_id) document.getElementById('pmx-token-id').value=d.token_id;
+    if(d.token_secret) document.getElementById('pmx-token-secret').value=d.token_secret;
+    const vms=d.vms||{};
+    for(let n=1;n<=4;n++){
+      const vm=vms[String(n)]||{};
+      if(vm.ip) document.getElementById('vm'+n+'-ip').value=vm.ip;
+      if(vm.vmid) document.getElementById('vm'+n+'-vmid').value=vm.vmid;
+      if(vm.ip||vm.vmid){
+        const el=document.getElementById('vm'+n+'-status');
+        if(el) el.textContent='configured';
+        if(el) el.style.color='#3fdc8a';
+      }
+    }
+  }catch(e){}
+}
+
+async function saveProxmox(){
+  const vms={};
+  for(let n=1;n<=4;n++){
+    vms[String(n)]={
+      ip:document.getElementById('vm'+n+'-ip').value.trim(),
+      vmid:document.getElementById('vm'+n+'-vmid').value.trim(),
+      node:'pve'
+    };
+  }
+  const body={
+    host:document.getElementById('pmx-host').value.trim(),
+    token_id:document.getElementById('pmx-token-id').value.trim(),
+    token_secret:document.getElementById('pmx-token-secret').value.trim(),
+    vms
+  };
+  const r=await fetch('/api/proxmox/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  showStatus('pmx-status',d.ok?'✓ Saved':'✗ Error','ok');
+}
+
+async function testProxmox(){
+  showStatus('pmx-status','Testing connection…','inf');
+  // Save first so server has latest values
+  await saveProxmox();
+  try{
+    const r=await fetch('/api/proxmox/test',{method:'POST'});
+    const d=await r.json();
+    if(d.ok){
+      showStatus('pmx-status','✓ Connected! Proxmox '+d.version+'-'+d.release,'ok');
+      document.getElementById('pmx-badge').textContent='✓ connected';
+      document.getElementById('pmx-badge').style.color='#3fdc8a';
+    } else {
+      showStatus('pmx-status','✗ '+d.error,'err');
+    }
+  }catch(e){ showStatus('pmx-status','✗ '+e.message,'err'); }
+}
+
+async function vmAction(slot,action){
+  const label={start:'Starting',stop:'Stopping',status:'Checking'}[action]||action;
+  try{
+    const r=await fetch('/api/proxmox/vm/'+slot+'/'+action,{method:'POST'});
+    const d=await r.json();
+    const el=document.getElementById('vm'+slot+'-status');
+    if(d.ok){
+      if(action==='status'){
+        if(el){ el.textContent=d.status; el.style.color=d.status==='running'?'#3fdc8a':'#f87171'; }
+      } else {
+        if(el){ el.textContent=action==='start'?'starting…':'stopping…'; el.style.color='#ff9a4a'; }
+        setTimeout(()=>vmAction(slot,'status'),4000);
+      }
+    } else {
+      if(el){ el.textContent='✗ '+d.error; el.style.color='#f87171'; }
+    }
+  }catch(e){ alert('Error: '+e.message); }
+}
+
+// ── Proxy ──
+async function loadProxyStatus(){
+  try{
+    const d=await fetch('/api/proxy/status').then(r=>r.json());
+    const inp=document.getElementById('proxy-url');
+    if(inp && d.proxy) inp.value=d.proxy;
+    const st=document.getElementById('proxy-status');
+    if(st){
+      if(d.proxy_ok)
+        st.innerHTML=`<span style="color:#3fdc8a">✓ Active — exit IP: ${d.exit_ip||'?'}</span>`;
+      else if(d.configured)
+        st.innerHTML=`<span style="color:#f0a500">⚠ Configured but unreachable: ${d.error||''}</span>`;
+      else
+        st.innerHTML=`<span style="color:#555">○ Direct (no proxy)</span>`;
+    }
+  }catch(e){}
+}
+async function proxySave(){
+  const proxy=(document.getElementById('proxy-url')||{}).value||'';
+  const r=await fetch('/api/proxy/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({proxy})});
+  const d=await r.json();
+  const st=document.getElementById('proxy-status');
+  if(st) st.innerHTML=d.ok?`<span style="color:#3fdc8a">✓ Saved${proxy?' — '+proxy:' (cleared)'}</span>`:`<span style="color:#f87171">✗ ${d.error}</span>`;
+  loadProxyStatus();
+}
+async function proxyClear(){
+  document.getElementById('proxy-url').value='';
+  await proxySave();
+}
+async function proxyTest(){
+  const proxy=(document.getElementById('proxy-url')||{}).value||'';
+  const url=(document.getElementById('proxy-test-url')||{}).value||'http://httpbin.org/ip';
+  const st=document.getElementById('proxy-status');
+  if(st) st.innerHTML='Testing…';
+  if(!proxy){ if(st) st.innerHTML='<span style="color:#f0a500">Enter a proxy URL first</span>'; return; }
+  const r=await fetch('/api/proxy/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({proxy,url})});
+  const d=await r.json();
+  if(st) st.innerHTML=d.ok?`<span style="color:#3fdc8a">✓ OK (${d.status}) — ${d.body.slice(0,100)}</span>`:`<span style="color:#f87171">✗ ${d.error}</span>`;
+}
+loadProxyStatus();
+
+function openVmVnc(slot){
+  const ip=document.getElementById('vm'+slot+'-ip').value.trim();
+  if(!ip){ alert('Set the VM IP for slot '+slot+' first'); return; }
+  window.open('http://'+ip+':6082/vnc.html?autoconnect=1&resize=scale','_blank');
+}
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

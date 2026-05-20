@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Staff Job Workflows</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0e0e0e;color:#e0e0e0;font-family:'Segoe UI',sans-serif;font-size:13px}
+:root{
+  --yel:#f5c400;--grn:#00c853;--red:#ff3b3b;--blu:#3a8fff;--pur:#a855f7;
+  --bg1:#0e0e0e;--bg2:#161616;--bg3:#1e1e1e;--bg4:#252525;--brd:#2a2a2a;
+}
+
+/* ── Header ── */
+.hdr{background:#111;border-bottom:1px solid var(--brd);padding:12px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100}
+.hdr h1{font-size:16px;font-weight:700;color:var(--yel);white-space:nowrap}
+.hdr-links{display:flex;gap:6px;flex-wrap:wrap}
+.hdr-links a{padding:3px 10px;border:1px solid #333;border-radius:12px;color:#888;text-decoration:none;font-size:11px;transition:all .15s}
+.hdr-links a:hover{border-color:#555;color:#ccc}
+.hdr-links a.noco{border-color:#555;color:#aaa}
+.hdr-links a.noco:hover{border-color:var(--grn);color:var(--grn)}
+.spacer{flex:1}
+
+/* ── Table ── */
+.wrap{padding:16px;overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;min-width:900px}
+.tbl th{background:#1a1a1a;padding:8px 12px;text-align:left;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--brd);white-space:nowrap;position:sticky;top:48px;z-index:10}
+.tbl td{padding:8px 10px;border-bottom:1px solid #1a1a1a;vertical-align:top}
+.tbl tr:hover td{background:#131313}
+.tbl tr.selected td{background:#1a1f1a}
+
+/* ── Stars ── */
+.stars{display:flex;gap:2px;cursor:pointer;user-select:none}
+.star{font-size:16px;color:#333;transition:color .1s}
+.star.on{color:var(--yel)}
+
+/* ── Workflow expand ── */
+.wf-summary{cursor:pointer;color:#3a8fff;font-size:11px;white-space:nowrap}
+.wf-summary:hover{text-decoration:underline}
+
+/* ── Edit modal ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;overflow-y:auto;padding:20px}
+.modal-bg.open{display:flex;align-items:flex-start;justify-content:center}
+.modal{background:#161616;border:1px solid #333;border-radius:10px;width:100%;max-width:900px;overflow:hidden}
+.modal-hd{background:#1e1e1e;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--brd)}
+.modal-hd h2{font-size:15px;font-weight:600}
+.modal-body{padding:18px;max-height:80vh;overflow-y:auto}
+.field-row{margin-bottom:12px}
+.field-row label{display:block;font-size:11px;color:#777;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.field-row input,.field-row textarea{width:100%;background:#111;border:1px solid #333;border-radius:5px;color:#eee;padding:7px 10px;font-size:13px;resize:vertical}
+.field-row input:focus,.field-row textarea:focus{outline:none;border-color:var(--yel)}
+.field-row textarea{min-height:70px;font-family:monospace}
+
+/* ── WF grid ── */
+.wf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.wf-step{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;padding:10px}
+.wf-step-hd{font-size:11px;font-weight:600;color:#555;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.wf-step-num{background:#252525;border-radius:10px;padding:1px 7px;color:#777;font-size:10px}
+.wf-step label{font-size:10px;color:#555;display:block;margin-bottom:3px;margin-top:6px}
+
+/* ── Section divider ── */
+.section-hd{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:1px;padding:6px 0;margin:16px 0 8px;border-bottom:1px solid #1e1e1e;display:flex;align-items:center;gap:8px}
+.section-hd span{background:#1e1e1e;padding:2px 8px;border-radius:10px}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:5px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid;transition:all .15s;background:transparent}
+.btn-yel{border-color:var(--yel);color:var(--yel)}
+.btn-yel:hover{background:var(--yel);color:#000}
+.btn-grn{border-color:var(--grn);color:var(--grn)}
+.btn-grn:hover{background:var(--grn);color:#000}
+.btn-red{border-color:var(--red);color:var(--red)}
+.btn-red:hover{background:var(--red);color:#fff}
+.btn-blu{border-color:var(--blu);color:var(--blu)}
+.btn-blu:hover{background:var(--blu);color:#fff}
+.btn-sm{padding:3px 8px;font-size:11px}
+.btn-ghost{border-color:#333;color:#777}
+.btn-ghost:hover{border-color:#555;color:#ccc}
+
+/* ── NocoDB links panel ── */
+.noco-links{display:flex;flex-wrap:wrap;gap:8px;padding:10px 20px;background:#111;border-bottom:1px solid var(--brd)}
+.noco-chip{display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid #2a2a2a;border-radius:14px;font-size:11px;color:#888;cursor:pointer;transition:all .15s;text-decoration:none}
+.noco-chip:hover{border-color:var(--grn);color:var(--grn)}
+.noco-chip .dot{width:6px;height:6px;border-radius:50%;background:#333}
+.noco-chip:hover .dot{background:var(--grn)}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:20px;right:20px;background:#1e1e1e;border:1px solid #444;border-radius:6px;padding:9px 16px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:999}
+#toast.show{opacity:1}
+#toast.ok{border-color:var(--grn);color:var(--grn)}
+#toast.err{border-color:var(--red);color:var(--red)}
+
+/* ── Empty state ── */
+.empty{text-align:center;padding:48px;color:#444;font-size:14px}
+.empty button{margin-top:16px}
+
+/* ── WF inline preview ── */
+.wf-inline{margin-top:8px;display:none}
+.wf-inline.open{display:block}
+.wf-pair{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;font-size:11px}
+.wf-pair .script{background:#111;border-radius:4px;padding:5px 8px;color:#aaa;font-family:monospace;border-left:2px solid #333}
+.wf-pair .prompt{background:#0f1a0f;border-radius:4px;padding:5px 8px;color:#7aff7a;font-family:monospace;border-left:2px solid #00c85340}
+.wf-pair-lbl{font-size:10px;color:#444;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>⚡ Staff Job Workflows</h1>
+  <div class="hdr-links" id="noco-quick-links">
+    <a href="http://192.168.0.107:8080" target="_blank" class="noco">🗄 NocoDB</a>
+  </div>
+  <div class="spacer"></div>
+  <div style="display:flex;gap:8px">
+    <input type="text" id="search" placeholder="Search jobs…" oninput="renderTable()"
+      style="background:#1a1a1a;border:1px solid #333;border-radius:5px;color:#eee;padding:5px 10px;font-size:12px;width:200px">
+    <button class="btn btn-yel" onclick="openEdit(null)">+ New Job</button>
+    <a href="/" class="btn btn-ghost">← Agent</a>
+    <a href="/masterclass" class="btn btn-ghost">Masterclass</a>
+  </div>
+</div>
+
+<!-- NocoDB table links -->
+<div class="noco-links" id="noco-links-bar"></div>
+
+<!-- Main table -->
+<div class="wrap">
+  <table class="tbl" id="jobs-tbl">
+    <thead>
+      <tr>
+        <th style="width:180px">Job Name</th>
+        <th style="width:200px">What it does</th>
+        <th style="width:80px;text-align:center">Workflows</th>
+        <th style="min-width:160px">Actual Output</th>
+        <th style="min-width:160px">Expected Output</th>
+        <th style="width:110px;text-align:center">Rating</th>
+        <th style="width:90px"></th>
+      </tr>
+    </thead>
+    <tbody id="tbl-body"></tbody>
+  </table>
+  <div class="empty" id="empty-state" style="display:none">
+    No jobs yet.<br>
+    <button class="btn btn-yel" onclick="openEdit(null)">+ Add First Job</button>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-hd">
+      <h2 id="modal-title">New Job</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-grn btn-sm" onclick="saveJob()">💾 Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="closeEdit()">✕ Close</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="field-row">
+          <label>Job Name *</label>
+          <input type="text" id="f-job-name" placeholder="e.g. Send Daily Report">
+        </div>
+        <div class="field-row">
+          <label>Rating (1–5)</label>
+          <div class="stars" id="f-rating-stars">
+            <span class="star" data-v="1">★</span>
+            <span class="star" data-v="2">★</span>
+            <span class="star" data-v="3">★</span>
+            <span class="star" data-v="4">★</span>
+            <span class="star" data-v="5">★</span>
+          </div>
+          <input type="hidden" id="f-rating" value="0">
+        </div>
+      </div>
+      <div class="field-row">
+        <label>What it does (description)</label>
+        <textarea id="f-desc" rows="2" placeholder="Short description of what this job accomplishes"></textarea>
+      </div>
+
+      <div class="section-hd"><span>Workflow Steps (up to 20)</span>
+        <span style="color:#555;font-size:11px">Script = n8n node/action · Prompt = what it does in the AI prompt</span>
+      </div>
+      <div class="wf-grid" id="wf-fields"></div>
+
+      <div class="section-hd"><span>Output Evaluation</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field-row">
+          <label>What it actually outputs</label>
+          <textarea id="f-actual" rows="3" placeholder="What the workflow currently produces"></textarea>
+        </div>
+        <div class="field-row">
+          <label>What it should output</label>
+          <textarea id="f-expected" rows="3" placeholder="The ideal/expected result"></textarea>
+        </div>
+      </div>
+
+      <input type="hidden" id="f-row-id">
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const NOCO = 'http://192.168.0.107:8080';
+const BASE_ID = 'p5tk8xrpifcbp6r';
+
+let jobs = [];
+let editRating = 0;
+
+// ── NocoDB table links ────────────────────────────────────────────────────────
+async function loadNocoLinks() {
+  try {
+    const r = await fetch('/api/noco-tables');
+    const d = await r.json();
+    const bar = document.getElementById('noco-links-bar');
+    bar.innerHTML = '';
+    for (const [name, info] of Object.entries(d)) {
+      const a = document.createElement('a');
+      a.className = 'noco-chip';
+      a.href = `${NOCO}/dashboard/#/signin`;
+      a.target = '_blank';
+      // Direct table URL format
+      a.href = `${NOCO}`;
+      a.target = '_blank';
+      a.innerHTML = `<span class="dot"></span>${name}`;
+      a.title = `Table ID: ${info.id}`;
+      // Make it open the specific table
+      a.href = `${NOCO}/dashboard/#/`;
+      a.setAttribute('data-table', info.id);
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.open(`${NOCO}`, '_blank');
+      });
+      bar.appendChild(a);
+    }
+  } catch(e) { console.warn('noco-tables:', e); }
+}
+
+// ── Load jobs ─────────────────────────────────────────────────────────────────
+async function loadJobs() {
+  const r = await fetch('/api/job-workflows');
+  jobs = await r.json();
+  renderTable();
+}
+
+function renderTable() {
+  const q   = (document.getElementById('search').value || '').toLowerCase();
+  const filtered = q ? jobs.filter(j => (j.Job_Name||'').toLowerCase().includes(q) || (j.Description||'').toLowerCase().includes(q)) : jobs;
+  const tbody = document.getElementById('tbl-body');
+  tbody.innerHTML = '';
+
+  document.getElementById('empty-state').style.display = filtered.length === 0 ? 'block' : 'none';
+  document.getElementById('jobs-tbl').style.display    = filtered.length === 0 ? 'none'  : '';
+
+  for (const j of filtered) {
+    const wfCount = Array.from({length:20}, (_,i) => j[`WF${i+1}_Script`]).filter(Boolean).length;
+    const rating  = parseInt(j.Rating || 0);
+    const stars   = Array.from({length:5}, (_,i) => `<span style="color:${i<rating?'#f5c400':'#333'}">★</span>`).join('');
+
+    const tr = document.createElement('tr');
+    tr.id = `row-${j.Id}`;
+    tr.innerHTML = `
+      <td style="font-weight:600;color:#e0e0e0">${esc(j.Job_Name||'')}</td>
+      <td style="color:#aaa;font-size:12px">${esc((j.Description||'').slice(0,120))}${(j.Description||'').length>120?'…':''}</td>
+      <td style="text-align:center">
+        ${wfCount > 0
+          ? `<span class="wf-summary" onclick="toggleWF(${j.Id})">📋 ${wfCount} step${wfCount>1?'s':''}</span>`
+          : `<span style="color:#333;font-size:11px">—</span>`}
+      </td>
+      <td style="color:#aaa;font-size:12px">${esc((j.Actual_Output||'').slice(0,100))}</td>
+      <td style="color:#7aff7a;font-size:12px">${esc((j.Expected_Output||'').slice(0,100))}</td>
+      <td style="text-align:center"><div style="display:flex;justify-content:center;font-size:14px">${stars}</div></td>
+      <td>
+        <div style="display:flex;gap:4px;justify-content:flex-end">
+          <button class="btn btn-yel btn-sm" onclick="openEdit(${j.Id})">✏</button>
+          <button class="btn btn-red btn-sm" onclick="deleteJob(${j.Id})">✕</button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+
+    // WF inline preview row (hidden by default)
+    const wfTr = document.createElement('tr');
+    wfTr.id = `wf-inline-${j.Id}`;
+    wfTr.innerHTML = `<td colspan="7" style="padding:0">
+      <div class="wf-inline" id="wf-body-${j.Id}">
+        <div style="padding:10px 12px;background:#0f0f0f">
+          ${buildWFPreview(j)}
+        </div>
+      </div></td>`;
+    tbody.appendChild(wfTr);
+  }
+}
+
+function buildWFPreview(j) {
+  const pairs = [];
+  for (let i = 1; i <= 20; i++) {
+    const s = j[`WF${i}_Script`]; const p = j[`WF${i}_Prompt`];
+    if (!s && !p) continue;
+    pairs.push(`
+      <div class="wf-pair">
+        <div><div class="wf-pair-lbl">Step ${i} · Script</div><div class="script">${esc(s||'—')}</div></div>
+        <div><div class="wf-pair-lbl">Step ${i} · Prompt</div><div class="prompt">${esc(p||'—')}</div></div>
+      </div>`);
+  }
+  return pairs.length ? pairs.join('') : '<div style="color:#444;padding:8px">No workflow steps defined.</div>';
+}
+
+function toggleWF(id) {
+  const el = document.getElementById(`wf-body-${id}`);
+  el.classList.toggle('open');
+}
+
+// ── Build workflow fields ─────────────────────────────────────────────────────
+function buildWFFields(data = {}) {
+  const container = document.getElementById('wf-fields');
+  container.innerHTML = '';
+  for (let i = 1; i <= 20; i++) {
+    const div = document.createElement('div');
+    div.className = 'wf-step';
+    div.innerHTML = `
+      <div class="wf-step-hd"><span class="wf-step-num">${i}</span> Workflow Step ${i}</div>
+      <label>Script / n8n node</label>
+      <textarea id="wf${i}-script" rows="2" placeholder="e.g. HTTP Request → POST to HA">${esc(data[`WF${i}_Script`]||'')}</textarea>
+      <label>What it does in a prompt</label>
+      <textarea id="wf${i}-prompt" rows="2" placeholder="e.g. Sends payload to turn on bedroom AC">${esc(data[`WF${i}_Prompt`]||'')}</textarea>`;
+    container.appendChild(div);
+  }
+}
+
+// ── Open/close edit modal ─────────────────────────────────────────────────────
+function openEdit(id) {
+  const job = id ? jobs.find(j => j.Id === id) : null;
+  document.getElementById('modal-title').textContent = job ? `Edit: ${job.Job_Name}` : 'New Job';
+  document.getElementById('f-row-id').value   = job ? job.Id : '';
+  document.getElementById('f-job-name').value = job ? (job.Job_Name||'') : '';
+  document.getElementById('f-desc').value     = job ? (job.Description||'') : '';
+  document.getElementById('f-actual').value   = job ? (job.Actual_Output||'') : '';
+  document.getElementById('f-expected').value = job ? (job.Expected_Output||'') : '';
+  setRating(job ? parseInt(job.Rating||0) : 0);
+  buildWFFields(job || {});
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeEdit() { document.getElementById('modal').classList.remove('open'); }
+
+// ── Rating stars ──────────────────────────────────────────────────────────────
+function setRating(val) {
+  editRating = val;
+  document.getElementById('f-rating').value = val;
+  document.querySelectorAll('#f-rating-stars .star').forEach((s, i) => {
+    s.classList.toggle('on', i < val);
+  });
+}
+document.getElementById('f-rating-stars').addEventListener('click', e => {
+  if (e.target.classList.contains('star')) setRating(parseInt(e.target.dataset.v));
+});
+document.getElementById('f-rating-stars').addEventListener('mouseover', e => {
+  if (e.target.classList.contains('star')) {
+    const v = parseInt(e.target.dataset.v);
+    document.querySelectorAll('#f-rating-stars .star').forEach((s, i) => s.classList.toggle('on', i < v));
+  }
+});
+document.getElementById('f-rating-stars').addEventListener('mouseleave', () => setRating(editRating));
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+async function saveJob() {
+  const name = document.getElementById('f-job-name').value.trim();
+  if (!name) { toast('Job name required', 'err'); return; }
+
+  const payload = {
+    Job_Name:        name,
+    Description:     document.getElementById('f-desc').value.trim(),
+    Actual_Output:   document.getElementById('f-actual').value.trim(),
+    Expected_Output: document.getElementById('f-expected').value.trim(),
+    Rating:          parseInt(document.getElementById('f-rating').value) || 0,
+  };
+  for (let i = 1; i <= 20; i++) {
+    payload[`WF${i}_Script`] = document.getElementById(`wf${i}-script`)?.value.trim() || '';
+    payload[`WF${i}_Prompt`] = document.getElementById(`wf${i}-prompt`)?.value.trim() || '';
+  }
+
+  const rowId = document.getElementById('f-row-id').value;
+  let r, d;
+  if (rowId) {
+    r = await fetch(`/api/job-workflows/${rowId}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+  } else {
+    r = await fetch('/api/job-workflows', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+  }
+  d = await r.json();
+  if (d.error || !r.ok) { toast('Save failed: ' + (d.error||r.status), 'err'); return; }
+  toast('Saved ✓', 'ok');
+  closeEdit();
+  loadJobs();
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deleteJob(id) {
+  if (!confirm('Delete this job workflow?')) return;
+  await fetch(`/api/job-workflows/${id}`, { method:'DELETE' });
+  toast('Deleted', 'ok');
+  loadJobs();
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function esc(s){ const d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `show ${type}`;
+  setTimeout(()=>el.className='', 2600);
+}
+
+// Close modal on background click
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeEdit();
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadNocoLinks();
+loadJobs();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

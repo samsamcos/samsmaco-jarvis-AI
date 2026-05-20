@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JARVIS — Auto Demo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'Segoe UI',sans-serif;font-size:13px}
+:root{
+  --grn:#22c55e;--red:#ef4444;--yel:#f5c518;--blu:#6b8cff;--pur:#a855f7;
+  --cyn:#06b6d4;--org:#f97316;
+  --bg2:#0f0f18;--bg3:#14141e;--brd:#1e1e2e;
+}
+
+/* ── Header ── */
+.hdr{background:#0f0f18;border-bottom:1px solid var(--brd);padding:10px 20px;
+     display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.hdr-title{font-size:15px;font-weight:700;color:var(--yel)}
+.hdr-sub{font-size:11px;color:#475569}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:6px;
+     font-size:12px;font-weight:700;cursor:pointer;border:1px solid;
+     transition:all .15s;background:transparent;text-decoration:none}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-go{border-color:var(--grn);color:var(--grn);font-size:16px;padding:10px 28px}
+.btn-go:hover:not(:disabled){background:var(--grn);color:#000}
+.btn-go.running{border-color:var(--red);color:var(--red)}
+.btn-go.running:hover:not(:disabled){background:var(--red);color:#fff}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-ghost{border-color:#2a2a3a;color:#64748b}.btn-ghost:hover{border-color:#444;color:#ccc}
+.btn-pur{border-color:var(--pur);color:var(--pur)}.btn-pur:hover{background:var(--pur);color:#fff}
+.btn-yel{border-color:var(--yel);color:var(--yel)}.btn-yel:hover{background:var(--yel);color:#000}
+
+/* ── GO hero ── */
+.go-hero{display:flex;flex-direction:column;align-items:center;justify-content:center;
+         padding:40px 20px;text-align:center;gap:16px;border-bottom:1px solid var(--brd)}
+.go-title{font-size:28px;font-weight:800;color:#e2e8f0}
+.go-sub{font-size:13px;color:#475569;max-width:520px;line-height:1.7}
+.phase-badge{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;
+             border:1px solid;margin-top:4px}
+.pb-idle{border-color:#2a2a3a;color:#475569;background:#0f0f18}
+.pb-run{border-color:var(--blu);color:var(--blu);background:#0d1528;animation:pulse 1.5s infinite}
+.pb-fix{border-color:var(--org);color:var(--org);background:#1a0e05;animation:pulse 1.5s infinite}
+.pb-done{border-color:var(--grn);color:var(--grn);background:#051a0e}
+.pb-stop{border-color:var(--red);color:var(--red);background:#150505}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ── Stats bar ── */
+.stats{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:16px 20px;
+       border-bottom:1px solid var(--brd)}
+.stat{background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:10px 12px;text-align:center}
+.stat-val{font-size:20px;font-weight:800}
+.stat-lbl{font-size:10px;color:#475569;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.stat-bar{height:4px;background:#1a1a26;border-radius:2px;margin-top:6px;overflow:hidden}
+.stat-fill{height:100%;border-radius:2px;transition:width .4s}
+
+/* ── Main layout ── */
+.body{display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 230px)}
+
+/* ── Log panel ── */
+.log-panel{background:#09090e;border-right:1px solid var(--brd);overflow-y:auto;
+           display:flex;flex-direction:column}
+.log-hdr{padding:8px 12px;border-bottom:1px solid var(--brd);font-size:10px;
+         font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.6px;
+         display:flex;align-items:center;gap:8px;position:sticky;top:0;background:#09090e;z-index:10}
+.log-body{padding:8px;flex:1;overflow-y:auto}
+.log-row{font-size:10px;line-height:1.7;padding:2px 4px;border-radius:3px;font-family:monospace}
+.log-row:hover{background:#0f0f18}
+.log-ts{color:#1e3a5f;margin-right:5px}
+.log-pass{color:var(--grn)}
+.log-fail{color:var(--red)}
+.log-info{color:#64748b}
+.log-fix{color:var(--org)}
+.log-done{color:var(--yel)}
+
+/* ── Results panel ── */
+.results-panel{overflow-y:auto}
+.results-hdr{padding:10px 16px;border-bottom:1px solid var(--brd);
+             display:flex;align-items:center;gap:10px;position:sticky;top:0;
+             background:#09090e;z-index:10}
+.results-hdr h3{font-size:13px;font-weight:700;color:#94a3b8;flex:1}
+.filter-row{display:flex;gap:4px}
+.f-btn{padding:2px 8px;border-radius:10px;font-size:10px;cursor:pointer;
+       border:1px solid #1e1e2e;background:#0f0f18;color:#475569;transition:all .12s}
+.f-btn.active{border-color:var(--blu);color:var(--blu);background:#0d1528}
+.f-pass.active{border-color:var(--grn);color:var(--grn);background:#051a0e}
+.f-fail.active{border-color:var(--red);color:var(--red);background:#150505}
+
+.results-list{padding:8px 10px}
+.rrow{background:#0f0f18;border:1px solid #1a1a28;border-radius:6px;margin-bottom:5px;
+      cursor:pointer;transition:all .12s;overflow:hidden}
+.rrow:hover{border-color:#2a2a3a}
+.rrow.pass{border-left:3px solid var(--grn)}
+.rrow.fail{border-left:3px solid var(--red)}
+.rrow.pending{border-left:3px solid #2a2a3a}
+.rrow.running{border-left:3px solid var(--blu);animation:pulse 1.2s infinite}
+.rrow-top{padding:8px 10px;display:flex;align-items:flex-start;gap:8px}
+.r-num{font-size:10px;color:#334155;font-weight:700;min-width:28px}
+.r-msg{font-size:12px;color:#94a3b8;flex:1;line-height:1.4}
+.r-status{font-size:10px;white-space:nowrap}
+.r-detail{padding:0 10px 8px;display:none}
+.r-detail.open{display:block}
+.r-steps{display:flex;flex-direction:column;gap:3px;margin-top:6px}
+.step-chip{display:flex;align-items:center;gap:6px;padding:3px 6px;
+           background:#14141e;border-radius:4px;font-size:10px}
+.step-type{color:var(--blu);font-weight:600;min-width:80px}
+.step-name{color:#64748b}
+.step-act{color:#334155;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r-reply{background:#0a0a14;border:1px solid #1a1a28;border-radius:4px;
+         padding:7px 9px;font-size:11px;color:#64748b;line-height:1.6;
+         margin-top:6px;max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+
+/* ── Current job ticker ── */
+.ticker{padding:6px 20px;background:#09090e;border-bottom:1px solid var(--brd);
+        font-size:11px;color:#334155;display:flex;align-items:center;gap:8px}
+.ticker-dot{width:7px;height:7px;border-radius:50%;background:var(--blu);flex-shrink:0}
+.ticker-dot.idle{background:#2a2a3a}
+.ticker-dot.run{animation:pulse .8s infinite;background:var(--blu)}
+.ticker-dot.fix{background:var(--org);animation:pulse .8s infinite}
+.ticker-dot.done{background:var(--grn)}
+
+/* ── Screenshots bar ── */
+.shots-bar{background:#09090e;border-bottom:1px solid var(--brd);padding:8px 14px;
+           display:flex;align-items:center;gap:10px;overflow-x:auto;min-height:44px}
+.shots-bar-lbl{font-size:10px;color:#334155;font-weight:700;text-transform:uppercase;
+               letter-spacing:.5px;white-space:nowrap;flex-shrink:0}
+.shot-thumb{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0}
+.shot-thumb img{height:36px;width:60px;object-fit:cover;border-radius:3px;
+                border:1px solid #1e1e2e;cursor:pointer;transition:border-color .12s}
+.shot-thumb img:hover{border-color:var(--cyn)}
+.shot-thumb a{font-size:9px;color:#334155;text-decoration:none;max-width:60px;
+              overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.shot-thumb a:hover{color:var(--cyn)}
+.shots-empty{font-size:10px;color:#1e1e2e;font-style:italic}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-title">🤖 JARVIS — Auto Demo</div>
+    <div class="hdr-sub">1,000 jobs prepared · Run 100 → Claude fix → 200 (same 100 + 100 new) · All logged to NocoDB</div>
+  </div>
+  <div class="spacer"></div>
+  <a href="/masterclass" class="btn btn-ghost btn-sm" style="margin-right:4px">⚙ Masterclass</a>
+  <a href="/" class="btn btn-ghost btn-sm">💬 Chat</a>
+</div>
+
+<!-- GO Hero -->
+<div class="go-hero">
+  <div class="go-title" id="hero-title">Ready — 1,000 Jobs Prepared</div>
+  <div class="go-sub" id="hero-sub">
+    Phase 1: 100 jobs via Gemini API → failures saved to NocoDB → Claude Code CLI fixes (YOLO, confirm required from loop 2+).
+    Phase 2: same 100 + 100 new = 200 jobs. Loops up to 5×. All results logged to NocoDB.
+    Close browser — runs in background. Telegram notifies at each phase.
+  </div>
+  <div class="phase-badge pb-idle" id="phase-badge">⏳ Idle</div>
+  <div style="display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap;justify-content:center">
+    <label style="font-size:11px;color:#475569">Loops:
+      <select id="sel-loops" style="background:#0f0f18;border:1px solid #2a2a3a;color:#94a3b8;
+              border-radius:4px;padding:3px 8px;font-size:12px;margin-left:4px">
+        <option value="1">1×</option>
+        <option value="2">2×</option>
+        <option value="3">3×</option>
+        <option value="4">4×</option>
+        <option value="5">5× (max)</option>
+      </select>
+    </label>
+    <button class="btn btn-go" id="btn-go" onclick="handleGo()">▶ GO</button>
+    <button class="btn btn-pur btn-sm" id="btn-scan" onclick="doScan()" title="Scan failures and notify Claude via Telegram">🔍 Scan</button>
+    <button class="btn btn-yel btn-sm" onclick="doFix()" title="Manually trigger Claude Code fix">🔧 Fix</button>
+    <button class="btn btn-ghost btn-sm" id="btn-reset" onclick="doReset()">↺ Reset</button>
+    <button class="btn btn-yel btn-sm" id="btn-export" onclick="exportMD()">📄 Export .md</button>
+  </div>
+  <div style="font-size:11px;color:#334155;margin-top:6px" id="timing-lbl"></div>
+</div>
+
+<!-- Ticker -->
+<div class="ticker">
+  <div class="ticker-dot idle" id="ticker-dot"></div>
+  <span id="ticker-msg">Press GO to start</span>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-val" id="s-done" style="color:var(--blu)">0</div>
+    <div class="stat-lbl">Done</div>
+    <div class="stat-bar"><div class="stat-fill" id="s-done-bar" style="background:var(--blu);width:0%"></div></div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-pass" style="color:var(--grn)">0</div>
+    <div class="stat-lbl">Passed</div>
+    <div class="stat-bar"><div class="stat-fill" id="s-pass-bar" style="background:var(--grn);width:0%"></div></div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-fail" style="color:var(--red)">0</div>
+    <div class="stat-lbl">Failed</div>
+    <div class="stat-bar"><div class="stat-fill" id="s-fail-bar" style="background:var(--red);width:0%"></div></div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-acc" style="color:var(--yel)">—</div>
+    <div class="stat-lbl">Accuracy</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-fix" style="color:var(--org)">0</div>
+    <div class="stat-lbl">Claude Fixes</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-noco" style="color:var(--pur)">0</div>
+    <div class="stat-lbl">NocoDB Saved</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-loop" style="color:var(--cyn)">—</div>
+    <div class="stat-lbl">Loop</div>
+  </div>
+</div>
+
+<!-- Screenshots bar -->
+<div class="shots-bar" id="shots-bar">
+  <span class="shots-bar-lbl">📸 Screenshots</span>
+  <span class="shots-empty" id="shots-empty">none yet</span>
+</div>
+
+<!-- Body -->
+<div class="body">
+
+  <!-- Log panel -->
+  <div class="log-panel">
+    <div class="log-hdr">
+      <span>📟 Live Log</span>
+      <span id="log-count" style="margin-left:auto;color:#334155">0 events</span>
+    </div>
+    <div class="log-body" id="log-body"></div>
+  </div>
+
+  <!-- Results panel -->
+  <div class="results-panel">
+    <div class="results-hdr">
+      <h3>Results <span id="res-count" style="color:#334155;font-weight:400">0 / 200</span></h3>
+      <div class="filter-row">
+        <div class="f-btn active" id="f-all" onclick="setFilter('all')">All</div>
+        <div class="f-btn f-pass" id="f-pass" onclick="setFilter('pass')">✅ Pass</div>
+        <div class="f-btn f-fail" id="f-fail" onclick="setFilter('fail')">❌ Fail</div>
+      </div>
+    </div>
+    <div class="results-list" id="results-list"></div>
+  </div>
+</div>
+
+<script>
+let _state = {running:false, phase:'idle', phase_label:'', done:0, total:0,
+              passed:0, failed:0, fix_attempts:0, noco_saved:0, log:[], current_job:''};
+let _results = [];
+let _filter = 'all';
+let _pollTimer = null;
+let _expanded = null;
+
+// ── Kick off ──────────────────────────────────────────────────────────────────
+async function handleGo() {
+  const btn = document.getElementById('btn-go');
+  if (_state.running) {
+    await fetch('/api/demo/stop', {method:'POST'});
+    btn.textContent = '▶ GO';
+    btn.classList.remove('running');
+    return;
+  }
+  const loops = parseInt(document.getElementById('sel-loops').value) || 1;
+  btn.textContent = '⏹ STOP';
+  btn.classList.add('running');
+  try {
+    const r = await fetch('/api/demo/go', {method:'POST', headers:{'Content-Type':'application/json'},
+                          body: JSON.stringify({loops})});
+    const d = await r.json();
+    if (!d.ok) { alert(d.error); btn.textContent='▶ GO'; btn.classList.remove('running'); return; }
+    document.getElementById('hero-sub').textContent = d.msg;
+  } catch(e) { alert('Failed to start: '+e); btn.textContent='▶ GO'; btn.classList.remove('running'); return; }
+  startPolling();
+}
+
+async function doScan() {
+  document.getElementById('btn-scan').textContent = '⏳ Scanning…';
+  try {
+    const r = await fetch('/api/demo/scan');
+    const d = await r.json();
+    alert(`Scan complete: ${d.failures} failure(s) of ${d.total||0} jobs.\n${d.failures ? 'Telegram sent — Claude will review.' : 'All passed!'}`);
+  } catch(e) { alert('Scan error: '+e); }
+  document.getElementById('btn-scan').textContent = '🔍 Scan';
+}
+
+async function doFix() {
+  if (!confirm('Run Claude Code CLI to fix current failures? (YOLO mode — will edit server.py)')) return;
+  try {
+    const r = await fetch('/api/demo/fix', {method:'POST'});
+    const d = await r.json();
+    alert(d.msg);
+    startPolling();
+  } catch(e) { alert('Fix error: '+e); }
+}
+
+async function doReset() {
+  if (_state.running) { alert('Stop first'); return; }
+  await fetch('/api/demo/reset', {method:'POST'});
+  _results = [];
+  _state = {running:false, phase:'idle', phase_label:'', done:0, total:0,
+            passed:0, failed:0, fix_attempts:0, noco_saved:0, log:[], current_job:''};
+  document.getElementById('btn-go').textContent = '▶ GO';
+  document.getElementById('btn-go').classList.remove('running');
+  updateUI();
+  renderResults();
+}
+
+// ── Polling ───────────────────────────────────────────────────────────────────
+function startPolling() {
+  if (_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = setInterval(poll, 2000);
+  poll();
+}
+
+async function poll() {
+  try {
+    const [sr, rr] = await Promise.all([
+      fetch('/api/demo/status').then(r=>r.json()),
+      fetch('/api/demo/results').then(r=>r.json()),
+    ]);
+    _state = sr;
+    _results = rr.results || [];
+    updateUI();
+    renderResults();
+
+    // Stop polling when done
+    if (!sr.running && sr.phase !== 'idle') {
+      document.getElementById('btn-go').textContent = '▶ GO';
+      document.getElementById('btn-go').classList.remove('running');
+    }
+  } catch(e) { console.warn('Poll error:', e); }
+}
+
+// ── Update UI ─────────────────────────────────────────────────────────────────
+function updateUI() {
+  const s = _state;
+  const total = Math.max(s.total || 200, _results.length);
+
+  // Stats
+  document.getElementById('s-done').textContent = s.done;
+  document.getElementById('s-pass').textContent = s.passed;
+  document.getElementById('s-fail').textContent = s.failed;
+  document.getElementById('s-fix').textContent  = s.fix_attempts || 0;
+  document.getElementById('s-noco').textContent = s.noco_saved || 0;
+  const acc = s.done ? (s.passed / s.done * 100).toFixed(1) + '%' : '—';
+  document.getElementById('s-acc').textContent = acc;
+
+  document.getElementById('s-done-bar').style.width = (s.done / total * 100) + '%';
+  document.getElementById('s-pass-bar').style.width = (s.passed / total * 100) + '%';
+  document.getElementById('s-fail-bar').style.width = (s.failed / total * 100) + '%';
+  document.getElementById('res-count').textContent = `${_results.length} / ${total}`;
+
+  // Loop counter
+  const loopCur = s.loop_current || 1;
+  const loopMax = s.loop_count  || 1;
+  document.getElementById('s-loop').textContent = s.phase === 'idle' ? '—' : `${loopCur}/${loopMax}`;
+
+  // Phase badge — handle dynamic multi-loop phase names
+  const badge = document.getElementById('phase-badge');
+  const dot   = document.getElementById('ticker-dot');
+  const label = s.phase_label || s.phase;
+  const p = s.phase || 'idle';
+
+  const isDone    = p === 'done';
+  const isStopped = p === 'stopped';
+  const isFix     = p.includes('fix');
+  const isRun     = p.includes('phase');
+
+  badge.className = 'phase-badge ' + (isDone ? 'pb-done' : isStopped ? 'pb-stop' : isFix ? 'pb-fix' : isRun ? 'pb-run' : 'pb-idle');
+  badge.textContent = isDone ? '✅ Complete' : isStopped ? '⏹ Stopped' : label || p;
+
+  dot.className = 'ticker-dot ' + (isDone ? 'done' : isFix ? 'fix' : isRun ? 'run' : 'idle');
+  document.getElementById('ticker-msg').textContent = s.current_job || label || 'Idle';
+
+  // Hero
+  document.getElementById('hero-title').textContent =
+    isDone    ? `✅ Complete — ${acc} Accuracy` :
+    isStopped ? '⏹ Stopped' :
+    s.running ? `Running… Loop ${loopCur}/${loopMax} · ${s.done}/${total} jobs` :
+    'Ready — 1,000 Jobs Prepared';
+
+  document.getElementById('hero-sub').textContent =
+    isDone
+      ? `${s.passed}/${s.done} passed (${acc}). ${s.fix_attempts} Claude fix(es). ${s.noco_saved} logged to NocoDB.`
+      : s.running
+      ? `${label} — ${s.done}/${total} done · ${s.passed} passed · ${s.failed} failed`
+      : 'Press GO — choose 1–5 loops. Each loop: 100 jobs (Gemini) → Claude fix → 200 jobs (same 100 + 100 new). All logged to NocoDB. Close browser — runs in background.';
+
+  // Timing
+  if (s.started_at) {
+    const start = new Date(s.started_at);
+    const end   = s.finished_at ? new Date(s.finished_at) : new Date();
+    const secs  = Math.floor((end - start) / 1000);
+    const mm    = String(Math.floor(secs/60)).padStart(2,'0');
+    const ss    = String(secs % 60).padStart(2,'0');
+    document.getElementById('timing-lbl').textContent = `⏱ ${mm}:${ss} elapsed`;
+  }
+
+  // Log
+  updateLog(s.log || []);
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────────
+let _logCount = 0;
+function updateLog(entries) {
+  if (entries.length === _logCount) return;
+  _logCount = entries.length;
+  document.getElementById('log-count').textContent = `${entries.length} events`;
+  const body = document.getElementById('log-body');
+  body.innerHTML = [...entries].reverse().map(e => {
+    const m = e.msg || '';
+    const cls = m.startsWith('✅') || m.startsWith('Phase 1 done') ? 'log-pass'
+              : m.startsWith('❌') ? 'log-fail'
+              : m.includes('Claude') || m.includes('Fix') || m.includes('fix') ? 'log-fix'
+              : m.includes('COMPLETE') || m.includes('STARTED') ? 'log-done'
+              : 'log-info';
+    return `<div class="log-row ${cls}"><span class="log-ts">${e.ts}</span>${esc(m)}</div>`;
+  }).join('');
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+function renderResults() {
+  const list = document.getElementById('results-list');
+  const filtered = _results.filter(r =>
+    _filter === 'all' ? true : _filter === 'pass' ? r.pass : !r.pass
+  );
+
+  list.innerHTML = filtered.map(r => {
+    const cls = r.pass ? 'pass' : 'fail';
+    const icon = r.pass ? '✅' : '❌';
+    const got = `${r.phase||'?'}/${r.status||'?'}`;
+    const isOpen = _expanded === r.id;
+
+    const stepsHtml = (r.step_list||[]).map(s =>
+      `<div class="step-chip">
+        <span class="step-type">${esc(s.type)}</span>
+        <span class="step-name">${esc(s.name||'').slice(0,25)}</span>
+        <span class="step-act">${esc(s.action||'').slice(0,50)}</span>
+      </div>`
+    ).join('');
+
+    return `<div class="rrow ${cls}" id="rr-${r.id}">
+      <div class="rrow-top" onclick="toggleDetail(${r.id})">
+        <span class="r-num">${icon} #${r.id}</span>
+        <span class="r-msg">${esc(r.message)}</span>
+        <span class="r-status" style="color:${r.pass?'var(--grn)':'var(--red)'}">
+          ${got} · ${r.steps}s
+        </span>
+      </div>
+      <div class="r-detail ${isOpen?'open':''}">
+        <div style="font-size:10px;color:#334155;padding:0 0 4px">
+          Expected: <span style="color:#64748b">${r.exp_phase}/${r.exp_status}</span>
+          ${r.wf_id?`· WF: <code style="color:var(--blu);font-size:9px">${r.wf_id}</code>`:''}
+          ${r.delegated?'· 🖥 Delegated':''}
+        </div>
+        ${stepsHtml ? `<div class="r-steps">${stepsHtml}</div>` : ''}
+        ${r.reply ? `<div class="r-reply">${esc(r.reply)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDetail(id) {
+  _expanded = _expanded === id ? null : id;
+  renderResults();
+}
+
+function setFilter(f) {
+  _filter = f;
+  ['all','pass','fail'].forEach(x => {
+    document.getElementById('f-'+x).classList.toggle('active', x===f);
+  });
+  renderResults();
+}
+
+// ── Export MD ─────────────────────────────────────────────────────────────────
+function exportMD() {
+  const s     = _state;
+  const total = _results.length;
+  const pass  = _results.filter(r=>r.pass).length;
+  const acc   = total ? (pass/total*100).toFixed(1) : 0;
+  const ts    = new Date().toISOString().slice(0,16).replace('T',' ');
+
+  const lines = [
+    `# JARVIS Auto-Demo Report`,``,
+    `**Date:** ${ts}  `,
+    `**Jobs:** ${total}  `,
+    `**Passed:** ${pass} (${acc}%)  `,
+    `**Claude Fixes:** ${s.fix_attempts||0}  `,
+    `**NocoDB Saved:** ${s.noco_saved||0}  `,``,
+    `---`,``,
+    `## Results`,``,
+    `| # | Question | Expected | Got | Steps | Status |`,
+    `|---|----------|----------|-----|-------|--------|`,
+  ];
+
+  _results.forEach(r => {
+    const icon = r.pass?'✅':'❌';
+    lines.push(`| ${icon}${r.id} | ${esc(r.message).slice(0,60).replace(/\|/g,'\\|')} | ${r.exp_phase}/${r.exp_status} | ${r.phase}/${r.status} | ${r.steps} | ${r.pass?'PASS':'FAIL'} |`);
+  });
+
+  lines.push(``,`---`,``,
+    `${parseFloat(acc)>=90?'✅ PASSED':'❌ BELOW TARGET'} — ${acc}% accuracy`);
+
+  const md   = lines.join('\n');
+  const blob = new Blob([md],{type:'text/markdown'});
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `jarvis_demo_${ts.replace(/[: ]/g,'_')}.md`;
+  a.click();
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Screenshots bar ──────────────────────────────────────────────────────────
+async function loadScreenshots() {
+  try {
+    const shots = await fetch('/api/screenshots').then(r=>r.json());
+    const bar   = document.getElementById('shots-bar');
+    const empty = document.getElementById('shots-empty');
+    if (!shots.length) { empty.style.display=''; return; }
+    empty.style.display = 'none';
+    // Remove old thumbs (keep label + empty span)
+    bar.querySelectorAll('.shot-thumb').forEach(el=>el.remove());
+    shots.forEach(s => {
+      const d = document.createElement('div');
+      d.className = 'shot-thumb';
+      d.innerHTML = `<a href="${s.url}" target="_blank"><img src="${s.url}" title="${s.file}" onerror="this.style.display='none'"></a><a href="${s.url}" target="_blank">${s.file.slice(0,18)}</a>`;
+      bar.appendChild(d);
+    });
+  } catch(e) { console.warn('Screenshots load error:', e); }
+}
+
+// ── Init — check if already running ──────────────────────────────────────────
+(async () => {
+  try {
+    const [sr, rr] = await Promise.all([
+      fetch('/api/demo/status').then(r=>r.json()),
+      fetch('/api/demo/results').then(r=>r.json()),
+    ]);
+    _state   = sr;
+    _results = rr.results || [];
+    updateUI();
+    renderResults();
+    loadScreenshots();
+    setInterval(loadScreenshots, 10000);
+    if (sr.running) {
+      document.getElementById('btn-go').textContent = '⏹ STOP';
+      document.getElementById('btn-go').classList.add('running');
+      startPolling();
+    }
+  } catch(e) { console.warn('Init error:', e); }
+})();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

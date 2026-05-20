@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JARVIS Fix Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a12;color:#e0e0f0;font-family:'Segoe UI',monospace,sans-serif;min-height:100vh}
+header{background:linear-gradient(135deg,#1a1a2e,#16213e);padding:14px 24px;display:flex;align-items:center;gap:14px;border-bottom:1px solid #2a2a4a}
+header h1{font-size:1.3rem;color:#7eb8f7;flex:1}
+.hdr-dot{width:10px;height:10px;border-radius:50%;background:#2ecc71;box-shadow:0 0 8px #2ecc71;flex-shrink:0}
+.hdr-err{background:#e74c3c;color:#fff;border-radius:20px;padding:2px 10px;font-size:.73rem;font-weight:700;display:none}
+.nav{background:#111127;padding:0 24px;display:flex;gap:4px;border-bottom:1px solid #1e1e3a}
+.nav button{background:none;border:none;color:#8888aa;padding:10px 16px;cursor:pointer;font-size:.85rem;border-bottom:3px solid transparent;transition:.2s}
+.nav button.active{color:#7eb8f7;border-bottom-color:#7eb8f7}
+.panel{display:none;padding:20px 24px}
+.panel.active{display:block}
+
+/* Two-lane layout */
+.lanes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.lanes{grid-template-columns:1fr}}
+
+.lane{border-radius:10px;padding:14px}
+.lane-mine{background:#120f00;border:1px solid #78350f}
+.lane-code{background:#0d0a18;border:1px solid #4c1d95}
+.lane h2{font-size:.88rem;font-weight:700;letter-spacing:.04em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.lane-mine h2{color:#f59e0b}
+.lane-code h2{color:#a78bfa}
+.lane-badge{border-radius:10px;padding:1px 8px;font-size:.68rem;font-weight:700}
+.lb-mine{background:#78350f;color:#fcd34d}
+.lb-code{background:#4c1d95;color:#c4b5fd}
+
+/* Notes */
+.note{border-radius:8px;padding:11px 13px;margin-bottom:9px;position:relative}
+.note-mine{background:#1a1000;border:1px solid #78350f}
+.note-code{background:#0f0b1e;border:1px solid #4c1d95}
+.note.done{opacity:.4}
+.note .meta{font-size:.68rem;color:#555;margin-bottom:5px}
+.note .comment{font-size:.83rem;color:#d8d8ee;margin-bottom:6px;line-height:1.4}
+.note .url-line{font-size:.68rem;color:#4477aa;word-break:break-all;margin-bottom:7px}
+.note .el-line{font-size:.68rem;color:#4aa88f;font-family:monospace;margin-bottom:7px}
+.note .actions{display:flex;gap:6px;flex-wrap:wrap}
+.note .btn{background:#1a1a30;border:1px solid #2a2a4a;color:#999;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:.7rem;text-decoration:none;display:inline-block}
+.note .btn:hover{color:#ddd;background:#222240}
+.btn-mine{border-color:#78350f!important;color:#f59e0b!important}
+.btn-code{border-color:#4c1d95!important;color:#a78bfa!important}
+.btn-claude{border-color:#7c3aed!important;color:#c4b5fd!important;background:#100d1a!important;font-weight:700}
+.btn-claude:hover{background:#1e1640!important;color:#fff!important}
+.btn-claude:disabled{opacity:.5;cursor:not-allowed}
+.claude-status{margin-top:6px;font-size:.7rem;border-radius:4px;padding:4px 8px;display:none}
+.claude-status.running{display:block;background:#0d0a1a;border:1px solid #4c1d95;color:#a78bfa}
+.claude-status.done{display:block;background:#061006;border:1px solid #16a34a;color:#4ade80}
+.claude-status.error{display:block;background:#170707;border:1px solid #dc2626;color:#f87171}
+
+/* Alerts */
+.card{background:#111127;border:1px solid #1e1e3a;border-radius:10px;padding:14px;margin-bottom:14px}
+.card h3{font-size:.82rem;color:#7eb8f7;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.row-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.row-top h3{font-size:.82rem;color:#7eb8f7;text-transform:uppercase;letter-spacing:.05em}
+.refresh-btn{background:#1a1a3a;border:1px solid #2a2a5a;color:#7eb8f7;padding:4px 12px;border-radius:5px;cursor:pointer;font-size:.75rem;margin-left:auto}
+.alert{border-left:3px solid #e74c3c;background:#170707;padding:9px 12px;border-radius:0 6px 6px 0;margin-bottom:8px;font-size:.78rem}
+.alert.warn{border-color:#f39c12;background:#150f00}
+.alert.ok{border-color:#2ecc71;background:#061006}
+.alert.info{border-color:#3b82f6;background:#060c1a}
+.alert .ts{font-size:.66rem;color:#555;margin-top:3px}
+.alert .fix-link{display:inline-block;margin-top:6px;background:#1a2744;border:1px solid #3b82f6;color:#7eb8f7;padding:3px 10px;border-radius:4px;text-decoration:none;font-size:.7rem}
+.alert .fix-link:hover{background:#2563eb;color:#fff}
+.alert .login-link{display:inline-block;margin-top:6px;background:#78350f;border:1px solid #f59e0b;color:#fcd34d;padding:3px 10px;border-radius:4px;text-decoration:none;font-size:.7rem}
+.alert .login-link:hover{background:#92400e;color:#fff}
+.alert-detail{font-size:.67rem;color:#666;margin-top:3px;word-break:break-all}
+
+/* Logs */
+.log-box{background:#07070f;border:1px solid #1e1e3a;border-radius:6px;height:400px;overflow-y:auto;padding:8px;font-size:.72rem;font-family:monospace;line-height:1.55}
+.ln.err{color:#e74c3c}.ln.warn{color:#f39c12}.ln.info{color:#27ae60}.ln.debug{color:#555}
+.filters{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.filters button{background:#1a1a3a;border:1px solid #2a2a5a;color:#888;padding:3px 9px;border-radius:4px;cursor:pointer;font-size:.72rem}
+.filters button.on{background:#2a2a5a;color:#7eb8f7;border-color:#7eb8f7}
+.filters input{background:#0d0d20;border:1px solid #2a2a5a;color:#e0e0f0;padding:3px 9px;border-radius:4px;font-size:.72rem;flex:1;min-width:100px}
+
+/* Monitor */
+.mon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.mon-tile{background:#0d0d20;border:1px solid #1e1e3a;border-radius:8px;padding:12px;text-align:center}
+.mon-tile .label{font-size:.68rem;color:#555;margin-bottom:5px}
+.mon-tile .val{font-size:1.3rem;font-weight:700;color:#7eb8f7}
+.mon-tile .sub{font-size:.66rem;color:#444;margin-top:3px}
+.mon-tile.red .val{color:#e74c3c}.mon-tile.amber .val{color:#f39c12}.mon-tile.green .val{color:#2ecc71}
+
+.empty{color:#444;font-size:.8rem;padding:18px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr-dot" id="hdr-dot"></div>
+  <h1>JARVIS Fix Dashboard</h1>
+  <span class="hdr-err" id="err-badge"></span>
+  <button class="refresh-btn" onclick="refreshAll()">Refresh All</button>
+</header>
+
+<div class="nav">
+  <button class="active" onclick="tab('notes')">Fix Notes</button>
+  <button onclick="tab('alerts')">Alerts</button>
+  <button onclick="tab('logs')">Live Logs</button>
+  <button onclick="tab('monitor')">Monitor</button>
+</div>
+
+<!-- NOTES TAB: two-lane layout -->
+<div class="panel active" id="panel-notes">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <span style="font-size:.8rem;color:#555">Click 🔧 on any page to add a note</span>
+    <button class="refresh-btn" onclick="loadNotes()">Refresh</button>
+  </div>
+  <div class="lanes">
+    <!-- Left lane: MY tasks -->
+    <div class="lane lane-mine">
+      <h2>👤 YOUR TASKS <span class="lane-badge lb-mine" id="cnt-mine">0</span></h2>
+      <div id="list-mine"><div class="empty">No tasks for you yet.</div></div>
+    </div>
+    <!-- Right lane: Code fixes -->
+    <div class="lane lane-code">
+      <h2>🤖 CLAUDE FIXES <span class="lane-badge lb-code" id="cnt-code">0</span>
+        <button class="btn btn-claude" style="margin-left:auto;font-size:.72rem;padding:3px 10px" onclick="runAllClaude()">Fix All Now</button>
+      </h2>
+      <div id="list-code"><div class="empty">No code fixes queued.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ALERTS TAB -->
+<div class="panel" id="panel-alerts">
+  <div class="card">
+    <div class="row-top">
+      <h3>System Alerts</h3>
+      <button class="refresh-btn" onclick="loadAlerts()">Refresh</button>
+    </div>
+    <div id="alert-list"><div class="empty">Scanning logs...</div></div>
+  </div>
+  <div class="card">
+    <h3>JARVIS Task Results</h3>
+    <div id="task-results"><div class="empty">No recent task results.</div></div>
+  </div>
+</div>
+
+<!-- LOGS TAB -->
+<div class="panel" id="panel-logs">
+  <div class="card">
+    <div class="row-top">
+      <h3>Server Log</h3>
+      <button class="refresh-btn" onclick="loadLogs()">Refresh</button>
+    </div>
+    <div class="filters">
+      <button class="on" id="btn-all" onclick="setLogFilter('all',this)">ALL</button>
+      <button id="btn-ERROR" onclick="setLogFilter('ERROR',this)">ERROR</button>
+      <button id="btn-WARNING" onclick="setLogFilter('WARNING',this)">WARNING</button>
+      <button id="btn-INFO" onclick="setLogFilter('INFO',this)">INFO</button>
+      <input id="log-search" placeholder="Search logs..." oninput="renderLogs()">
+    </div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+</div>
+
+<!-- MONITOR TAB -->
+<div class="panel" id="panel-monitor">
+  <div class="card">
+    <div class="row-top"><h3>System Monitor</h3><button class="refresh-btn" onclick="loadMonitor()">Refresh</button></div>
+    <div class="mon-grid" id="mon-grid"><div class="empty">Loading...</div></div>
+  </div>
+  <div class="card">
+    <h3>AI Provider Scores</h3>
+    <div class="mon-grid" id="provider-grid"><div class="empty">Loading...</div></div>
+  </div>
+  <div class="card">
+    <h3>Auto-Fix Schedule</h3>
+    <div style="font-size:.8rem;color:#888;line-height:1.8;padding:4px 0">
+      <div>⏰ <b style="color:#a78bfa">Every day at 7:00 AM</b> — Claude auto-fixes all pending code notes</div>
+      <div>📋 Cron: <code style="color:#7eb8f7">0 7 * * * python3 /root/ai-browser/scripts/claude_fix_cron.py</code></div>
+      <div style="margin-top:8px">
+        <button class="btn btn-claude" onclick="runAllClaude()" style="font-size:.75rem">Run Now (don't wait for 7am)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/fix-widget.js"></script>
+<script>
+var _allLogLines = [];
+var _logFilter   = 'all';
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function tab(name) {
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav button').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('panel-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'notes')   loadNotes();
+  if (name === 'alerts')  loadAlerts();
+  if (name === 'logs')    loadLogs();
+  if (name === 'monitor') loadMonitor();
+}
+
+// ── Fix Notes — two lanes ─────────────────────────────────────────────────
+function loadNotes() {
+  fetch('/api/fix-note').then(function(r){ return r.json(); }).then(function(notes) {
+    var mine = notes.filter(function(n){ return n.note_type === 'mine' && n.status !== 'deleted'; });
+    var code = notes.filter(function(n){ return n.note_type !== 'mine' && n.status !== 'deleted'; });
+    document.getElementById('cnt-mine').textContent = mine.filter(function(n){ return n.status === 'pending'; }).length;
+    document.getElementById('cnt-code').textContent = code.filter(function(n){ return n.status === 'pending'; }).length;
+    document.getElementById('list-mine').innerHTML = renderNotes(mine, 'mine') || '<div class="empty">No tasks for you yet.</div>';
+    document.getElementById('list-code').innerHTML = renderNotes(code, 'code') || '<div class="empty">No code fixes queued.</div>';
+  });
+}
+
+function renderNotes(notes, type) {
+  if (!notes.length) return '';
+  return notes.map(function(n) {
+    var cls = type === 'mine' ? 'note-mine' : 'note-code';
+    var doneCls = n.status === 'done' ? ' done' : '';
+    var ts  = (n.ts || '').replace('T',' ').split('.')[0];
+    var el  = n.target ? ('<' + n.target.tag + (n.target.id ? '#' + n.target.id : '') + '>') : '';
+    var txt = n.target && n.target.text ? ' "' + n.target.text.slice(0,40) + '"' : '';
+
+    var html = '<div class="note ' + cls + doneCls + '" id="note-' + n.id + '">';
+    html += '<div class="meta">' + esc(ts) + (n.status === 'done' ? ' · DONE' : ' · PENDING') + '</div>';
+    html += '<div class="comment">' + esc(n.comment) + '</div>';
+    if (n.url) html += '<div class="url-line">' + esc(n.url) + '</div>';
+    if (el)   html += '<div class="el-line">' + esc(el + txt) + '</div>';
+    html += '<div class="actions">';
+
+    if (type === 'mine' && n.url && n.status !== 'done') {
+      html += '<a class="btn btn-mine" href="' + esc(n.url) + '" target="_blank">Go to Page</a>';
+      var lc = (n.comment || '').toLowerCase();
+      if (/login|account|api.?key|credential|password|composio|groq|gemini/.test(lc)) {
+        html += '<a class="btn btn-mine" href="/jarvis-setup" target="_blank">Setup Page</a>';
+      }
+    }
+    if (type === 'code' && n.status !== 'done') {
+      var fixBtnId  = 'fix-btn-' + n.id;
+      var fixStatId = 'fix-stat-' + n.id;
+      var running   = n.claude_status === 'running';
+      var btnLabel  = running ? '⏳ Claude Fixing...' : '🤖 Fix with Claude';
+      html += '<button class="btn btn-claude" id="' + fixBtnId + '" ' + (running ? 'disabled' : '') + ' onclick="runClaudeFix(\'' + n.id + '\')">' + btnLabel + '</button>';
+      html += '<div class="claude-status ' + (n.claude_status || '') + '" id="' + fixStatId + '">';
+      if (n.claude_result) html += esc(n.claude_result.slice(0, 200));
+      html += '</div>';
+    }
+    if (n.status !== 'done') {
+      html += '<button class="btn" onclick="markNote(\'' + n.id + '\',\'done\')">Done</button>';
+    }
+    html += '<button class="btn" onclick="markNote(\'' + n.id + '\',\'deleted\')">Delete</button>';
+    html += '</div></div>';
+    return html;
+  }).join('');
+}
+
+function markNote(id, status) {
+  fetch('/api/fix-note/' + id, {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({status: status})}).then(loadNotes);
+}
+
+// ── Alerts ────────────────────────────────────────────────────────────────
+var _serverStartedAt = null;  // ISO string from /health
+
+var _ALERT_RULES = [
+  // code issues (Claude's job)
+  { re: /GROQ.*HTTP 40[13]/i,       type:'code', sev:'err',  msg:'Groq API auth error', action: '<a class="fix-link" href="/jarvis-setup">Fix Keys in Setup</a>' },
+  { re: /GROQ.*HTTP 429/i,          type:'code', sev:'warn', msg:'Groq rate limit hit' },
+  { re: /GROQ.*HTTP 400/i,          type:'code', sev:'warn', msg:'Groq tool schema error (needs code fix)' },
+  { re: /GEMINI.*429/i,             type:'code', sev:'warn', msg:'Gemini rate limit — all keys exhausted' },
+  { re: /POLLINATIONS.*404/i,       type:'code', sev:'err',  msg:'Pollinations model name wrong', action: '<a class="fix-link" href="#">Code fix needed</a>' },
+  { re: /duplicate method arg|multiple values for argument/i, type:'code', sev:'err', msg:'ai_router.py HTTP bug (already fixed in this session)' },
+  { re: /No module named '([^']+)'/i, type:'code', sev:'warn', msg:'Missing Python module', extract: function(m){ return 'Missing: ' + (m[1]||'?'); } },
+  { re: /tool call validation failed/i, type:'code', sev:'err', msg:'Tool schema mismatch — needs code fix' },
+  { re: /Queue poller error/i,      type:'code', sev:'warn', msg:'Background queue poller error' },
+  { re: /HTTPSConnectionPool|ConnectionError/i, type:'code', sev:'warn', msg:'Network connection failed' },
+  { re: /All function-calling providers failed/i, type:'code', sev:'warn', msg:'All AI providers failed — using fallback' },
+  // user tasks (Sam's job)
+  { re: /composio.*login|login.*composio|authenticate.*composio/i, type:'mine', sev:'warn', msg:'Composio needs login', action: '<a class="login-link" href="https://app.composio.dev" target="_blank">Login to Composio</a>' },
+  { re: /invalid api key|no_groq_key|no groq key/i, type:'mine', sev:'err', msg:'Groq API key missing or invalid', action: '<a class="login-link" href="/jarvis-setup">Add Groq Key in Setup</a>' },
+  { re: /no_gemini_key|no gemini key/i, type:'mine', sev:'err', msg:'Gemini API key missing', action: '<a class="login-link" href="/jarvis-setup">Add Gemini Key in Setup</a>' },
+];
+
+function loadAlerts() {
+  // Get server start time first so we only show post-restart alerts
+  fetch('/health')
+    .then(function(r){ return r.json(); })
+    .then(function(h) {
+      _serverStartedAt = h.started_at || null;
+      return fetch('/api/jarvis/logs?n=800');
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ renderAlerts(d.lines || []); })
+    .catch(function() {
+      fetch('/api/jarvis/logs?n=800').then(function(r){ return r.json(); }).then(function(d){ renderAlerts(d.lines || []); });
+    });
+  loadTaskResults();
+}
+
+function renderAlerts(lines) {
+  var myAlerts   = [];
+  var codeAlerts = [];
+  var seen = {};
+
+  // Only look at lines logged after the server last started
+  // cutoff is "YYYY-MM-DD HH:MM:SS" — log line timestamps are the same format, so string compare works
+  var cutoff = _serverStartedAt ? _serverStartedAt.replace('T', ' ').slice(0, 19) : null;
+
+  lines.forEach(function(ln) {
+    if (cutoff) {
+      var ts = (ln.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/) || [])[1];
+      if (!ts || ts < cutoff) return;
+    }
+    _ALERT_RULES.forEach(function(rule) {
+      var m = ln.match(rule.re);
+      if (!m) return;
+      var msg = rule.extract ? rule.extract(m) : rule.msg;
+      if (seen[msg]) return;
+      seen[msg] = true;
+      var ts = (ln.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/) || [])[1] || '';
+      var entry = { sev: rule.sev, msg: msg, detail: ln, ts: ts, action: rule.action || '' };
+      if (rule.type === 'mine') myAlerts.push(entry);
+      else codeAlerts.push(entry);
+    });
+  });
+
+  var errCount = [...myAlerts, ...codeAlerts].filter(function(a){ return a.sev === 'err'; }).length;
+  var dot = document.getElementById('hdr-dot');
+  var badge = document.getElementById('err-badge');
+  if (errCount > 0) {
+    dot.style.background = '#e74c3c'; dot.style.boxShadow = '0 0 8px #e74c3c';
+    badge.textContent = errCount + ' error' + (errCount !== 1 ? 's' : '');
+    badge.style.display = 'inline-block';
+  } else {
+    dot.style.background = '#2ecc71'; dot.style.boxShadow = '0 0 8px #2ecc71';
+    badge.style.display = 'none';
+  }
+
+  function renderAlertList(list, emptyMsg) {
+    if (!list.length) return '<div class="alert ok">' + emptyMsg + '</div>';
+    return list.map(function(a) {
+      return '<div class="alert ' + a.sev + '">'
+        + '<b>' + esc(a.msg) + '</b>'
+        + (a.detail !== a.msg ? '<div class="alert-detail">' + esc(a.detail.slice(0,200)) + '</div>' : '')
+        + (a.ts ? '<div class="ts">Last seen: ' + a.ts + '</div>' : '')
+        + (a.action ? '<div>' + a.action + '</div>' : '')
+        + '</div>';
+    }).join('');
+  }
+
+  var html = '';
+  if (cutoff) {
+    html += '<div style="font-size:.7rem;color:#444;padding:4px 8px;margin-bottom:10px;border-left:2px solid #222;display:flex;justify-content:space-between">'
+      + '<span>Showing alerts since last restart</span>'
+      + '<span style="color:#555">' + esc(cutoff) + '</span></div>';
+  }
+  if (myAlerts.length) {
+    html += '<div style="font-size:.78rem;color:#f59e0b;font-weight:700;margin-bottom:8px;padding:6px 10px;background:#1a1000;border-radius:6px">👤 YOUR ACTION NEEDED</div>';
+    html += renderAlertList(myAlerts, '');
+  }
+  if (codeAlerts.length) {
+    html += '<div style="font-size:.78rem;color:#a78bfa;font-weight:700;margin:10px 0 8px;padding:6px 10px;background:#0d0a18;border-radius:6px">🤖 CODE FIXES (Claude\'s job)</div>';
+    html += renderAlertList(codeAlerts, '');
+  }
+  if (!myAlerts.length && !codeAlerts.length) {
+    html = '<div class="alert ok">All clear — no warnings detected in recent logs.</div>';
+  }
+
+  document.getElementById('alert-list').innerHTML = html;
+}
+
+// ── Task Results ──────────────────────────────────────────────────────────
+function loadTaskResults() {
+  var results = JSON.parse(localStorage.getItem('jarvis_task_results') || '[]');
+  var el = document.getElementById('task-results');
+  if (!results.length) { el.innerHTML = '<div class="empty">No recent task results. When JARVIS uses tools, results appear here.</div>'; return; }
+  el.innerHTML = results.slice(0,8).map(function(r, i) {
+    return '<div class="note note-code" style="margin-bottom:9px">'
+      + '<div class="meta">' + esc(r.ts || '') + ' · ' + esc(r.provider || 'unknown') + '</div>'
+      + '<div class="comment"><b>Q:</b> ' + esc((r.message || '').slice(0,100)) + '</div>'
+      + '<div class="comment" style="margin-top:5px"><b>A:</b> ' + esc((r.reply || '').slice(0,250)) + '</div>'
+      + (r.tools_used && r.tools_used.length ? '<div class="el-line">Tools: ' + esc(r.tools_used.join(', ')) + '</div>' : '')
+      + '<div class="actions"><button class="btn" onclick="clearResult(' + i + ')">Clear</button></div>'
+      + '</div>';
+  }).join('');
+}
+
+function clearResult(i) {
+  var r = JSON.parse(localStorage.getItem('jarvis_task_results') || '[]');
+  r.splice(i, 1);
+  localStorage.setItem('jarvis_task_results', JSON.stringify(r));
+  loadTaskResults();
+}
+
+// ── Logs ──────────────────────────────────────────────────────────────────
+function loadLogs() {
+  fetch('/api/jarvis/logs?n=400').then(function(r){ return r.json(); }).then(function(d) {
+    _allLogLines = d.lines || [];
+    renderLogs();
+  });
+}
+
+function setLogFilter(f, btn) {
+  _logFilter = f;
+  document.querySelectorAll('.filters button').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  renderLogs();
+}
+
+function renderLogs() {
+  var q = (document.getElementById('log-search').value || '').toLowerCase();
+  var box = document.getElementById('log-box');
+  var html = '';
+  var errCount = 0;
+  _allLogLines.forEach(function(ln) {
+    if (_logFilter !== 'all' && ln.indexOf(_logFilter) === -1) return;
+    if (q && ln.toLowerCase().indexOf(q) === -1) return;
+    var cls = 'debug';
+    if (ln.indexOf(' ERROR ') !== -1)   { cls = 'err'; errCount++; }
+    else if (ln.indexOf(' WARNING ') !== -1) cls = 'warn';
+    else if (ln.indexOf(' INFO ') !== -1)    cls = 'info';
+    html += '<span class="ln ' + cls + '">' + esc(ln) + '\n</span>';
+  });
+  box.innerHTML = html || '<span class="ln debug">No matching lines.</span>';
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── Monitor ───────────────────────────────────────────────────────────────
+function loadMonitor() {
+  Promise.all([
+    fetch('/health').then(function(r){ return r.json(); }).catch(function(){ return {}; }),
+    fetch('/api/jarvis/scores').then(function(r){ return r.json(); }).catch(function(){ return {}; }),
+    fetch('/api/fix-note').then(function(r){ return r.json(); }).catch(function(){ return []; }),
+  ]).then(function(res) {
+    var health = res[0] || {};
+    var scores = (res[1] || {}).scores || {};
+    var notes  = res[2] || [];
+    var pend   = notes.filter(function(n){ return n.status === 'pending'; }).length;
+    var mine   = notes.filter(function(n){ return n.status === 'pending' && n.note_type === 'mine'; }).length;
+
+    document.getElementById('mon-grid').innerHTML = [
+      {label:'Server',      val: 'UP',    cls:'green'},
+      {label:'Your Tasks',  val: mine,    cls: mine > 0 ? 'amber' : 'green', sub:'pending'},
+      {label:'Code Fixes',  val: pend - mine, cls: (pend - mine) > 0 ? 'amber' : 'green', sub:'pending'},
+    ].map(function(t){
+      return '<div class="mon-tile ' + t.cls + '"><div class="label">' + t.label + '</div><div class="val">' + t.val + '</div>' + (t.sub ? '<div class="sub">' + t.sub + '</div>' : '') + '</div>';
+    }).join('');
+
+    document.getElementById('provider-grid').innerHTML = ['groq','gemini','pollinations','router'].map(function(p) {
+      var s = scores[p];
+      var cls = !s ? '' : s.avg >= 3.5 ? 'green' : s.avg >= 2 ? 'amber' : 'red';
+      return '<div class="mon-tile ' + cls + '"><div class="label">' + p + '</div><div class="val">' + (s ? s.avg.toFixed(1) : '--') + '</div><div class="sub">' + (s ? s.n + ' calls' : 'no data') + '</div></div>';
+    }).join('');
+  });
+}
+
+// ── Claude Fix ────────────────────────────────────────────────────────────
+var _claudePollers = {};
+
+function runClaudeFix(noteId) {
+  var btn  = document.getElementById('fix-btn-' + noteId);
+  var stat = document.getElementById('fix-stat-' + noteId);
+  if (btn)  { btn.disabled = true; btn.textContent = '⏳ Claude Fixing...'; }
+  if (stat) { stat.className = 'claude-status running'; stat.textContent = 'Claude is reading the file and fixing the issue...'; stat.style.display = 'block'; }
+
+  fetch('/api/fix-note/' + noteId + '/run-claude', {method:'POST'})
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (!d.ok) {
+        if (stat) { stat.className = 'claude-status error'; stat.textContent = 'Error: ' + (d.error || 'unknown'); }
+        if (btn)  { btn.disabled = false; btn.textContent = '🤖 Fix with Claude'; }
+        return;
+      }
+      pollClaudeStatus(noteId);
+    })
+    .catch(function(e) {
+      if (stat) { stat.className = 'claude-status error'; stat.textContent = 'Request failed: ' + e.message; }
+      if (btn)  { btn.disabled = false; btn.textContent = '🤖 Fix with Claude'; }
+    });
+}
+
+function pollClaudeStatus(noteId) {
+  if (_claudePollers[noteId]) clearInterval(_claudePollers[noteId]);
+  _claudePollers[noteId] = setInterval(function() {
+    fetch('/api/fix-note/' + noteId + '/claude-status')
+      .then(function(r){ return r.json(); })
+      .then(function(d) {
+        var stat = document.getElementById('fix-stat-' + noteId);
+        var btn  = document.getElementById('fix-btn-' + noteId);
+        if (d.status === 'running') {
+          var elapsed = d.started ? Math.round((Date.now()/1000) - d.started) : '?';
+          if (stat) stat.textContent = 'Claude is working... (' + elapsed + 's elapsed)';
+        } else if (d.status === 'done' || d.status === 'error') {
+          clearInterval(_claudePollers[noteId]);
+          if (stat) {
+            stat.className = 'claude-status ' + d.status;
+            stat.textContent = d.status === 'done'
+              ? '✓ Fixed! ' + (d.output || '').slice(0, 150)
+              : '✗ Error: ' + (d.output || '').slice(0, 150);
+          }
+          if (btn && d.status === 'done') {
+            btn.textContent = '✓ Fixed';
+            btn.disabled = true;
+          } else if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🤖 Retry Claude';
+          }
+          // Refresh notes list after fix
+          setTimeout(loadNotes, 2000);
+        }
+      });
+  }, 5000);
+}
+
+function runAllClaude() {
+  if (!confirm('Run Claude on all pending code fix notes?')) return;
+  fetch('/api/fix-note/run-all-claude', {method:'POST'})
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      alert('Started ' + d.started + ' Claude fix job(s).\nCheck back in a few minutes.');
+      loadNotes();
+    });
+}
+
+function refreshAll() {
+  loadNotes();
+  if (document.getElementById('panel-alerts').classList.contains('active')) loadAlerts();
+  if (document.getElementById('panel-logs').classList.contains('active')) loadLogs();
+  if (document.getElementById('panel-monitor').classList.contains('active')) loadMonitor();
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+loadNotes();
+loadAlerts();
+setInterval(function() {
+  if (document.getElementById('panel-notes').classList.contains('active')) loadNotes();
+  if (document.getElementById('panel-alerts').classList.contains('active')) loadAlerts();
+}, 30000);
+
+window.addEventListener('storage', function(e) {
+  if (e.key === 'jarvis_task_results') loadTaskResults();
+});
+</script>
+</body>
+</html>

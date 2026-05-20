@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>New Node Setup</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.box{background:#0d0f17;border:1px solid #1e2030;border-radius:14px;padding:32px;width:100%;max-width:520px}
+h1{font-size:20px;font-weight:800;color:#b57aff;margin-bottom:4px}
+.sub{font-size:13px;color:#475569;margin-bottom:24px}
+.step{display:none}.step.active{display:block}
+.step-title{font-size:13px;font-weight:700;color:#dde1f5;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #1e2030}
+.field{margin-bottom:14px}
+label{display:block;font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:5px}
+input,select,textarea{width:100%;background:#07080d;border:1px solid #1e2030;border-radius:7px;color:#dde1f5;padding:9px 12px;font-size:13px;font-family:inherit;transition:.12s}
+input:focus,select:focus{outline:none;border-color:#7c3aed}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;transition:.12s;width:100%}
+.btn-purple{background:#7c3aed;color:#fff}.btn-purple:hover{background:#6d28d9}
+.btn-green{background:#059669;color:#fff}.btn-green:hover{background:#047857}
+.btn-ghost{background:transparent;border:1px solid #2d3148;color:#94a3b8}.btn-ghost:hover{background:#1e2030;color:#dde1f5}
+.actions{display:flex;gap:8px;margin-top:20px}
+.alert{padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:14px}
+.alert-green{background:#0a2810;border:1px solid #065f46;color:#34d399}
+.alert-red{background:#2a0a0a;border:1px solid #7f1d1d;color:#f87171}
+.alert-blue{background:#0a1220;border:1px solid #1e3a5f;color:#60a5fa}
+.code{background:#07080d;border:1px solid #1e2030;border-radius:6px;padding:10px 12px;font-family:monospace;font-size:12px;color:#94a3b8;word-break:break-all}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.progress{display:flex;gap:6px;margin-bottom:24px}
+.progress-step{flex:1;height:3px;border-radius:99px;background:#1e2030;transition:.3s}
+.progress-step.done{background:#7c3aed}
+.progress-step.active{background:#b57aff}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>🖥 New Node Setup</h1>
+  <p class="sub">Set up this machine as a staff node. Takes 2 minutes.</p>
+
+  <div class="progress">
+    <div class="progress-step active" id="prog0"></div>
+    <div class="progress-step" id="prog1"></div>
+    <div class="progress-step" id="prog2"></div>
+  </div>
+
+  <div id="alert-box"></div>
+
+  <!-- STEP 0: What is this node? -->
+  <div class="step active" id="step0">
+    <div class="step-title">Step 1 — Who is this node for?</div>
+    <div class="field">
+      <label>Node Name</label>
+      <input id="s-name" placeholder="e.g. SAM Main, GF, HOUSE, LTD-2" />
+    </div>
+    <div class="field">
+      <label>Folder ID (short, no spaces)</label>
+      <input id="s-folder" placeholder="e.g. SAM, GF, HOUSE, LTD-2" />
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Max Job Slots</label>
+        <input id="s-slots" type="number" value="30" />
+      </div>
+      <div class="field">
+        <label>Node Color</label>
+        <input id="s-color" type="color" value="#a78bfa" style="height:38px;padding:4px" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes (what does this node handle?)</label>
+      <input id="s-notes" placeholder="e.g. CRM tasks, sales leads, outreach" />
+    </div>
+    <div class="field">
+      <label>Browser VM IP (machine running Chrome for this node)</label>
+      <input id="s-bvm" placeholder="192.168.0.8" />
+    </div>
+    <div class="actions">
+      <button class="btn btn-purple" onclick="goStep(1)">Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 1: Confirm IP + save -->
+  <div class="step" id="step1">
+    <div class="step-title">Step 2 — Confirm this machine's IP</div>
+    <div class="alert alert-blue" style="margin-bottom:14px">
+      The identity will be saved on this machine at <code>config/node_identity.json</code>.<br>
+      The master at 192.168.0.3:8050 will be able to import it by IP.
+    </div>
+    <div class="field">
+      <label>This Machine's IP Address</label>
+      <input id="s-ip" placeholder="192.168.0.234" />
+    </div>
+    <div class="field">
+      <label>Port (usually 8080)</label>
+      <input id="s-port" type="number" value="8080" />
+    </div>
+    <div class="field">
+      <label>PIA VPN on this node?</label>
+      <select id="s-pia">
+        <option value="false">No — direct connection</option>
+        <option value="true">Yes — routes through PIA proxy</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost" onclick="goStep(0)">← Back</button>
+      <button class="btn btn-purple" onclick="saveIdentity()">Save Identity</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Done -->
+  <div class="step" id="step2">
+    <div class="step-title">Step 3 — Done! Register with master</div>
+    <div class="alert alert-green" id="done-alert">Identity saved ✓</div>
+    <p style="font-size:13px;color:#94a3b8;margin-bottom:14px">
+      Now go to the Node Manager and import this node by IP:
+    </p>
+    <div class="code" id="master-url">http://192.168.0.3:8050</div>
+    <p style="font-size:12px;color:#475569;margin:10px 0">
+      Click <b>Add Node → Import from IP</b> and enter this machine's IP.
+      The master will pull all the info automatically.
+    </p>
+    <div style="margin-top:16px">
+      <p style="font-size:11px;color:#475569;margin-bottom:8px">Or auto-register now:</p>
+      <button class="btn btn-green" onclick="autoRegister()">🔗 Register with Master Now</button>
+    </div>
+    <div id="reg-status" style="margin-top:10px;font-size:12px;color:#64748b"></div>
+  </div>
+</div>
+
+<script>
+let _identity = {};
+let _step = 0;
+
+function goStep(n) {
+  if (n === 1) {
+    const name = document.getElementById('s-name').value.trim();
+    const folder = document.getElementById('s-folder').value.trim();
+    if (!name || !folder) { showAlert('error','Name and Folder are required'); return; }
+    // Auto-fill IP attempt
+    fetch('/api/node-info').then(r=>r.json()).then(d=>{
+      if(d.ip && d.ip !== '127.0.0.1') document.getElementById('s-ip').value = d.ip;
+    }).catch(()=>{});
+  }
+  document.getElementById('step'+_step).classList.remove('active');
+  document.getElementById('prog'+_step).classList.remove('active');
+  document.getElementById('prog'+_step).classList.add('done');
+  _step = n;
+  document.getElementById('step'+_step).classList.add('active');
+  document.getElementById('prog'+_step).classList.add('active');
+  document.getElementById('alert-box').innerHTML = '';
+}
+
+async function saveIdentity() {
+  const ip = document.getElementById('s-ip').value.trim();
+  if (!ip) { showAlert('error','Enter this machine\'s IP address'); return; }
+
+  _identity = {
+    folder:     document.getElementById('s-folder').value.trim(),
+    name:       document.getElementById('s-name').value.trim(),
+    ip:         ip,
+    port:       parseInt(document.getElementById('s-port').value) || 8080,
+    type:       'lxc',
+    max_slots:  parseInt(document.getElementById('s-slots').value) || 30,
+    browser_vm: document.getElementById('s-bvm').value.trim(),
+    color:      document.getElementById('s-color').value,
+    notes:      document.getElementById('s-notes').value.trim(),
+    pia:        document.getElementById('s-pia').value === 'true',
+    mini_group: 0,
+  };
+
+  try {
+    const r = await fetch('/api/node-info', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(_identity)
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(JSON.stringify(d));
+    document.getElementById('done-alert').textContent = `✓ Identity saved for "${_identity.name}"`;
+    goStep(2);
+  } catch(e) {
+    showAlert('error', 'Save failed: '+e.message);
+  }
+}
+
+async function autoRegister() {
+  const statusEl = document.getElementById('reg-status');
+  statusEl.textContent = 'Registering with master…';
+  try {
+    const r = await fetch('http://192.168.0.3:8050/api/nodes/import', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ip: _identity.ip, port: _identity.port })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      statusEl.innerHTML = '✅ Registered! <a href="http://192.168.0.3:8050" style="color:#b57aff">Open Node Manager →</a>';
+    } else {
+      statusEl.textContent = '❌ ' + (d.error || 'Registration failed');
+    }
+  } catch(e) {
+    statusEl.textContent = '❌ Could not reach master (192.168.0.3:8050): '+e.message;
+  }
+}
+
+function showAlert(type, msg) {
+  const cls = type==='error' ? 'alert-red' : 'alert-green';
+  document.getElementById('alert-box').innerHTML = `<div class="alert ${cls}">${msg}</div>`;
+}
+
+// Pre-fill from existing node-info if available
+fetch('/api/node-info').then(r=>r.json()).then(d=>{
+  if(d.folder) document.getElementById('s-folder').value = d.folder;
+  if(d.name)   document.getElementById('s-name').value = d.name;
+  if(d.max_slots) document.getElementById('s-slots').value = d.max_slots;
+  if(d.browser_vm) document.getElementById('s-bvm').value = d.browser_vm;
+  if(d.color)  document.getElementById('s-color').value = d.color;
+  if(d.notes)  document.getElementById('s-notes').value = d.notes;
+  if(d.pia)    document.getElementById('s-pia').value = 'true';
+}).catch(()=>{});
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

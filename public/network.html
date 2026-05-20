@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS Network Center</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080a10;--panel:#0d0f1a;--border:rgba(255,255,255,.06);--text:#c8d2e6;--dim:#555;--accent:#6b8cff;--green:#3fdc8a;--red:#f87171;--yellow:#facc15;--cyan:#22d3ee}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace,system-ui;font-size:12px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:10px;height:44px;flex-shrink:0}
+.logo{color:var(--accent);font-weight:800;font-size:13px;letter-spacing:1px}
+.sep{width:1px;height:20px;background:var(--border)}
+.spacer{flex:1}
+.pill{font-size:10px;padding:3px 10px;border-radius:99px;border:1px solid;cursor:pointer;font-family:inherit;transition:all .15s}
+.pill.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.pill:not(.active){background:transparent;border-color:#2a2d42;color:var(--dim)}
+.content{flex:1;display:flex;overflow:hidden}
+/* Left sidebar */
+.sidebar{width:220px;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:10px 0}
+.sb-title{font-size:9px;color:#444;letter-spacing:.08em;text-transform:uppercase;padding:8px 12px 4px}
+.sb-node{padding:6px 12px;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:7px;border-left:2px solid transparent}
+.sb-node:hover{background:rgba(107,140,255,.06)}
+.sb-node.selected{background:rgba(107,140,255,.1);border-left-color:var(--accent)}
+.sb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sb-name{font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-ip{font-size:9px;color:var(--dim)}
+/* Main map area */
+.map-area{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.map-toolbar{padding:8px 14px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0}
+.btn{padding:5px 12px;border-radius:5px;border:1px solid #2a2d42;background:transparent;color:#888;cursor:pointer;font-size:11px;font-family:inherit;transition:all .15s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.on{background:var(--accent)22;border-color:var(--accent);color:var(--accent)}
+#map-svg{flex:1;width:100%;cursor:grab}
+/* Right detail panel */
+.detail{width:260px;border-left:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:14px}
+.det-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
+.det-ip{font-size:11px;color:var(--accent);margin-bottom:10px}
+.det-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #1a1c28;font-size:11px}
+.det-lbl{color:var(--dim)}
+.det-val{color:var(--text)}
+.det-btn{width:100%;margin-top:6px;padding:7px;border-radius:5px;border:1px solid #2a2d42;background:transparent;color:#888;cursor:pointer;font-size:11px;font-family:inherit;transition:all .15s;text-align:left}
+.det-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* VNC modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:#0d0f1a;border:1px solid #2a2d42;border-radius:10px;padding:0;overflow:hidden;width:900px;height:600px;display:flex;flex-direction:column}
+.modal-head{padding:10px 14px;border-bottom:1px solid #1e2030;display:flex;align-items:center;gap:8px}
+.modal-head span{flex:1;font-size:13px;font-weight:700;color:#fff}
+.modal-head button{padding:4px 10px;background:transparent;border:1px solid #2a2d42;color:#aaa;border-radius:4px;cursor:pointer;font-size:11px;font-family:inherit}
+.modal-body{flex:1;overflow:hidden}
+.modal-body iframe{width:100%;height:100%;border:none}
+/* Status bar */
+.statusbar{background:var(--panel);border-top:1px solid var(--border);padding:4px 16px;font-size:10px;color:var(--dim);display:flex;gap:12px;flex-shrink:0}
+/* Node shapes in SVG */
+.node-hypervisor rect{fill:#0d0f1a;stroke:#f0a500;stroke-width:1.5}
+.node-control rect{fill:#0d0f1a;stroke:#6b8cff;stroke-width:1.5}
+.node-engine rect{fill:#0d0f1a;stroke:#3fdc8a;stroke-width:1.5}
+.node-staff rect{fill:#0d0f1a;stroke:#a78bfa;stroke-width:1.5}
+.node-backup rect{fill:#0d0f1a;stroke:#555;stroke-width:1;stroke-dasharray:4 2}
+.node-windows rect{fill:#0d0f1a;stroke:#22d3ee;stroke-width:1.5}
+.node-offline rect{stroke:#444!important;opacity:.5}
+.edge{stroke:#2a2d42;stroke-width:1;fill:none}
+.edge.active{stroke:var(--accent);stroke-width:2;opacity:.8}
+.pulse{animation:pulse-anim 1.5s infinite}
+@keyframes pulse-anim{0%{opacity:1;stroke-width:2}50%{opacity:.3;stroke-width:4}100%{opacity:1;stroke-width:2}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">🌐 JARVIS NETWORK CENTER</div>
+  <div class="sep"></div>
+  <span id="top-summary" style="font-size:11px;color:var(--dim)">Loading…</span>
+  <div class="spacer"></div>
+  <button class="btn" id="btn-routing" onclick="toggleRouting()">VPN Routing</button>
+  <button class="btn" onclick="refreshAll()">↺ Refresh</button>
+  <a href="/worker" class="btn" style="text-decoration:none">⚡ Worker</a>
+  <a href="/" class="btn" style="text-decoration:none">← Back</a>
+  <div id="poll-dot" style="width:8px;height:8px;border-radius:50%;background:#555;margin-left:4px" title="Live polling"></div>
+</div>
+
+<div class="content">
+  <!-- Left sidebar: node list -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Map -->
+  <div class="map-area">
+    <div class="map-toolbar">
+      <span style="font-size:10px;color:var(--dim)">Filter:</span>
+      <button class="pill active" onclick="setFilter('all',this)">All</button>
+      <button class="pill" onclick="setFilter('hypervisor',this)">Hypervisors</button>
+      <button class="pill" onclick="setFilter('engine',this)">Engines</button>
+      <button class="pill" onclick="setFilter('staff',this)">Staff</button>
+      <button class="pill" onclick="setFilter('windows',this)">T730</button>
+      <button class="pill" onclick="setFilter('backup',this)">Backup</button>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="toggleView()">Tree / Grid</button>
+      <span style="font-size:10px;color:var(--dim)" id="last-poll">—</span>
+    </div>
+    <svg id="map-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <!-- Right: detail panel -->
+  <div class="detail" id="detail">
+    <div style="color:var(--dim);font-size:11px;margin-top:20px">Click a node to see details</div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span id="sb-online">● 0 online</span>
+  <span id="sb-offline">○ 0 offline</span>
+  <span id="sb-jarvis">⚡ 0 JARVIS</span>
+  <span style="flex:1"></span>
+  <span id="sb-poll">Poll: never</span>
+</div>
+
+<!-- VNC Modal -->
+<div class="modal-bg" id="vnc-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-head">
+      <span id="vnc-title">VNC</span>
+      <button onclick="closeVnc()">✕ Close</button>
+    </div>
+    <div class="modal-body">
+      <iframe id="vnc-frame" src="about:blank"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+let _nodes = [];
+let _families = [];
+let _selected = null;
+let _filter = 'all';
+let _viewMode = 'grid'; // grid | tree
+let _showRouting = false;
+let _pollTimer = null;
+
+const ROLE_COLORS = {
+  hypervisor: '#f0a500',
+  control:    '#6b8cff',
+  engine:     '#3fdc8a',
+  staff:      '#a78bfa',
+  backup:     '#555',
+  windows:    '#22d3ee',
+};
+
+async function refreshAll(){
+  document.getElementById('poll-dot').style.background='#f0a500';
+  try{
+    const d = await fetch('/api/network/status').then(r=>r.json());
+    _nodes = d.nodes || [];
+    _families = d.api_families || [];
+    renderSidebar();
+    renderMap();
+    updateStats();
+    document.getElementById('last-poll').textContent = 'Polled: ' + new Date().toLocaleTimeString();
+    document.getElementById('sb-poll').textContent = 'Poll: ' + new Date().toLocaleTimeString();
+    document.getElementById('poll-dot').style.background = '#3fdc8a';
+    setTimeout(()=>document.getElementById('poll-dot').style.background='#555', 2000);
+  }catch(e){
+    document.getElementById('poll-dot').style.background='#f87171';
+    document.getElementById('top-summary').textContent = 'Error: '+e.message;
+  }
+}
+
+function updateStats(){
+  const online  = _nodes.filter(n=>n.up).length;
+  const offline = _nodes.filter(n=>!n.up).length;
+  const jarvis  = _nodes.filter(n=>n.jarvis_ok).length;
+  document.getElementById('sb-online').innerHTML  = `<span style="color:#3fdc8a">● ${online} online</span>`;
+  document.getElementById('sb-offline').innerHTML = `<span style="color:#f87171">○ ${offline} offline</span>`;
+  document.getElementById('sb-jarvis').innerHTML  = `<span style="color:#6b8cff">⚡ ${jarvis} JARVIS</span>`;
+  document.getElementById('top-summary').textContent = `${online}/${_nodes.length} nodes online · ${jarvis} JARVIS active`;
+}
+
+function renderSidebar(){
+  const sb = document.getElementById('sidebar');
+  const groups = {
+    'Hypervisors': _nodes.filter(n=>n.role==='hypervisor'),
+    'Control':     _nodes.filter(n=>n.role==='control'),
+    'Engines':     _nodes.filter(n=>n.role==='engine'),
+    'Staff':       _nodes.filter(n=>n.role==='staff'),
+    'Backup':      _nodes.filter(n=>n.role==='backup'),
+    'Windows T730':_nodes.filter(n=>n.role==='windows'),
+  };
+  let html = '';
+  for(const [title, nodes] of Object.entries(groups)){
+    if(!nodes.length) continue;
+    html += `<div class="sb-title">${title}</div>`;
+    html += nodes.map(n=>`
+<div class="sb-node ${_selected===n.id?'selected':''}" onclick="selectNode('${n.id}')">
+  <div class="sb-dot" style="background:${n.up?(ROLE_COLORS[n.role]||'#888'):'#444'}${n.up?'':';opacity:.4'}"></div>
+  <div>
+    <div class="sb-name" style="color:${n.up?'#ddd':'#555'}">${n.name||n.id}</div>
+    <div class="sb-ip">${n.ip}</div>
+  </div>
+  ${n.jarvis_ok?'<span style="font-size:9px;color:#6b8cff">⚡</span>':''}
+</div>`).join('');
+  }
+  sb.innerHTML = html;
+}
+
+// ── Grid view ──────────────────────────────────────────────────────────────
+function renderMap(){
+  if(_viewMode === 'grid') renderGrid();
+  else renderTree();
+}
+
+function renderGrid(){
+  const svg = document.getElementById('map-svg');
+  const W = svg.clientWidth || 800;
+  const H = svg.clientHeight || 500;
+  svg.innerHTML = '';
+
+  const filtered = _filter === 'all' ? _nodes : _nodes.filter(n=>n.role===_filter);
+  const cols = Math.max(1, Math.floor(W / 160));
+  const cardW = 140, cardH = 60, gap = 14;
+
+  filtered.forEach((node, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = col * (cardW + gap) + gap;
+    const y = row * (cardH + gap) + gap;
+
+    const col_stroke = node.up ? (ROLE_COLORS[node.role] || '#888') : '#333';
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('transform', `translate(${x},${y})`);
+    g.setAttribute('cursor','pointer');
+    g.onclick = () => selectNode(node.id);
+
+    // VPN routing overlay
+    if(_showRouting && node.api_family){
+      const fam = _families.find(f=>f.id===node.api_family);
+      if(fam){
+        const glow = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        glow.setAttribute('width', cardW+4); glow.setAttribute('height', cardH+4);
+        glow.setAttribute('x',-2); glow.setAttribute('y',-2);
+        glow.setAttribute('rx','7'); glow.setAttribute('fill', fam.color+'22');
+        glow.setAttribute('stroke', fam.color); glow.setAttribute('stroke-width','1');
+        g.appendChild(glow);
+      }
+    }
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('width',cardW); rect.setAttribute('height',cardH);
+    rect.setAttribute('rx','6');
+    rect.setAttribute('fill','#0d0f1a');
+    rect.setAttribute('stroke', col_stroke);
+    rect.setAttribute('stroke-width', node.id===_selected ? '2' : '1');
+    g.appendChild(rect);
+
+    // Status dot
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx','10'); dot.setAttribute('cy','10'); dot.setAttribute('r','4');
+    dot.setAttribute('fill', node.up ? '#3fdc8a' : '#f87171');
+    g.appendChild(dot);
+
+    // JARVIS bolt
+    if(node.jarvis_ok){
+      const bolt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      bolt.setAttribute('x', cardW-10); bolt.setAttribute('y','14');
+      bolt.setAttribute('font-size','10'); bolt.setAttribute('fill','#6b8cff');
+      bolt.setAttribute('text-anchor','middle');
+      bolt.textContent='⚡';
+      g.appendChild(bolt);
+    }
+
+    // Name
+    const name = document.createElementNS('http://www.w3.org/2000/svg','text');
+    name.setAttribute('x', cardW/2); name.setAttribute('y','30');
+    name.setAttribute('text-anchor','middle');
+    name.setAttribute('font-size','10'); name.setAttribute('fill', node.up ? '#ddd' : '#555');
+    name.setAttribute('font-family','JetBrains Mono,monospace');
+    name.textContent = (node.name||node.id).slice(0,18);
+    g.appendChild(name);
+
+    // IP
+    const ipTxt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    ipTxt.setAttribute('x', cardW/2); ipTxt.setAttribute('y','44');
+    ipTxt.setAttribute('text-anchor','middle');
+    ipTxt.setAttribute('font-size','9'); ipTxt.setAttribute('fill','#555');
+    ipTxt.setAttribute('font-family','JetBrains Mono,monospace');
+    ipTxt.textContent = node.ip;
+    g.appendChild(ipTxt);
+
+    // Latency
+    if(node.latency_ms){
+      const ms = document.createElementNS('http://www.w3.org/2000/svg','text');
+      ms.setAttribute('x', cardW-6); ms.setAttribute('y', cardH-6);
+      ms.setAttribute('text-anchor','end');
+      ms.setAttribute('font-size','8'); ms.setAttribute('fill','#444');
+      ms.setAttribute('font-family','JetBrains Mono,monospace');
+      ms.textContent = node.latency_ms + 'ms';
+      g.appendChild(ms);
+    }
+
+    svg.appendChild(g);
+  });
+
+  // Extend SVG height
+  const rows = Math.ceil(filtered.length / cols);
+  svg.setAttribute('height', Math.max(H, rows*(cardH+gap)+gap));
+  svg.style.overflowY = 'auto';
+}
+
+function renderTree(){
+  // Simple tree: root groups → children nodes
+  const svg = document.getElementById('map-svg');
+  const W = svg.clientWidth || 800;
+  svg.innerHTML = `<text x="${W/2}" y="30" text-anchor="middle" font-size="11" fill="#555" font-family="JetBrains Mono,monospace">Tree view — click Grid to switch back</text>`;
+  renderGrid(); // fallback for now
+}
+
+// ── Filter ──────────────────────────────────────────────────────────────────
+function setFilter(f, btn){
+  _filter = f;
+  document.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderMap();
+}
+
+function toggleView(){
+  _viewMode = _viewMode==='grid' ? 'tree' : 'grid';
+  renderMap();
+}
+
+function toggleRouting(){
+  _showRouting = !_showRouting;
+  document.getElementById('btn-routing').classList.toggle('on', _showRouting);
+  renderMap();
+  if(_showRouting) renderFamilyLegend();
+}
+
+function renderFamilyLegend(){
+  const svg = document.getElementById('map-svg');
+  let x = 10;
+  _families.forEach(f=>{
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x',x); rect.setAttribute('y',2);
+    rect.setAttribute('width',90); rect.setAttribute('height',16);
+    rect.setAttribute('rx','4'); rect.setAttribute('fill',f.color+'22');
+    rect.setAttribute('stroke',f.color); rect.setAttribute('stroke-width','1');
+    g.appendChild(rect);
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',x+45); txt.setAttribute('y',13);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','9');
+    txt.setAttribute('fill',f.color); txt.setAttribute('font-family','JetBrains Mono,monospace');
+    txt.textContent = f.name+' '+f.pia_server;
+    g.appendChild(txt);
+    svg.appendChild(g);
+    x += 96;
+  });
+}
+
+// ── Node detail panel ───────────────────────────────────────────────────────
+function selectNode(id){
+  _selected = id;
+  const node = _nodes.find(n=>n.id===id);
+  if(!node) return;
+  renderSidebar();
+  renderMap();
+
+  const fam = _families.find(f=>f.id===node.api_family);
+  const det = document.getElementById('detail');
+  det.innerHTML = `
+<div class="det-title">${node.name||node.id}</div>
+<div class="det-ip">${node.ip}</div>
+<div class="det-row"><span class="det-lbl">Status</span><span class="det-val" style="color:${node.up?'#3fdc8a':'#f87171'}">${node.up?'● Online':'○ Offline'}</span></div>
+<div class="det-row"><span class="det-lbl">Role</span><span class="det-val" style="color:${ROLE_COLORS[node.role]||'#888'}">${node.role}</span></div>
+<div class="det-row"><span class="det-lbl">Type</span><span class="det-val">${node.type||'—'}</span></div>
+<div class="det-row"><span class="det-lbl">Hardware</span><span class="det-val">${node.hw||'—'}</span></div>
+${node.latency_ms?`<div class="det-row"><span class="det-lbl">Latency</span><span class="det-val">${node.latency_ms}ms</span></div>`:''}
+${node.jarvis_ok!==undefined?`<div class="det-row"><span class="det-lbl">JARVIS</span><span class="det-val" style="color:${node.jarvis_ok?'#6b8cff':'#555'}">${node.jarvis_ok?'⚡ Online':'○ Not running'}</span></div>`:''}
+${fam?`<div class="det-row"><span class="det-lbl">API Family</span><span class="det-val" style="color:${fam.color}">${fam.name} (${fam.pia_server})</span></div>`:''}
+${node.profile!=null?`<div class="det-row"><span class="det-lbl">Profile</span><span class="det-val">${node.profile}</span></div>`:''}
+<div style="margin-top:10px"></div>
+${node.jarvis_port && node.up ? `<button class="det-btn" onclick="openJarvis('${node.ip}',${node.jarvis_port})">⚡ Open JARVIS (${node.jarvis_port})</button>` : ''}
+${node.vnc_port && node.up ? `<button class="det-btn" onclick="openVnc('${node.ip}',${node.vnc_port})">🖥 Open VNC</button>` : ''}
+${node.role==='windows' ? `<button class="det-btn" onclick="openAhk('${node.ip}')">⌨ Run AHK Webhook</button>` : ''}
+${node.role==='hypervisor' ? `<button class="det-btn" onclick="openProxmox('${node.ip}')">🖥 Proxmox UI</button>` : ''}
+<button class="det-btn" onclick="sendWol('${node.ip}')">📡 Wake on LAN</button>
+<button class="det-btn" onclick="pingNode('${node.ip}')">🏓 Ping Now</button>
+${fam ? `
+<div style="margin-top:10px;font-size:10px;color:#555;margin-bottom:6px">Reroute API Family ${fam.id}:</div>
+<select id="re-pia" style="width:100%;padding:5px;background:#090b12;border:1px solid #2a2d42;color:#888;border-radius:4px;font-size:11px;font-family:inherit;margin-bottom:6px">
+  ${[1,2,3,4,5,6].map(i=>`<option value="PIA-Server-${i}" ${fam.pia_server==='PIA-Server-'+i?'selected':'[]'}>PIA Server ${i}</option>`).join('')}
+</select>
+<button class="det-btn" onclick="rerouteFamily(${fam.id})">↩ Apply Reroute</button>` : ''}`;
+}
+
+function openJarvis(ip, port){
+  window.open(`http://${ip}:${port}`, '_blank');
+}
+
+function openVnc(ip, port){
+  document.getElementById('vnc-title').textContent = `VNC — ${ip}`;
+  document.getElementById('vnc-frame').src = `http://${ip}:${port}/vnc.html?autoconnect=1&resize=scale`;
+  document.getElementById('vnc-modal').style.display='flex';
+}
+
+function closeVnc(){
+  document.getElementById('vnc-modal').style.display='none';
+  document.getElementById('vnc-frame').src='about:blank';
+}
+
+function openProxmox(ip){
+  window.open(`https://${ip}:8006`, '_blank');
+}
+
+function openAhk(ip){
+  const webhook = prompt(`AHK webhook path on ${ip}:`, '/ahk/run');
+  if(webhook) window.open(`http://${ip}:7070${webhook}`,'_blank');
+}
+
+async function sendWol(ip){
+  try{
+    const r = await fetch('/api/network/wol',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip})});
+    const d = await r.json();
+    alert(d.ok ? `WoL packet sent to ${ip} (${d.mac||'unknown MAC'})` : `Error: ${d.error}`);
+  }catch(e){alert('WoL error: '+e.message);}
+}
+
+async function pingNode(ip){
+  const btn = event.target;
+  btn.textContent = '🏓 Pinging…';
+  try{
+    const r = await fetch('/api/network/status');
+    const d = await r.json();
+    const node = (d.nodes||[]).find(n=>n.ip===ip);
+    btn.textContent = node ? (node.up ? `✓ ${node.latency_ms}ms` : '✗ Offline') : '? Unknown';
+    setTimeout(()=>{btn.textContent='🏓 Ping Now';},3000);
+  }catch(e){btn.textContent='✗ Error';}
+}
+
+async function rerouteFamily(famId){
+  const sel = document.getElementById('re-pia');
+  const pia = sel?.value;
+  if(!pia) return;
+  try{
+    const r = await fetch('/api/network/route',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({family_id:famId,pia_server:pia})});
+    const d = await r.json();
+    if(d.ok) alert(`Family ${famId} → ${pia}`);
+  }catch(e){alert('Error: '+e.message);}
+}
+
+// ── Auto-poll every 30s ─────────────────────────────────────────────────────
+refreshAll();
+_pollTimer = setInterval(refreshAll, 30000);
+
+// Redraw on resize
+window.addEventListener('resize', ()=>renderMap());
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

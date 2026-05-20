@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Node Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'Segoe UI',sans-serif;min-height:100vh}
+
+/* Nav */
+.nav{background:#0d0f17;border-bottom:1px solid #1e2030;padding:0 20px;display:flex;align-items:center;gap:12px;height:52px}
+.nav h1{font-size:16px;font-weight:800}
+.nav-badge{font-size:10px;padding:2px 8px;background:#7c3aed30;border:1px solid #7c3aed;border-radius:99px;color:#a78bfa}
+.nav-links{margin-left:auto;display:flex;gap:6px}
+.nav-links a{color:#64748b;font-size:12px;text-decoration:none;padding:4px 10px;border:1px solid #1e2030;border-radius:6px}
+.nav-links a:hover{color:#dde1f5;border-color:#7c3aed}
+
+/* Tabs */
+.tabs{background:#0d0f17;border-bottom:1px solid #1e2030;display:flex;padding:0 20px;gap:2px}
+.tab{padding:11px 16px;font-size:12px;font-weight:600;color:#475569;cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+.tab.active{color:#dde1f5;border-bottom-color:#7c3aed}
+.tab:hover{color:#dde1f5}
+
+/* Panels */
+.panel{display:none;padding:20px;max-width:1200px;margin:0 auto}
+.panel.active{display:block}
+
+/* Stat bar */
+.stats{display:flex;gap:10px;margin-bottom:18px}
+.stat{background:#0d0f17;border:1px solid #1e2030;border-radius:8px;padding:10px 16px;flex:1;text-align:center}
+.stat-n{font-size:22px;font-weight:800}
+.stat-l{font-size:10px;color:#475569;margin-top:2px}
+
+/* Nodes grid */
+.nodes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.node-card{background:#0d0f17;border:2px solid #1e2030;border-radius:10px;padding:13px;transition:.15s}
+.node-card:hover{border-color:#2d3148}
+.node-card.online{border-left-color:var(--nc)}
+.node-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.nc-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.nc-name{font-size:14px;font-weight:700;flex:1}
+.nc-status{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:700}
+.s-on{background:#14532d20;color:#34d399;border:1px solid #14532d}
+.s-off{background:#7f1d1d20;color:#f87171;border:1px solid #7f1d1d}
+.nc-meta{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.nc-chip{background:#13151f;border:1px solid #1e2030;border-radius:99px;padding:2px 8px;font-size:11px;color:#64748b}
+.nc-actions{display:flex;gap:5px;flex-wrap:wrap}
+
+/* Buttons */
+.btn{padding:5px 12px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:.12s}
+.btn-purple{background:#7c3aed;color:#fff}.btn-purple:hover{background:#6d28d9}
+.btn-green{background:#059669;color:#fff}.btn-green:hover{background:#047857}
+.btn-ghost{background:transparent;border:1px solid #2d3148;color:#94a3b8}.btn-ghost:hover{color:#dde1f5;border-color:#475569}
+.btn-danger{background:transparent;border:1px solid #7f1d1d;color:#f87171}.btn-danger:hover{background:#7f1d1d20}
+.btn-sm{padding:3px 9px;font-size:11px}
+.btn-blue{background:#1d4ed8;color:#fff}.btn-blue:hover{background:#1e40af}
+.btn-amber{background:#b45309;color:#fff}.btn-amber:hover{background:#92400e}
+
+/* Form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:10px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.fi{background:#07080d;border:1px solid #1e2030;border-radius:6px;color:#dde1f5;padding:7px 10px;font-size:12px;width:100%}
+.fi:focus{outline:none;border-color:#7c3aed}
+select.fi{cursor:pointer}
+.fgfull{grid-column:1/-1}
+
+/* ── AUTO-ROUTING MAP ────────────────────── */
+.routing-map{background:#0a0b12;border:1px solid #1e2030;border-radius:12px;overflow:hidden;margin-bottom:16px}
+.routing-map-header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e2030}
+.routing-map-header h3{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#475569}
+.routing-map-header span{font-size:11px;color:#334155}
+.rmap-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #0d0f17;min-height:46px;transition:.12s}
+.rmap-row:hover{background:#0d0f1780}
+.rmap-row:last-child{border-bottom:none}
+.rmap-row.offline{opacity:.45}
+.rmap-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.rmap-name{font-size:13px;font-weight:800;min-width:120px;flex-shrink:0}
+.rmap-default{font-size:9px;padding:1px 6px;border-radius:99px;background:#7c3aed30;color:#a78bfa;border:1px solid #7c3aed;margin-left:4px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.rmap-chips{display:flex;flex-wrap:wrap;gap:5px;flex:1}
+.kw-chip{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:600;cursor:default;border:1px solid transparent;opacity:.85}
+.kw-chip .kw-x{color:inherit;opacity:.5;cursor:pointer;font-size:10px;margin-left:2px;transition:.1s}
+.kw-chip .kw-x:hover{opacity:1}
+.kw-add{background:transparent;border:1px dashed #2d3148;border-radius:99px;padding:3px 8px;font-size:11px;color:#334155;cursor:text;min-width:60px;outline:none}
+.kw-add:focus{border-color:#7c3aed;color:#dde1f5}
+.rmap-ip{font-size:11px;color:#334155;font-family:monospace;min-width:110px;text-align:right;flex-shrink:0}
+.rmap-off-section{padding:8px 16px 10px;display:flex;align-items:center;gap:8px;border-top:1px solid #1e2030;background:#07080d}
+.off-label{font-size:11px;font-weight:700;color:#334155;margin-right:4px}
+
+/* Test routing */
+.test-box{background:#0d0f17;border:1px solid #1e2030;border-radius:9px;padding:14px;margin-bottom:16px}
+.test-input-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.test-result-row{font-size:13px;padding:8px 12px;border-radius:7px;background:#07080d;border:1px solid #1e2030;display:none}
+
+/* Import */
+.import-box{background:#0d0f17;border:1px solid #1e2030;border-radius:9px;padding:14px;margin-bottom:16px}
+.import-preview{background:#07080d;border:1px solid #1e2030;border-radius:7px;padding:10px 12px;font-size:12px;font-family:monospace;display:none;margin-top:10px;white-space:pre-wrap;color:#94a3b8}
+
+/* Modals */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#0d0f17;border:1px solid #2d3148;border-radius:12px;padding:22px;width:540px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:15px;font-weight:700;margin-bottom:16px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.script-pre{background:#000;border-radius:7px;padding:12px;font-family:monospace;font-size:11px;white-space:pre;overflow-x:auto;max-height:380px;overflow-y:auto;color:#94a3b8;line-height:1.5}
+
+/* Log area */
+.log-area{background:#07080d;border:1px solid #1e2030;border-radius:7px;padding:10px 12px;font-family:monospace;font-size:11px;max-height:200px;overflow-y:auto;white-space:pre-wrap;color:#475569;line-height:1.5}
+.ok{color:#34d399}.err{color:#f87171}.info{color:#60a5fa}
+
+/* Latency */
+.lat-fast{color:#34d399}.lat-slow{color:#fbbf24}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pulsing{animation:pulse 1.2s infinite}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span style="font-size:18px">🖥</span>
+  <h1>Node Manager</h1>
+  <span class="nav-badge">:8050</span>
+  <div class="nav-links">
+    <a href="http://192.168.0.3:8080" target="_blank">Hub :8080</a>
+    <a href="http://192.168.0.3:8080/masterclass" target="_blank">Masterclass</a>
+    <a href="/new" target="_blank">+ New Node</a>
+  </div>
+</nav>
+
+<div class="tabs">
+  <div class="tab active" onclick="tab('nodes')">🖥 Nodes</div>
+  <div class="tab" onclick="tab('routing')">🔀 Auto-Routing</div>
+  <div class="tab" onclick="tab('add')">➕ Add / Import</div>
+  <div class="tab" onclick="tab('browser-vms')">🌐 Browser VMs</div>
+</div>
+
+<!-- ── NODES ── -->
+<div class="panel active" id="panel-nodes">
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="s-total">–</div><div class="stat-l">Nodes</div></div>
+    <div class="stat"><div class="stat-n" style="color:#34d399" id="s-online">–</div><div class="stat-l">Online</div></div>
+    <div class="stat"><div class="stat-n" style="color:#f87171" id="s-offline">–</div><div class="stat-l">Offline</div></div>
+    <div class="stat"><div class="stat-n" id="s-slots">–</div><div class="stat-l">Total Slots</div></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <button class="btn btn-ghost btn-sm" onclick="loadNodes()">🔄 Refresh</button>
+    <button class="btn btn-purple btn-sm" onclick="tab('add')">➕ Add / Import</button>
+    <span id="nodes-ts" style="font-size:11px;color:#334155;margin-left:auto;align-self:center"></span>
+  </div>
+  <div class="nodes-grid" id="nodes-grid"><div class="pulsing" style="color:#475569;font-size:12px">Loading…</div></div>
+</div>
+
+<!-- ── ROUTING MAP ── -->
+<div class="panel" id="panel-routing">
+  <div class="test-box">
+    <div style="font-size:12px;font-weight:700;color:#dde1f5;margin-bottom:10px">🧪 Test Auto-Routing</div>
+    <div class="test-input-row">
+      <input class="fi" id="test-phrase" placeholder="Type a task phrase… e.g. 'book a flight to Madrid'"
+             style="flex:1" onkeydown="if(event.key==='Enter')testRoute()">
+      <button class="btn btn-purple btn-sm" onclick="testRoute()">Test →</button>
+    </div>
+    <div class="test-result-row" id="test-result"></div>
+
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #1e2030;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:11px;color:#475569">🧪 Test Only — force all tasks to one node:</span>
+      <select class="fi" id="test-only-sel" style="width:160px"></select>
+      <button class="btn btn-amber btn-sm" onclick="setTestOnly()">Set</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearTestOnly()">Clear</button>
+      <span id="test-only-status" style="font-size:11px;color:#fbbf24"></span>
+    </div>
+  </div>
+
+  <div class="routing-map" id="routing-map-container">
+    <div class="routing-map-header">
+      <h3>Auto-Routing Map</h3>
+      <span>AUTO picks the best node for your task</span>
+    </div>
+    <div id="rmap-rows"><div class="pulsing" style="padding:16px;color:#475569;font-size:12px">Loading…</div></div>
+    <div class="rmap-off-section" id="rmap-off" style="display:none">
+      <span class="off-label">OFF:</span>
+      <div id="rmap-off-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-green btn-sm" onclick="saveRouting()">💾 Save Routing Map</button>
+    <span id="route-save-ts" style="font-size:11px;color:#334155;align-self:center"></span>
+  </div>
+</div>
+
+<!-- ── ADD / IMPORT ── -->
+<div class="panel" id="panel-add">
+  <!-- Import from IP -->
+  <div class="import-box">
+    <div style="font-size:12px;font-weight:700;color:#dde1f5;margin-bottom:4px">⬇ Import Node from IP</div>
+    <div style="font-size:11px;color:#475569;margin-bottom:10px">Enter the IP of a machine already running ai-browser. It fetches all info automatically.</div>
+    <div style="display:flex;gap:8px">
+      <input class="fi" id="import-ip" placeholder="192.168.0.234" style="flex:1" onkeydown="if(event.key==='Enter')previewImport()">
+      <input class="fi" id="import-port" value="8080" style="width:80px" type="number">
+      <button class="btn btn-blue btn-sm" onclick="previewImport()">Fetch Info</button>
+    </div>
+    <div class="import-preview" id="import-preview"></div>
+    <div style="display:flex;gap:8px;margin-top:8px" id="import-confirm-row" style="display:none!important">
+      <button class="btn btn-green btn-sm" id="import-confirm-btn" onclick="confirmImport()" style="display:none">✓ Add This Node</button>
+    </div>
+  </div>
+
+  <!-- Manual add -->
+  <div style="font-size:12px;font-weight:700;color:#dde1f5;margin-bottom:12px">➕ Add Node Manually</div>
+  <div id="add-alert"></div>
+  <div class="form-grid" style="margin-bottom:14px">
+    <div class="fg"><label>Folder ID *</label><input class="fi" id="a-folder" placeholder="e.g. Finance-2"></div>
+    <div class="fg"><label>Display Name *</label><input class="fi" id="a-name" placeholder="e.g. Finance Node 2"></div>
+    <div class="fg"><label>IP Address *</label><input class="fi" id="a-ip" placeholder="192.168.0.234"></div>
+    <div class="fg"><label>Port</label><input class="fi" id="a-port" type="number" value="8080"></div>
+    <div class="fg"><label>Type</label>
+      <select class="fi" id="a-type">
+        <option value="lxc">LXC Container</option>
+        <option value="vm">VM</option>
+        <option value="bare">Bare Metal</option>
+        <option value="docker">Docker</option>
+      </select>
+    </div>
+    <div class="fg"><label>Max Slots</label><input class="fi" id="a-slots" type="number" value="30"></div>
+    <div class="fg"><label>Browser VM IP</label><input class="fi" id="a-bvm" placeholder="192.168.0.8"></div>
+    <div class="fg"><label>Color</label><input class="fi" id="a-color" type="color" value="#94a3b8" style="height:35px;padding:3px"></div>
+    <div class="fg fgfull"><label>Notes</label><input class="fi" id="a-notes" placeholder="What tasks does this node handle?"></div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-purple" onclick="addNode()">➕ Add Node</button>
+    <button class="btn btn-ghost" onclick="tab('nodes')">Cancel</button>
+  </div>
+
+  <!-- Clone script -->
+  <div style="margin-top:24px;padding-top:16px;border-top:1px solid #1e2030">
+    <div style="font-size:12px;font-weight:700;color:#dde1f5;margin-bottom:8px">⬇ Clone Setup Script</div>
+    <div style="font-size:11px;color:#475569;margin-bottom:8px">Download a bash script to set up a new machine identical to an existing node.</div>
+    <div style="display:flex;gap:8px">
+      <select class="fi" id="clone-src" style="flex:1"><option value="">Select node…</option></select>
+      <button class="btn btn-ghost btn-sm" onclick="downloadScript()">⬇ Download .sh</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── BROWSER VMs ── -->
+<div class="panel" id="panel-browser-vms">
+  <div style="margin-bottom:16px">
+    <div style="font-size:12px;font-weight:700;color:#dde1f5;margin-bottom:4px">Browser VMs</div>
+    <div style="font-size:11px;color:#475569">Physical/virtual machines running Chrome. Each agent node routes browser tasks to its assigned VM.</div>
+  </div>
+  <div id="bvm-list" style="margin-bottom:16px"></div>
+  <div style="border-top:1px solid #1e2030;padding-top:14px">
+    <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:10px">ADD BROWSER VM</div>
+    <div class="form-grid">
+      <div class="fg"><label>Name</label><input class="fi" id="bvm-name" placeholder="Worker-3"></div>
+      <div class="fg"><label>IP</label><input class="fi" id="bvm-ip" placeholder="192.168.0.8"></div>
+      <div class="fg"><label>Profile #</label><input class="fi" id="bvm-profile" type="number" value="0"></div>
+      <div class="fg"><label>Notes</label><input class="fi" id="bvm-notes" placeholder="Purpose"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+        <input type="checkbox" id="bvm-pia"> PIA VPN
+      </label>
+      <button class="btn btn-purple btn-sm" onclick="addBvm()">Add VM</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <h2>Edit Node</h2>
+    <div class="form-grid">
+      <div class="fg"><label>Name</label><input class="fi" id="e-name"></div>
+      <div class="fg"><label>IP</label><input class="fi" id="e-ip"></div>
+      <div class="fg"><label>Port</label><input class="fi" id="e-port" type="number"></div>
+      <div class="fg"><label>Slots</label><input class="fi" id="e-slots" type="number"></div>
+      <div class="fg"><label>Browser VM</label><input class="fi" id="e-bvm"></div>
+      <div class="fg"><label>Color</label><input class="fi" id="e-color" type="color" style="height:35px;padding:3px"></div>
+      <div class="fg fgfull"><label>Notes</label><input class="fi" id="e-notes"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-purple btn-sm" onclick="saveEdit()">💾 Save</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('edit-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Test Modal -->
+<div class="modal-overlay" id="test-modal">
+  <div class="modal">
+    <h2 id="test-modal-title">Node Test</h2>
+    <div class="log-area" id="test-modal-body">Running…</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('test-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Script Modal -->
+<div class="modal-overlay" id="script-modal">
+  <div class="modal" style="width:680px">
+    <h2 id="script-modal-title">Setup Script</h2>
+    <div class="script-pre" id="script-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-green btn-sm" onclick="copyScript()">📋 Copy</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('script-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allNodes = [], routing = {nodes:[], test_only:'', load_balance:true};
+let editingFolder = null, importData = null;
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function tab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const ns = ['nodes','routing','add','browser-vms'];
+    t.classList.toggle('active', ns[i]===name);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='routing') loadRouting();
+  if(name==='browser-vms') loadBvms();
+}
+
+// ── Nodes ──────────────────────────────────────────────────────────────────
+async function loadNodes() {
+  document.getElementById('nodes-ts').textContent='Loading…';
+  const r   = await fetch('/api/nodes');
+  const d   = await r.json();
+  allNodes  = d.nodes || [];
+  renderNodes(allNodes);
+  populateSelects(allNodes);
+  document.getElementById('s-total').textContent   = allNodes.length;
+  document.getElementById('s-online').textContent  = allNodes.filter(n=>n.online).length;
+  document.getElementById('s-offline').textContent = allNodes.filter(n=>!n.online).length;
+  document.getElementById('s-slots').textContent   = allNodes.reduce((a,n)=>a+(n.max_slots||30),0);
+  document.getElementById('nodes-ts').textContent  = 'Updated '+new Date().toLocaleTimeString();
+}
+
+function renderNodes(nodes) {
+  document.getElementById('nodes-grid').innerHTML = nodes.length ? nodes.map(n=>{
+    const lat = n.latency_ms ? `<span class="${n.latency_ms<80?'lat-fast':'lat-slow'}">${n.latency_ms}ms</span>` : '';
+    return `<div class="node-card ${n.online?'online':''}" style="--nc:${n.color||'#94a3b8'}">
+      <div class="node-header">
+        <div class="nc-dot" style="background:${n.color||'#94a3b8'}"></div>
+        <span class="nc-name">${esc(n.name)}</span>
+        <span class="nc-status ${n.online?'s-on':'s-off'}">${n.online?'● Online':'○ Offline'}</span>
+      </div>
+      <div class="nc-meta">
+        <span class="nc-chip">📁 ${esc(n.folder)}</span>
+        <span class="nc-chip">🌐 ${esc(n.ip)}:${n.port||8080}</span>
+        <span class="nc-chip">📊 ${n.max_slots||30} slots</span>
+        ${n.browser_vm?`<span class="nc-chip">🖥 ${n.browser_vm}</span>`:''}
+        ${lat?`<span class="nc-chip">⚡ ${lat}</span>`:''}
+        ${n.pia?`<span class="nc-chip" style="color:#34d399">🔒 PIA</span>`:''}
+      </div>
+      ${n.notes?`<div style="font-size:11px;color:#334155;margin-bottom:7px">${esc(n.notes)}</div>`:''}
+      <div class="nc-actions">
+        <button class="btn btn-ghost btn-sm" onclick="testNode('${n.folder}')">🧪 Test</button>
+        <button class="btn btn-ghost btn-sm" onclick="editNode('${n.folder}')">✏ Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="showScript('${n.folder}')">⬇ Script</button>
+        <a href="http://${n.ip}:${n.port||8080}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🔗 Open</a>
+        <button class="btn btn-danger btn-sm" onclick="deleteNode('${n.folder}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('') : '<div style="color:#475569;font-size:12px">No nodes yet — click Add / Import.</div>';
+}
+
+function populateSelects(nodes) {
+  const opts = nodes.map(n=>`<option value="${n.folder}">${n.name} (${n.ip})</option>`).join('');
+  document.getElementById('clone-src').innerHTML = '<option value="">Select node…</option>'+opts;
+}
+
+async function deleteNode(folder) {
+  if(!confirm(`Delete "${folder}"?`)) return;
+  await fetch('/api/nodes/'+folder,{method:'DELETE'});
+  loadNodes();
+}
+
+// ── Edit ──────────────────────────────────────────────────────────────────
+function editNode(folder) {
+  const n = allNodes.find(n=>n.folder===folder); if(!n) return;
+  editingFolder = folder;
+  document.getElementById('e-name').value  = n.name||'';
+  document.getElementById('e-ip').value    = n.ip||'';
+  document.getElementById('e-port').value  = n.port||8080;
+  document.getElementById('e-slots').value = n.max_slots||30;
+  document.getElementById('e-bvm').value   = n.browser_vm||'';
+  document.getElementById('e-color').value = n.color||'#94a3b8';
+  document.getElementById('e-notes').value = n.notes||'';
+  document.getElementById('edit-modal').classList.add('open');
+}
+async function saveEdit() {
+  await fetch('/api/nodes/'+editingFolder,{
+    method:'PATCH',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:document.getElementById('e-name').value,
+      ip:document.getElementById('e-ip').value,
+      port:+document.getElementById('e-port').value,
+      max_slots:+document.getElementById('e-slots').value,
+      browser_vm:document.getElementById('e-bvm').value,
+      color:document.getElementById('e-color').value,
+      notes:document.getElementById('e-notes').value,
+    })
+  });
+  closeModal('edit-modal');
+  loadNodes();
+}
+
+// ── Test ──────────────────────────────────────────────────────────────────
+async function testNode(folder) {
+  document.getElementById('test-modal-title').textContent = 'Testing: '+folder;
+  document.getElementById('test-modal-body').innerHTML = '<span class="pulsing" style="color:#fbbf24">Running…</span>';
+  document.getElementById('test-modal').classList.add('open');
+  const d = await (await fetch('/api/nodes/'+folder+'/test',{method:'POST'})).json();
+  let html = `<span class="${d.online?'ok':'err'}">${d.online?'✓ ONLINE':'✗ OFFLINE'}</span>  ${d.ip}:${d.port}\n\n`;
+  for(const [path,res] of Object.entries(d.checks||{})) {
+    html += `<span class="info">${path}</span>  `;
+    html += res.status===200 ? `<span class="ok">HTTP ${res.status} (${res.latency_ms}ms)</span>\n` : `<span class="err">FAILED — ${res.error||'HTTP '+res.status}</span>\n`;
+    if(res.body) html += `  ${res.body.slice(0,200)}\n`;
+    html += '\n';
+  }
+  document.getElementById('test-modal-body').innerHTML = html;
+}
+
+// ── Script ────────────────────────────────────────────────────────────────
+async function showScript(folder) {
+  document.getElementById('script-modal-title').textContent = 'Setup Script — '+folder;
+  document.getElementById('script-body').textContent = 'Generating…';
+  document.getElementById('script-modal').classList.add('open');
+  document.getElementById('script-body').textContent = await (await fetch('/api/nodes/'+folder+'/clone-script')).text();
+}
+function copyScript() { navigator.clipboard.writeText(document.getElementById('script-body').textContent).then(()=>alert('Copied ✓')); }
+function downloadScript() {
+  const folder = document.getElementById('clone-src').value;
+  if(!folder){alert('Select a node first');return;}
+  window.open('/api/nodes/'+folder+'/clone-script','_blank');
+}
+
+// ── Add / Import ──────────────────────────────────────────────────────────
+async function previewImport() {
+  const ip   = document.getElementById('import-ip').value.trim();
+  const port = document.getElementById('import-port').value||8080;
+  if(!ip){alert('Enter an IP');return;}
+  const el = document.getElementById('import-preview');
+  el.style.display='block';
+  el.textContent='Fetching from '+ip+':'+port+' …';
+  try{
+    const r = await fetch('/api/nodes/import',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ip,port:+port,_preview:true})
+    });
+    // We hit the actual import — undo: just do a GET to node-info via a proxy approach
+    // Actually let's just try fetching node-info directly from browser
+    const r2 = await fetch(`http://${ip}:${port}/api/node-info`);
+    importData = await r2.json();
+    el.textContent = JSON.stringify(importData, null, 2);
+    document.getElementById('import-confirm-btn').style.display='block';
+  }catch(e){
+    // Try via proxy
+    try{
+      const r3 = await fetch('/api/nodes/import',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ip,port:+port})
+      });
+      const d3 = await r3.json();
+      if(d3.ok){
+        el.textContent = '✓ Imported!\n\n'+JSON.stringify(d3.node,null,2);
+        document.getElementById('import-confirm-btn').style.display='none';
+        loadNodes();
+        setTimeout(()=>tab('nodes'),1500);
+        return;
+      }
+      el.textContent = '❌ '+( d3.error||'Failed');
+    }catch(e2){
+      el.textContent = '❌ Cannot reach '+ip+':'+port+'\n'+e2.message;
+    }
+  }
+}
+
+async function confirmImport() {
+  if(!importData){return;}
+  const ip   = document.getElementById('import-ip').value.trim();
+  const port = +document.getElementById('import-port').value||8080;
+  const r = await fetch('/api/nodes/import',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ip,port,...importData})
+  });
+  const d = await r.json();
+  if(d.ok){ alert('Node imported ✓'); tab('nodes'); loadNodes(); }
+  else alert('Error: '+(d.error||'failed'));
+}
+
+async function addNode() {
+  const f=document.getElementById('a-folder').value.trim();
+  const n=document.getElementById('a-name').value.trim();
+  const ip=document.getElementById('a-ip').value.trim();
+  if(!f||!n||!ip){showAddAlert('Folder, Name, IP required');return;}
+  const r=await fetch('/api/nodes',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({folder:f,name:n,ip,port:+document.getElementById('a-port').value,type:document.getElementById('a-type').value,max_slots:+document.getElementById('a-slots').value,browser_vm:document.getElementById('a-bvm').value,color:document.getElementById('a-color').value,notes:document.getElementById('a-notes').value})
+  });
+  const d=await r.json();
+  if(d.error){showAddAlert(d.error);return;}
+  showAddAlert('✓ Node added',true);
+  loadNodes();
+}
+function showAddAlert(msg,ok=false){
+  document.getElementById('add-alert').innerHTML=`<div style="padding:8px 12px;border-radius:7px;margin-bottom:10px;font-size:12px;background:${ok?'#0a2810':'#2a0a0a'};border:1px solid ${ok?'#065f46':'#7f1d1d'};color:${ok?'#34d399':'#f87171'}">${msg}</div>`;
+  if(ok) setTimeout(()=>document.getElementById('add-alert').innerHTML='',4000);
+}
+
+// ── ROUTING MAP ───────────────────────────────────────────────────────────
+async function loadRouting() {
+  const r = await fetch('/api/routing');
+  routing  = await r.json();
+  renderRoutingMap();
+  // Test-only dropdown
+  const sel = document.getElementById('test-only-sel');
+  const folders = (routing.nodes||[]).map(n=>n.folder);
+  sel.innerHTML = '<option value="">Normal routing</option>' +
+    folders.map(f=>`<option value="${f}" ${f===routing.test_only?'selected':''}>${f}</option>`).join('');
+  if(routing.test_only)
+    document.getElementById('test-only-status').textContent = `⚠️ Test Only: all → ${routing.test_only}`;
+}
+
+function renderRoutingMap() {
+  const rnodes   = routing.nodes || [];
+  const enabled  = rnodes.filter(n=>n.enabled!==false);
+  const disabled = rnodes.filter(n=>n.enabled===false);
+
+  document.getElementById('rmap-rows').innerHTML = enabled.map((rn,idx)=>{
+    const nodeInfo = allNodes.find(n=>n.folder===rn.folder)||{};
+    const online   = nodeInfo.online;
+    const ip       = nodeInfo.ip || '';
+    const color    = rn.color || nodeInfo.color || '#94a3b8';
+    const chipBg   = color+'22';
+    const chipBd   = color+'55';
+
+    const chips = (rn.keywords||[]).map((kw,ki)=>`
+      <span class="kw-chip" style="background:${chipBg};border-color:${chipBd};color:${color}">
+        ${esc(kw)}<span class="kw-x" onclick="removeKw(${idx},${ki})">✕</span>
+      </span>`).join('');
+
+    return `
+      <div class="rmap-row ${online===false?'offline':''}" id="rrow-${idx}">
+        <div class="rmap-dot" style="background:${online===undefined?'#475569':online?color:'#374151'}"></div>
+        <div class="rmap-name" style="color:${color}">
+          ${esc(rn.folder)}
+          ${rn.is_default?'<span class="rmap-default">DEFAULT</span>':''}
+        </div>
+        <div class="rmap-chips" id="chips-${idx}">
+          ${chips}
+          <input class="kw-add" placeholder="+ add…" onkeydown="addKw(event,${idx})" id="kwadd-${idx}">
+        </div>
+        <div class="rmap-ip">${ip}</div>
+      </div>`;
+  }).join('');
+
+  // Disabled (offline section)
+  if(disabled.length) {
+    document.getElementById('rmap-off').style.display='flex';
+    document.getElementById('rmap-off-chips').innerHTML = disabled.map((rn,di)=>`
+      <span style="background:#1e203080;border:1px solid #2d3148;border-radius:99px;padding:3px 10px;font-size:11px;color:#475569;cursor:pointer"
+            onclick="enableNode('${rn.folder}')" title="Click to re-enable">${esc(rn.folder)}</span>`).join('');
+  } else {
+    document.getElementById('rmap-off').style.display='none';
+  }
+}
+
+function removeKw(rowIdx, kwIdx) {
+  const en = (routing.nodes||[]).filter(n=>n.enabled!==false);
+  en[rowIdx].keywords.splice(kwIdx, 1);
+  renderRoutingMap();
+}
+
+function addKw(event, rowIdx) {
+  if(event.key !== 'Enter' && event.key !== ',') return;
+  event.preventDefault();
+  const val = event.target.value.trim().replace(/,$/, '');
+  if(!val) return;
+  const en = (routing.nodes||[]).filter(n=>n.enabled!==false);
+  en[rowIdx].keywords = en[rowIdx].keywords || [];
+  en[rowIdx].keywords.push(val);
+  event.target.value = '';
+  renderRoutingMap();
+  // Refocus the add input for this row
+  setTimeout(()=>{ const el=document.getElementById('kwadd-'+rowIdx); if(el) el.focus(); },50);
+}
+
+function enableNode(folder) {
+  const rn = (routing.nodes||[]).find(n=>n.folder===folder);
+  if(rn) rn.enabled = true;
+  renderRoutingMap();
+}
+
+async function saveRouting() {
+  await fetch('/api/routing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(routing)});
+  // Also save to main server
+  try{ await fetch('http://192.168.0.3:8080/api/routing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(routing)}); }catch(e){}
+  document.getElementById('route-save-ts').textContent='Saved '+new Date().toLocaleTimeString();
+}
+
+async function testRoute() {
+  const phrase = document.getElementById('test-phrase').value.trim();
+  if(!phrase) return;
+  const d   = await (await fetch('/api/routing/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phrase})})).json();
+  const el  = document.getElementById('test-result');
+  el.style.display='block';
+  const color = d.test_only ? '#fbbf24' : '#34d399';
+  el.innerHTML = `<span style="color:${color};font-weight:700">→ ${d.routes_to}</span>
+    <span style="color:#475569;margin-left:10px">${esc(d.reason)}</span>
+    ${d.test_only?`<span style="color:#fbbf24;margin-left:8px">⚠️ TEST ONLY</span>`:''}`;
+}
+
+async function setTestOnly() {
+  routing.test_only = document.getElementById('test-only-sel').value;
+  await saveRouting();
+  const to = routing.test_only;
+  document.getElementById('test-only-status').textContent = to ? `⚠️ Test Only: all → ${to}` : '';
+}
+async function clearTestOnly() {
+  routing.test_only = '';
+  document.getElementById('test-only-sel').value='';
+  await saveRouting();
+  document.getElementById('test-only-status').textContent='';
+}
+
+// ── Browser VMs ───────────────────────────────────────────────────────────
+async function loadBvms() {
+  const vms = await (await fetch('/api/browser-vms')).json();
+  document.getElementById('bvm-list').innerHTML = vms.length
+    ? vms.map(vm=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1e203040;font-size:12px">
+          <span style="font-weight:700;min-width:130px">${esc(vm.name)}</span>
+          <span style="color:#475569;font-family:monospace">${vm.ip}</span>
+          <span style="color:#475569">Profile ${vm.profile}</span>
+          ${vm.pia?'<span style="color:#34d399">🔒 PIA</span>':''}
+          <span style="color:#334155;flex:1">${esc(vm.notes||'')}</span>
+        </div>`).join('')
+    : '<div style="color:#475569;font-size:12px">No browser VMs configured.</div>';
+}
+async function addBvm() {
+  const vm={name:document.getElementById('bvm-name').value.trim(),ip:document.getElementById('bvm-ip').value.trim(),profile:+document.getElementById('bvm-profile').value,notes:document.getElementById('bvm-notes').value.trim(),pia:document.getElementById('bvm-pia').checked};
+  if(!vm.name||!vm.ip){alert('Name and IP required');return;}
+  await fetch('/api/browser-vms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(vm)});
+  ['bvm-name','bvm-ip','bvm-notes'].forEach(id=>document.getElementById(id).value='');
+  loadBvms();
+}
+
+// ── Utils ────────────────────────────────────────────────────────────────
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function esc(s){const d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML;}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+loadNodes();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

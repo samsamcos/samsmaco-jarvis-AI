@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sync — JARVIS Nodes</title>
+<style>
+  :root { --bg:#0f0f1a;--panel:#161625;--border:#2a2a3e;--accent:#7c3aed;--accent2:#a78bfa;--text:#e2e8f0;--muted:#64748b;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+  header{background:var(--panel);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px}
+  header h1{font-size:1.2rem;font-weight:600}
+  .container{max-width:1100px;margin:0 auto;padding:24px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+  .card h2{font-size:1rem;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .node-card{background:#1e1e30;border:1px solid var(--border);border-radius:10px;padding:14px}
+  .node-card.online{border-color:var(--green)}
+  .node-card.offline{opacity:.6}
+  .node-card h3{font-size:.88rem;font-weight:600;margin-bottom:4px}
+  .node-card .ip{font-size:.78rem;color:var(--muted)}
+  .node-card .status{font-size:.75rem;margin-top:6px}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+  .dot.green{background:var(--green)}.dot.red{background:var(--red)}.dot.yellow{background:var(--yellow)}
+  .btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:.88rem;font-weight:500}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-secondary{background:#2a2a3e;color:var(--text)}
+  .btn:hover{opacity:.85}
+  .btn-sm{padding:5px 12px;font-size:.78rem}
+  .checkbox-grid{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .cb-item{display:flex;align-items:center;gap:5px;background:#1e1e30;border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.82rem}
+  .cb-item input{accent-color:var(--accent)}
+  .log{background:#0a0a14;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:monospace;font-size:.78rem;min-height:80px;max-height:200px;overflow-y:auto;color:#94a3b8;white-space:pre-wrap}
+  .tabs{display:flex;gap:2px;margin-bottom:16px}
+  .tab{padding:8px 18px;border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none;background:#1e1e30;cursor:pointer;font-size:.88rem}
+  .tab.active{background:var(--panel);color:var(--accent2)}
+  .tab-content{display:none}.tab-content.active{display:block}
+  .mem-stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  .mem-stat{background:#1e1e30;border:1px solid var(--border);border-radius:8px;padding:10px 16px;min-width:100px}
+  .mem-stat .v{font-size:1.4rem;font-weight:700;color:var(--accent2)}
+  .mem-stat .l{font-size:.72rem;color:var(--muted)}
+  select{background:#1e1e30;border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:.88rem}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .toast{position:fixed;bottom:20px;right:20px;background:#1e293b;border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:.88rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:1.4rem">🔄</span>
+  <h1>Sync Dashboard</h1>
+  <span style="color:var(--muted);font-size:.8rem;margin-left:auto">Node memory + config synchronisation</span>
+  <a href="/mempalace" style="margin-left:12px;color:var(--accent2);font-size:.82rem;text-decoration:none">🧠 MemPalace</a>
+</header>
+
+<div class="container">
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('nodes')">🖥️ Nodes</div>
+    <div class="tab" onclick="showTab('memory')">🧠 Memory Sync</div>
+    <div class="tab" onclick="showTab('config')">⚙️ Config Sync</div>
+  </div>
+
+  <!-- NODES TAB -->
+  <div class="tab-content active" id="tab-nodes">
+    <div class="card">
+      <h2>🖥️ All Nodes <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="pingAll()">Ping All</button></h2>
+      <div class="grid" id="node-grid">Loading...</div>
+    </div>
+  </div>
+
+  <!-- MEMORY SYNC TAB -->
+  <div class="tab-content" id="tab-memory">
+    <div class="card">
+      <h2>🧠 Memory Sync Status</h2>
+      <div class="mem-stats" id="mem-stats">Loading...</div>
+    </div>
+    <div class="card">
+      <h2>🔄 Sync Memories to Nodes</h2>
+      <p style="color:var(--muted);font-size:.82rem;margin-bottom:12px">Pushes your memories to selected nodes and pulls theirs. Cloned LXCs will inherit all memories.</p>
+
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">Select nodes:</div>
+      <div class="checkbox-grid" id="mem-node-checks">Loading...</div>
+
+      <div style="font-size:.82rem;color:var(--muted);margin:10px 0 6px">Wings to sync:</div>
+      <div class="checkbox-grid" id="wing-checks"></div>
+
+      <div class="row">
+        <button class="btn btn-primary" onclick="doMemSync()">🔄 Sync Now</button>
+        <span style="font-size:.78rem;color:var(--muted)" id="sync-status"></span>
+      </div>
+      <div class="log" id="sync-log">—</div>
+    </div>
+  </div>
+
+  <!-- CONFIG SYNC TAB -->
+  <div class="tab-content" id="tab-config">
+    <div class="card">
+      <h2>⚙️ Push Config to Nodes</h2>
+      <p style="color:var(--muted);font-size:.82rem;margin-bottom:12px">Syncs worker_jobs.json, routing_map.json, staff_nodes.json, and masterclass.json to selected nodes.</p>
+      <div class="checkbox-grid" id="cfg-node-checks">Loading...</div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn btn-primary" onclick="doCfgSync()">📤 Push Config</button>
+      </div>
+      <div class="log" id="cfg-log">—</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WINGS = ['jarvis','sam','gf','house','work-ltd','work-sole','work-full','auto','ai','orders'];
+
+const KNOWN_NODES = [
+  {name:'Master',     ip:'192.168.0.3',  group:'master'},
+  {name:'MITOS 0.38', ip:'192.168.0.38', group:'master'},
+  {name:'Jarvis LXC', ip:'192.168.0.222',group:'lxc'},
+  {name:'SAM LXC',    ip:'192.168.0.223',group:'lxc'},
+  {name:'GF LXC',     ip:'192.168.0.224',group:'lxc'},
+  {name:'HOUSE LXC',  ip:'192.168.0.225',group:'lxc'},
+  {name:'AI LXC',     ip:'192.168.0.226',group:'lxc'},
+  {name:'Personal LXC',ip:'192.168.0.227',group:'lxc'},
+  {name:'Personal-2', ip:'192.168.0.228',group:'lxc'},
+  {name:'Sole-Trader',ip:'192.168.0.229',group:'lxc'},
+  {name:'Sole-Tr-2',  ip:'192.168.0.230',group:'lxc'},
+  {name:'LTD LXC',    ip:'192.168.0.231',group:'lxc'},
+  {name:'LTD-2 LXC',  ip:'192.168.0.232',group:'lxc'},
+  {name:'PIA LXC',    ip:'192.168.0.233',group:'lxc'},
+  {name:'Worker 0.8', ip:'192.168.0.8',  group:'vm'},
+  {name:'Worker 0.9', ip:'192.168.0.9',  group:'vm'},
+  {name:'Worker 0.10',ip:'192.168.0.10', group:'vm'},
+  {name:'Worker 0.11',ip:'192.168.0.11', group:'vm'},
+  {name:'Worker 0.12',ip:'192.168.0.12', group:'vm'},
+  {name:'Worker 0.13',ip:'192.168.0.13', group:'vm'},
+  {name:'Worker 0.14',ip:'192.168.0.14', group:'vm'},
+];
+
+let nodeStatus = {};
+
+async function api(path, opts={}) {
+  const r = await fetch(path, opts);
+  return r.json().catch(()=>({ok:false}));
+}
+
+async function pingAll() {
+  document.getElementById('node-grid').innerHTML = '<span style="color:var(--muted)">Pinging...</span>';
+  // Ping via our network status endpoint
+  const results = await Promise.all(KNOWN_NODES.map(async n => {
+    try {
+      const r = await fetch(`http://${n.ip}:8080/health`, {signal: AbortSignal.timeout(3000)});
+      return {...n, online: r.ok || r.status < 500, code: r.status};
+    } catch {
+      return {...n, online: false, code: 0};
+    }
+  }));
+  results.forEach(r => nodeStatus[r.ip] = r.online);
+  renderNodes(results);
+  buildNodeChecks(results);
+}
+
+function renderNodes(nodes) {
+  const grid = document.getElementById('node-grid');
+  grid.innerHTML = nodes.map(n => `
+    <div class="node-card ${n.online ? 'online' : 'offline'}">
+      <h3>${n.name}</h3>
+      <div class="ip">${n.ip} · ${n.group}</div>
+      <div class="status">
+        <span class="dot ${n.online ? 'green' : 'red'}"></span>
+        ${n.online ? `Online (HTTP ${n.code})` : 'Offline'}
+      </div>
+    </div>
+  `).join('');
+}
+
+function buildNodeChecks(nodes) {
+  const mkChecks = (containerId, onlyOnline) => {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = nodes.map(n => `
+      <label class="cb-item">
+        <input type="checkbox" name="node" value="${n.ip}" ${n.online && n.ip !== '192.168.0.3' ? 'checked' : ''}>
+        <span class="dot ${n.online ? 'green' : 'red'}"></span>
+        ${n.name} (${n.ip})
+      </label>
+    `).join('');
+  };
+  mkChecks('mem-node-checks');
+  mkChecks('cfg-node-checks');
+}
+
+async function loadMemStats() {
+  const d = await api('/api/mempalace/status');
+  if (!d.ok) return;
+  const el = document.getElementById('mem-stats');
+  el.innerHTML = `<div class="mem-stat"><div class="v">${d.total}</div><div class="l">Total</div></div>` +
+    WINGS.map(w => `<div class="mem-stat"><div class="v" style="font-size:1.1rem">${d.per_wing?.[w]??0}</div><div class="l">${w}</div></div>`).join('');
+}
+
+function buildWingChecks() {
+  document.getElementById('wing-checks').innerHTML = WINGS.map(w => `
+    <label class="cb-item">
+      <input type="checkbox" name="wing" value="${w}" checked>
+      ${w}
+    </label>
+  `).join('');
+}
+
+async function doMemSync() {
+  const nodes = [...document.querySelectorAll('#mem-node-checks input:checked')].map(c => c.value);
+  const wings = [...document.querySelectorAll('#wing-checks input:checked')].map(c => c.value);
+  if (!nodes.length) { toast('Select at least one node'); return; }
+  document.getElementById('sync-status').textContent = 'Syncing...';
+  const logEl = document.getElementById('sync-log');
+  logEl.textContent = `Syncing ${nodes.length} nodes, wings: ${wings.join(', ')}...\n`;
+  const d = await api('/api/mempalace/sync', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({nodes, wings})
+  });
+  if (d.ok) {
+    const lines = (d.report||[]).map(r =>
+      `${r.ip}: pushed=${r.pushed} pulled=${r.pulled}${r.errors?.length?' WARN:'+r.errors.join(';'):''}`
+    );
+    logEl.textContent = lines.join('\n') || 'Done (nothing to sync)';
+    document.getElementById('sync-status').textContent = `Done — ${d.synced_nodes} nodes synced`;
+    toast('Memory sync complete ✅');
+    loadMemStats();
+  } else {
+    logEl.textContent = 'Error: ' + (d.error||'unknown');
+    document.getElementById('sync-status').textContent = 'Failed';
+  }
+}
+
+async function doCfgSync() {
+  const nodes = [...document.querySelectorAll('#cfg-node-checks input:checked')].map(c => c.value);
+  if (!nodes.length) { toast('Select at least one node'); return; }
+  const logEl = document.getElementById('cfg-log');
+  logEl.textContent = `Pushing config to ${nodes.length} nodes...\n`;
+  // Use existing sync endpoint if available, otherwise report
+  let results = [];
+  for (const ip of nodes) {
+    try {
+      const r = await fetch(`http://${ip}:8080/api/sync/push`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({source: '192.168.0.3'}),
+        signal: AbortSignal.timeout(8000),
+      });
+      const data = await r.json().catch(()=>({ok:r.ok}));
+      results.push(`${ip}: ${data.ok ? 'OK' : 'FAIL ' + (data.error||r.status)}`);
+    } catch(e) {
+      results.push(`${ip}: unreachable (${e.message?.substring(0,40)})`);
+    }
+  }
+  logEl.textContent = results.join('\n');
+  toast('Config push done');
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['nodes','memory','config'][i]===name));
+  document.querySelectorAll('.tab-content').forEach((t,i) => t.classList.toggle('active', ['nodes','memory','config'][i]===name));
+  if (name === 'memory') { loadMemStats(); buildWingChecks(); }
+}
+
+let _toastT;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastT);
+  _toastT = setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+// Init
+pingAll();
+buildWingChecks();
+loadMemStats();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

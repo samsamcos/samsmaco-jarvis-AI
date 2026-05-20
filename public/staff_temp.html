@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staff Temp — Workflow Review</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f1117;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 18px;background:#1a1d2e;border-bottom:1px solid #2d3148;position:sticky;top:0;z-index:100}
+.topbar h1{font-size:17px;font-weight:700;color:#c084fc}
+.topbar .sub{font-size:12px;color:#64748b;margin-left:4px}
+.topbar-actions{margin-left:auto;display:flex;gap:8px}
+button{cursor:pointer;border:none;outline:none;font-family:inherit}
+.btn{padding:6px 14px;border-radius:7px;font-size:13px;font-weight:600;transition:.15s}
+.btn-purple{background:#7c3aed;color:#fff}.btn-purple:hover{background:#6d28d9}
+.btn-blue{background:#2563eb;color:#fff}.btn-blue:hover{background:#1d4ed8}
+.btn-green{background:#059669;color:#fff}.btn-green:hover{background:#047857}
+.btn-orange{background:#d97706;color:#fff}.btn-orange:hover{background:#b45309}
+.btn-red{background:#dc2626;color:#fff}.btn-red:hover{background:#b91c1c}
+.btn-ghost{background:transparent;color:#94a3b8;border:1px solid #2d3148}.btn-ghost:hover{background:#1e2235;color:#e2e8f0}
+.btn-sm{padding:4px 10px;font-size:12px}
+
+.layout{display:grid;grid-template-columns:280px 1fr;height:calc(100vh - 49px);overflow:hidden}
+.sidebar{border-right:1px solid #1e2235;overflow-y:auto;padding:12px}
+.main{overflow-y:auto;padding:18px}
+
+.wf-card{padding:10px 12px;border-radius:8px;border:1px solid #1e2235;margin-bottom:8px;cursor:pointer;transition:.12s}
+.wf-card:hover{border-color:#4f46e5;background:#13152a}
+.wf-card.active{border-color:#7c3aed;background:#1a1030}
+.wf-name{font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wf-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.wf-steps-count{font-size:10px;color:#60a5fa}
+.badge{font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700}
+.badge-temp{background:#1e2235;color:#64748b}
+.badge-confirmed{background:#1e3a5f;color:#60a5fa}
+.badge-running{background:#1a2e1a;color:#4ade80;animation:pulse 1s infinite}
+.badge-done,.badge-complete{background:#0a1f18;color:#34d399}
+.badge-failed{background:#1f0a0a;color:#f87171}
+.badge-queued{background:#2d1f0a;color:#fbbf24}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+.detail-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.detail-title{font-size:18px;font-weight:700;color:#e2e8f0;margin-bottom:6px}
+.detail-desc{font-size:13px;color:#94a3b8;margin-bottom:14px;line-height:1.5}
+.detail-actions{display:flex;gap:8px;flex-wrap:wrap}
+.detail-meta{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:#131624;border-radius:8px;border:1px solid #1e2235}
+.meta-item{font-size:12px;color:#64748b}.meta-item span{color:#94a3b8;font-weight:600}
+
+/* Dispatch banner */
+.dispatch-banner{border-radius:10px;padding:14px 16px;margin-bottom:16px;border:1px solid}
+.dispatch-banner.sending{background:#0f1e35;border-color:#2563eb}
+.dispatch-banner.sent{background:#0a1f18;border-color:#059669}
+.dispatch-banner.failed{background:#1f0a0a;border-color:#dc2626}
+.dispatch-banner.polling{background:#1a1d2e;border-color:#7c3aed}
+.db-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.db-meta{font-size:11px;color:#64748b;font-family:monospace}
+
+/* Result panel */
+.result-panel{background:#0d0f1c;border:1px solid #1e2235;border-radius:10px;padding:16px;margin-top:16px}
+.result-title{font-size:13px;font-weight:700;color:#34d399;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.result-text{font-size:12px;line-height:1.6;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;background:#07080d;padding:12px;border-radius:6px;max-height:300px;overflow-y:auto;margin-bottom:12px}
+.result-screenshot{text-align:center;margin-top:8px}
+.result-screenshot img{max-width:100%;border-radius:8px;border:1px solid #2d3148;max-height:400px}
+.step-log-panel{margin-top:12px}
+.sl-row{display:flex;gap:8px;align-items:flex-start;font-size:11px;padding:4px 0;border-bottom:1px solid #1e2235}
+.sl-row:last-child{border-bottom:none}
+.sl-num{color:#475569;min-width:28px;font-family:monospace}
+.sl-type{color:#60a5fa;min-width:90px;font-family:monospace;font-size:10px}
+.sl-name{color:#94a3b8;flex:1}
+.sl-res{color:#64748b;font-size:10px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sl-ok{color:#34d399}.sl-err{color:#f87171}
+
+/* Steps list */
+.steps-label{font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.step-row{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:#131624;border-radius:8px;margin-bottom:6px;border:1px solid #1e2235;transition:.15s}
+.step-row.running{border-color:#60a5fa;background:#0f1e35}
+.step-row.ok{border-color:#34d399;background:#0a1f18}
+.step-row.error{border-color:#f87171;background:#1f0a0a}
+.step-row.skipped{border-color:#64748b;opacity:.6}
+.step-num{width:22px;height:22px;border-radius:50%;background:#2d3148;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#64748b;flex-shrink:0;margin-top:1px}
+.step-row.ok .step-num{background:#065f46;color:#34d399}
+.step-row.error .step-num{background:#7f1d1d;color:#f87171}
+.step-row.running .step-num{background:#1e3a5f;color:#60a5fa;animation:pulse 1s infinite}
+.step-icon{font-size:15px;flex-shrink:0;margin-top:2px}
+.step-body{flex:1;min-width:0}
+.step-name{font-size:13px;font-weight:600;color:#e2e8f0}
+.step-action{font-size:12px;color:#64748b;word-break:break-all;margin-top:2px}
+.step-obs{font-size:11px;color:#94a3b8;margin-top:4px;font-style:italic;white-space:pre-wrap;word-break:break-all}
+.risk-badge{font-size:10px;padding:1px 5px;border-radius:4px;font-weight:700}
+.risk-low{background:#1a3a2a;color:#34d399}
+.risk-medium{background:#2d2010;color:#fbbf24}
+.risk-high{background:#3b1515;color:#f87171}
+
+.spinner{width:14px;height:14px;border:2px solid #2d3148;border-top-color:#60a5fa;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Intake panel */
+.intake-panel{background:#1a1d2e;border:1px solid #2d3148;border-radius:12px;padding:18px;margin-bottom:20px}
+.intake-panel h2{font-size:15px;font-weight:700;color:#c084fc;margin-bottom:12px}
+.intake-row{display:flex;gap:8px;align-items:flex-end}
+textarea.intake-input{flex:1;background:#0d0f1c;border:1px solid #2d3148;border-radius:8px;color:#e2e8f0;font-size:13px;padding:10px;resize:vertical;min-height:70px;font-family:inherit}
+textarea.intake-input:focus{outline:none;border-color:#7c3aed}
+.questions-box{margin-top:14px}
+.question-item{background:#131624;border-radius:8px;padding:10px;margin-bottom:8px;border-left:3px solid #7c3aed}
+.question-text{font-size:13px;color:#c084fc;margin-bottom:6px;font-weight:600}
+input.answer-input{width:100%;background:#0d0f1c;border:1px solid #2d3148;border-radius:6px;color:#e2e8f0;font-size:13px;padding:7px 10px;font-family:inherit}
+input.answer-input:focus{outline:none;border-color:#60a5fa}
+
+/* Assign modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal{background:#1a1d2e;border:1px solid #2d3148;border-radius:14px;padding:24px;width:420px;max-width:95vw}
+.modal h3{font-size:16px;font-weight:700;color:#e2e8f0;margin-bottom:16px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+select.form-ctrl,input.form-ctrl{width:100%;background:#0d0f1c;border:1px solid #2d3148;border-radius:7px;color:#e2e8f0;font-size:13px;padding:8px 10px;font-family:inherit}
+select.form-ctrl:focus,input.form-ctrl:focus{outline:none;border-color:#7c3aed}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+
+.empty-state{text-align:center;padding:60px 20px;color:#475569}
+.empty-state .ei{font-size:40px;margin-bottom:12px}
+.empty-state p{font-size:14px}
+
+@media(max-width:700px){.layout{grid-template-columns:1fr}.sidebar{max-height:240px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div><h1>👁️ Staff Temp <span class="sub">— Workflow Review</span></h1></div>
+  <div class="topbar-actions">
+    <button class="btn btn-purple" onclick="openIntake()">✦ New Task</button>
+    <button class="btn btn-ghost btn-sm" onclick="location.href='/'">⌂ Home</button>
+    <button class="btn btn-ghost btn-sm" onclick="location.href='/staff'">👥 Staff</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar" id="sidebar">
+    <div style="font-size:11px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Temp Workflows</div>
+    <div id="wf-list"><div class="empty-state"><div class="ei">📋</div><p>No workflows yet.<br>Click ✦ New Task to start.</p></div></div>
+  </div>
+
+  <div class="main">
+    <div class="intake-panel" id="intake-panel" style="display:none">
+      <h2>✦ New Task — Intake &amp; Blueprint</h2>
+      <div class="intake-row">
+        <textarea class="intake-input" id="intake-task" placeholder="Describe the task… e.g. 'Find the cheapest return flight London to Paris next month'"></textarea>
+        <button class="btn btn-purple" onclick="intakeAnalyze()" style="height:70px;width:100px">Analyse</button>
+      </div>
+      <div id="intake-status" style="font-size:12px;color:#64748b;margin-top:8px"></div>
+      <div class="questions-box" id="questions-box" style="display:none">
+        <div style="font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:10px">Clarifying questions:</div>
+        <div id="questions-list"></div>
+        <button class="btn btn-blue" style="margin-top:10px" onclick="intakeBuild()">📐 Build Blueprint</button>
+      </div>
+    </div>
+
+    <div id="wf-detail">
+      <div class="empty-state"><div class="ei">👈</div><p>Select a workflow from the sidebar<br>or create a new one.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Modal -->
+<div class="modal-overlay" id="assign-modal" style="display:none" onclick="if(event.target===this)closeAssign()">
+  <div class="modal">
+    <h3>Assign to Staff Member</h3>
+    <div class="form-group">
+      <label>Node (Folder)</label>
+      <select class="form-ctrl" id="assign-folder">
+        <option value="Jarvis">Jarvis</option><option value="SAM">SAM Main</option>
+        <option value="PTNR">PTNR</option><option value="HOUSE">HOUSE</option>
+        <option value="AI">AI</option><option value="Personal">Personal</option>
+        <option value="Sole-Trader">Sole-Trader</option><option value="LTD">LTD</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Slot (1–60)</label>
+      <input type="number" class="form-ctrl" id="assign-slot" value="1" min="1" max="60">
+    </div>
+    <div class="form-group">
+      <label>Job Name</label>
+      <input type="text" class="form-ctrl" id="assign-name" placeholder="Leave blank to use workflow name">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAssign()">Cancel</button>
+      <button class="btn btn-green" onclick="doAssign()">✓ Assign &amp; Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PALETTE = {
+  goto_url:{icon:"🌐",risk:"low"},click:{icon:"👆",risk:"low"},type_text:{icon:"⌨",risk:"low"},
+  wait_sel:{icon:"⏳",risk:"low"},wait_ms:{icon:"⏱",risk:"low"},screenshot:{icon:"📸",risk:"low"},
+  scroll:{icon:"↕",risk:"low"},select:{icon:"▾",risk:"low"},extract_text:{icon:"🔍",risk:"low"},
+  run_js:{icon:"⚡",risk:"medium"},gemini_vision:{icon:"🤖",risk:"low"},
+  tg_confirm:{icon:"✅",risk:"low"},gemini_prompt:{icon:"✨",risk:"low"},
+  google_ai_search:{icon:"🔎",risk:"low"},
+  http_post:{icon:"📡",risk:"medium"},http_get:{icon:"📥",risk:"low"},
+  n8n_workflow:{icon:"🔗",risk:"medium"},wait_webhook:{icon:"⏸",risk:"low"},
+  ha_service:{icon:"🏠",risk:"medium"},ha_scene:{icon:"🎭",risk:"low"},
+  ha_auto:{icon:"🔄",risk:"medium"},room_temp:{icon:"🌡",risk:"low"},ac_heat:{icon:"❄",risk:"medium"},
+  send_telegram:{icon:"✈",risk:"medium"},send_email:{icon:"📧",risk:"high"},mitos_display:{icon:"📺",risk:"low"},
+  ssh_command:{icon:"🖥",risk:"high"},run_shell:{icon:"$_",risk:"high"},run_cli:{icon:"⚙",risk:"medium"},
+  gmail:{icon:"📧",risk:"high"},gcal:{icon:"📅",risk:"medium"},gsheets:{icon:"📊",risk:"medium"},
+  slack:{icon:"💬",risk:"medium"},log_note:{icon:"📋",risk:"low"},run_job:{icon:"⚡",risk:"medium"}
+};
+
+let _workflows = [], _activeWf = null, _intakeSession = null, _assignWfId = null;
+let _pollTimer = null;
+
+// ── Load workflows ─────────────────────────────────────────────────────────
+async function loadWorkflows(){
+  try{
+    const r = await fetch('/api/staff-temp');
+    _workflows = (await r.json()) || [];
+    renderSidebar();
+    if(_activeWf){
+      const updated = _workflows.find(w=>w.id===_activeWf.id);
+      if(updated){ _activeWf=updated; renderDetail(updated,false); }
+    }
+  }catch(e){}
+}
+
+function renderSidebar(){
+  const el = document.getElementById('wf-list');
+  if(!_workflows.length){
+    el.innerHTML='<div class="empty-state"><div class="ei">📋</div><p>No workflows yet.<br>Click ✦ New Task to start.</p></div>';
+    return;
+  }
+  el.innerHTML=[..._workflows].reverse().map(w=>`
+    <div class="wf-card${_activeWf&&_activeWf.id===w.id?' active':''}" onclick="selectWf('${w.id}')">
+      <div class="wf-name">${esc(w.name||'Unnamed')}</div>
+      <div class="wf-meta">
+        <span class="badge badge-${w.status||'temp'}">${w.status||'temp'}</span>
+        <span class="wf-steps-count">${(w.steps||[]).length} steps</span>
+        <span style="font-size:10px;color:#475569">${w.node||'Jarvis'}</span>
+        <span style="font-size:10px;color:#475569">${fmtDate(w.created_at)}</span>
+      </div>
+    </div>`).join('');
+}
+
+function selectWf(id){
+  const wf=_workflows.find(w=>w.id===id);
+  if(!wf) return;
+  _activeWf=wf;
+  renderSidebar();
+  renderDetail(wf,true);
+  document.getElementById('intake-panel').style.display='none';
+}
+
+// ── Render detail ──────────────────────────────────────────────────────────
+function renderDetail(wf, resetDispatch){
+  _activeWf=wf;
+  const steps=wf.steps||[];
+
+  const stepRows=steps.map((s,i)=>{
+    const p=PALETTE[s.type]||{icon:'⚙',risk:'low'};
+    return `<div class="step-row" id="sr-${wf.id}-${i}">
+      <div class="step-num">${i+1}</div>
+      <div class="step-icon">${p.icon}</div>
+      <div class="step-body">
+        <div class="step-name">${esc(s.name||s.type)} <span class="risk-badge risk-${p.risk}">${p.risk}</span></div>
+        <div class="step-action">${esc(s.action||'')}</div>
+        ${s.note?`<div class="step-action" style="color:#475569;font-style:italic">${esc(s.note)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Worker VM info
+  const workerIp = wf.webhook_vm || '192.168.0.8';
+  const sentAt   = wf.started_at ? fmtDate(wf.started_at) : null;
+  const wfStatus = wf.status||'temp';
+  const wasDispatched = ['running','queued','done','complete','webhook_failed'].includes(wfStatus);
+
+  document.getElementById('wf-detail').innerHTML=`
+    <div class="detail-header">
+      <div>
+        <div class="detail-title">${esc(wf.name||'Unnamed')}</div>
+        <span class="badge badge-${wfStatus}" style="font-size:11px">${wfStatus}</span>
+        ${wf.mode==='supervised'?'<span style="font-size:11px;color:#60a5fa;margin-left:6px">👁️ Supervised</span>':''}
+      </div>
+      <div class="detail-actions">
+        <button class="btn btn-orange btn-sm" onclick="sendToWorker('${wf.id}')">🚀 Send to Worker PC</button>
+        <button class="btn btn-green btn-sm" onclick="runSupervised('${wf.id}')">▶ Run Local</button>
+        <button class="btn btn-blue btn-sm" onclick="openAssign('${wf.id}')">👤 Assign</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteWf('${wf.id}')">🗑</button>
+      </div>
+    </div>
+    <div class="detail-desc">${esc(wf.description||wf.task_origin||'')}</div>
+    <div class="detail-meta">
+      <div class="meta-item">Node: <span>${esc(wf.node||'Jarvis')}</span></div>
+      <div class="meta-item">Steps: <span>${steps.length}</span></div>
+      <div class="meta-item">Created: <span>${fmtDate(wf.created_at)}</span></div>
+      <div class="meta-item">Worker VM: <span>${esc(workerIp)}</span></div>
+      ${wf.assigned_to?`<div class="meta-item">Assigned: <span>${wf.assigned_to.folder} / slot ${wf.assigned_to.slot}</span></div>`:''}
+    </div>
+
+    <div class="steps-label">
+      <span>Workflow Steps (${steps.length})</span>
+      <span style="font-size:11px;color:#475569;font-weight:400;text-transform:none">All ${steps.length} steps the worker PC will run</span>
+    </div>
+    ${stepRows||'<div style="color:#475569;font-size:13px;padding:12px 0">No steps defined.</div>'}
+
+    <div id="dispatch-area">
+      ${wasDispatched && resetDispatch!==true ? renderDispatchBanner(wf) : ''}
+    </div>
+    <div id="result-area">
+      ${wasDispatched && wf.worker_result ? renderResultPanel(wf.worker_result, workerIp, sentAt) : ''}
+    </div>
+  `;
+}
+
+function renderDispatchBanner(wf){
+  const workerIp = wf.webhook_vm||'192.168.0.8';
+  const st = wf.status||'';
+  if(st==='running'||st==='queued'){
+    return `<div class="dispatch-banner polling">
+      <div class="db-title"><div class="spinner"></div> <span style="color:#c084fc">Sent to Worker PC — waiting for result…</span></div>
+      <div class="db-meta">📡 ${workerIp}:8081  ·  Job: ${esc(wf.id)}  ·  Sent: ${fmtDate(wf.started_at)}</div>
+    </div>`;
+  }
+  if(st==='done'||st==='complete'||st==='webhook_failed'){
+    const ok = st!=='webhook_failed';
+    return `<div class="dispatch-banner ${ok?'sent':'failed'}">
+      <div class="db-title" style="color:${ok?'#34d399':'#f87171'}">${ok?'✅ Worker PC completed the job':'❌ Worker dispatch failed'}</div>
+      <div class="db-meta">📡 ${workerIp}:8081  ·  Job: ${esc(wf.id)}  ·  Sent: ${fmtDate(wf.started_at)}</div>
+    </div>`;
+  }
+  return '';
+}
+
+function renderResultPanel(result, workerIp, sentAt){
+  if(!result || (!result.result && !result.screenshot_b64 && !result.step_log)) return '';
+  const text      = result.result||result.text||result.raw||'';
+  const sc        = result.screenshot_b64||'';
+  const stepLog   = result.step_log||[];
+  const success   = result.success!==false;
+
+  let stepLogHtml='';
+  if(stepLog.length){
+    stepLogHtml=`<div class="step-log-panel">
+      <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Step Log from Worker (${stepLog.length} steps)</div>
+      ${stepLog.map(sl=>`
+        <div class="sl-row">
+          <span class="sl-num">#${sl.step||sl.id||''}</span>
+          <span class="sl-type">${esc(sl.type||'')}</span>
+          <span class="sl-name">${esc(sl.name||'')}</span>
+          <span class="sl-res ${sl.error?'sl-err':'sl-ok'}">${esc((sl.error||sl.result||'').slice(0,80))}</span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  return `<div class="result-panel">
+    <div class="result-title">
+      ${success?'✅':'❌'} Result from Worker PC
+      <span style="font-size:11px;color:#475569;font-weight:400">${esc(workerIp)} · ${sentAt||''}</span>
+    </div>
+    ${text?`<div class="result-text">${esc(text)}</div>`:'<div style="color:#475569;font-size:12px;padding:8px 0">No text extracted.</div>'}
+    ${sc?`<div class="result-screenshot"><img src="data:image/png;base64,${sc}" alt="Worker screenshot"></div>`:''}
+    ${stepLogHtml}
+  </div>`;
+}
+
+// ── Send to Worker PC (0.8) ────────────────────────────────────────────────
+async function sendToWorker(wfId){
+  const wf=_workflows.find(w=>w.id===wfId);
+  if(!wf) return;
+
+  const dispatchArea=document.getElementById('dispatch-area');
+  const resultArea=document.getElementById('result-area');
+
+  dispatchArea.innerHTML=`<div class="dispatch-banner sending">
+    <div class="db-title"><div class="spinner"></div> <span style="color:#60a5fa">Confirming &amp; dispatching to Worker PC…</span></div>
+    <div class="db-meta">📡 Sending to 192.168.0.8:8081 — ${(wf.steps||[]).length} steps</div>
+  </div>`;
+  resultArea.innerHTML='';
+
+  // Step 1: Confirm
+  try{
+    const cr=await fetch(`/api/intake/confirm`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({wf_id:wfId,action:'yes'})
+    });
+    if(!cr.ok) throw new Error('Confirm failed: '+cr.status);
+  }catch(e){
+    // Ignore confirm errors — wf may already be confirmed
+  }
+
+  // Step 2: Execute (dispatch to worker)
+  let jobId=wfId;
+  let workerIp='192.168.0.8';
+  try{
+    const er=await fetch(`/api/intake/execute`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({wf_id:wfId})
+    });
+    const ed=await er.json();
+    jobId=ed.job_id||ed.worker_task_id||wfId;
+    workerIp=ed.worker_vm||ed.vm_ip||'192.168.0.8';
+
+    if(ed.error && !ed.ok){
+      dispatchArea.innerHTML=`<div class="dispatch-banner failed">
+        <div class="db-title" style="color:#f87171">❌ Dispatch failed: ${esc(ed.error)}</div>
+      </div>`;
+      return;
+    }
+  }catch(e){
+    dispatchArea.innerHTML=`<div class="dispatch-banner failed">
+      <div class="db-title" style="color:#f87171">❌ ${esc(e.message)}</div>
+    </div>`;
+    return;
+  }
+
+  const sentAt=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  dispatchArea.innerHTML=`<div class="dispatch-banner polling">
+    <div class="db-title"><div class="spinner"></div> <span style="color:#c084fc">🚀 Sent to Worker PC — running…</span></div>
+    <div class="db-meta">📡 ${esc(workerIp)}:8081  ·  Job: ${esc(jobId)}  ·  Sent: ${sentAt}</div>
+    <div style="margin-top:8px;font-size:11px;color:#475569">Polling every 3s for result… (max 5 min)</div>
+  </div>`;
+
+  // Step 3: Poll for result
+  _pollTimer && clearInterval(_pollTimer);
+  const deadline=Date.now()+300000;
+  _pollTimer=setInterval(async()=>{
+    if(Date.now()>deadline){
+      clearInterval(_pollTimer);
+      dispatchArea.innerHTML=`<div class="dispatch-banner failed">
+        <div class="db-title" style="color:#f87171">⏰ Timed out waiting for worker (5 min)</div>
+        <div class="db-meta">📡 ${esc(workerIp)}  ·  Job: ${esc(jobId)}</div>
+      </div>`;
+      return;
+    }
+
+    // Try worker-result endpoint on master (0.3)
+    try{
+      const rr=await fetch(`/api/worker-result/${jobId}`);
+      const rd=await rr.json();
+      if(rd.done){
+        clearInterval(_pollTimer);
+        const success=rd.success!==false;
+        dispatchArea.innerHTML=`<div class="dispatch-banner ${success?'sent':'failed'}">
+          <div class="db-title" style="color:${success?'#34d399':'#f87171'}">${success?'✅ Worker PC completed':'❌ Worker reported failure'}</div>
+          <div class="db-meta">📡 ${esc(workerIp)}:8081  ·  Job: ${esc(jobId)}  ·  Done at: ${new Date().toLocaleTimeString('en-GB')}</div>
+        </div>`;
+        resultArea.innerHTML=renderResultPanel(rd, workerIp, sentAt);
+        await loadWorkflows();
+        return;
+      }
+    }catch(e){}
+
+    // Also try direct worker_listener result endpoint
+    try{
+      const wr=await fetch(`http://${workerIp}:8081/api/worker/result/${jobId}`);
+      const wd=await wr.json();
+      if(wd.done){
+        clearInterval(_pollTimer);
+        const success=wd.success!==false;
+        dispatchArea.innerHTML=`<div class="dispatch-banner ${success?'sent':'failed'}">
+          <div class="db-title" style="color:${success?'#34d399':'#f87171'}">${success?'✅ Worker PC completed':'❌ Worker reported failure'}</div>
+          <div class="db-meta">📡 ${esc(workerIp)}:8081  ·  Job: ${esc(jobId)}  ·  Done</div>
+        </div>`;
+        resultArea.innerHTML=renderResultPanel(wd, workerIp, sentAt);
+        await loadWorkflows();
+        return;
+      }
+    }catch(e){}
+  },3000);
+}
+
+// ── Run supervised (local) ────────────────────────────────────────────────
+async function runSupervised(wfId){
+  const container=document.getElementById('dispatch-area');
+  container.innerHTML=`<div class="dispatch-banner sending">
+    <div class="db-title"><div class="spinner"></div> <span style="color:#60a5fa">Running locally on 0.3 — Supervised Mode</span></div>
+  </div>`;
+  document.getElementById('result-area').innerHTML='';
+
+  const lines=[];
+  const addLine=(cls,label,txt)=>{
+    lines.push(`<div class="sl-row"><span class="sl-num ${cls}">${esc(label)}</span><span class="${cls}">${esc(txt)}</span></div>`);
+    container.innerHTML=`<div class="dispatch-banner sending">
+      <div class="db-title"><div class="spinner"></div> Running locally on 0.3…</div>
+      <div class="step-log-panel" style="margin-top:10px">${lines.join('')}</div>
+    </div>`;
+  };
+
+  try{
+    const resp=await fetch(`/api/staff-temp/${wfId}/run`,{method:'POST',headers:{'Content-Type':'application/json'}});
+    const reader=resp.body.getReader();
+    const decoder=new TextDecoder();
+    let buf='';
+    while(true){
+      const {done,value}=await reader.read();
+      if(done) break;
+      buf+=decoder.decode(value,{stream:true});
+      const parts=buf.split('\n\n');
+      buf=parts.pop();
+      for(const part of parts){
+        const line=part.replace(/^data: /,'').trim();
+        if(!line) continue;
+        try{
+          const ev=JSON.parse(line);
+          if(ev.type==='start') addLine('sl-info','START',`${ev.name} — ${ev.steps} steps`);
+          else if(ev.type==='step_start') addLine('sl-info',`S${ev.step}`,`${ev.icon} ${ev.name}`);
+          else if(ev.type==='step_done') addLine(ev.status==='ok'?'sl-ok':'sl-err',ev.status.toUpperCase(),ev.obs||'');
+          else if(ev.type==='done'){
+            container.innerHTML=`<div class="dispatch-banner sent">
+              <div class="db-title" style="color:#34d399">✅ Local run complete</div>
+              <div class="step-log-panel" style="margin-top:10px">${lines.join('')}</div>
+            </div>`;
+            await loadWorkflows();
+          }
+        }catch(e){}
+      }
+    }
+  }catch(e){ addLine('sl-err','ERR',e.message); }
+}
+
+// ── Intake flow ───────────────────────────────────────────────────────────
+function openIntake(){
+  document.getElementById('intake-panel').style.display='block';
+  document.getElementById('questions-box').style.display='none';
+  document.getElementById('intake-task').value='';
+  document.getElementById('intake-status').textContent='';
+  document.getElementById('intake-task').focus();
+}
+
+async function intakeAnalyze(){
+  const task=document.getElementById('intake-task').value.trim();
+  if(!task){ document.getElementById('intake-status').textContent='Please describe the task first.'; return; }
+  document.getElementById('intake-status').innerHTML='<span style="color:#60a5fa">Scanning system &amp; building questions…</span>';
+  document.getElementById('questions-box').style.display='none';
+  try{
+    const r=await fetch('/api/intake',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task})});
+    const d=await r.json();
+    if(d.error){ document.getElementById('intake-status').textContent='Error: '+d.error; return; }
+    _intakeSession=d;
+    document.getElementById('intake-status').innerHTML=
+      `<span style="color:#34d399">✓ Scan: ${d.scan_summary.nodes_found} nodes, ${d.scan_summary.jobs_found} jobs — Model: ${d.scan_summary.model}</span>`;
+    const qlist=document.getElementById('questions-list');
+    qlist.innerHTML=(d.questions||[]).map((q,i)=>`
+      <div class="question-item">
+        <div class="question-text">Q${i+1}: ${esc(q)}</div>
+        <input class="answer-input" id="answer-${i}" placeholder="Your answer…">
+      </div>`).join('');
+    document.getElementById('questions-box').style.display='block';
+  }catch(e){ document.getElementById('intake-status').textContent='Error: '+e.message; }
+}
+
+async function intakeBuild(){
+  if(!_intakeSession){ alert('Run Analyse first'); return; }
+  const questions=_intakeSession.questions||[];
+  const answers=questions.map((_,i)=>(document.getElementById(`answer-${i}`)||{}).value||'');
+  document.getElementById('intake-status').innerHTML='<span style="color:#60a5fa">Building blueprint…</span>';
+  try{
+    const r=await fetch('/api/intake/build',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({task:_intakeSession.task,questions,answers,session_id:_intakeSession.session_id})
+    });
+    const d=await r.json();
+    if(d.error){ document.getElementById('intake-status').textContent='Error: '+d.error; return; }
+    document.getElementById('intake-status').innerHTML='<span style="color:#34d399">✓ Blueprint ready!</span>';
+    document.getElementById('questions-box').style.display='none';
+    await loadWorkflows();
+    const wf=_workflows.find(w=>w.id===d.workflow_id);
+    if(wf){
+      selectWf(wf.id);
+      document.getElementById('intake-panel').style.display='none';
+      // Auto-dispatch to worker after short delay
+      setTimeout(()=>sendToWorker(wf.id),800);
+    }
+  }catch(e){ document.getElementById('intake-status').textContent='Error: '+e.message; }
+}
+
+// ── Assign ────────────────────────────────────────────────────────────────
+function openAssign(wfId){
+  _assignWfId=wfId;
+  const wf=_workflows.find(w=>w.id===wfId);
+  if(wf) document.getElementById('assign-name').value=wf.name||'';
+  document.getElementById('assign-modal').style.display='flex';
+}
+function closeAssign(){ document.getElementById('assign-modal').style.display='none'; }
+async function doAssign(){
+  const folder=document.getElementById('assign-folder').value;
+  const slot=parseInt(document.getElementById('assign-slot').value)||1;
+  const name=document.getElementById('assign-name').value.trim();
+  if(!_assignWfId) return;
+  const r=await fetch(`/api/staff-temp/${_assignWfId}/assign`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({folder,slot,job_name:name})
+  });
+  const d=await r.json();
+  if(d.error){ alert('Error: '+d.error); return; }
+  closeAssign();
+  await loadWorkflows();
+  showToast(`✓ Assigned to ${folder} / slot ${slot}`,'#34d399');
+}
+
+async function deleteWf(wfId){
+  if(!confirm('Delete this workflow?')) return;
+  await fetch(`/api/staff-temp/${wfId}`,{method:'DELETE'});
+  _activeWf=null;
+  document.getElementById('wf-detail').innerHTML='<div class="empty-state"><div class="ei">👈</div><p>Select a workflow.</p></div>';
+  await loadWorkflows();
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────
+function esc(s){ const d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
+function fmtDate(s){ if(!s) return '—'; try{ return new Date(s).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); }catch(e){ return s; } }
+function showToast(msg,color='#34d399'){
+  const t=document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:20px;right:20px;background:${color};color:#000;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;z-index:999`;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+loadWorkflows();
+setInterval(loadWorkflows,8000);
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

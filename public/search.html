@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS Search</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0c14;color:#c8d2e6;font-family:'JetBrains Mono',monospace,system-ui;font-size:13px;min-height:100vh;}
+nav{background:#0d0f1a;border-bottom:1px solid rgba(107,140,255,.15);padding:0 20px;display:flex;align-items:center;gap:16px;height:44px;position:sticky;top:0;z-index:100;}
+nav .logo{color:#6b8cff;font-weight:800;font-size:14px;letter-spacing:1px;text-decoration:none;}
+nav a{color:rgba(200,210,230,.5);font-size:11px;text-decoration:none;transition:color .2s;}
+nav a:hover,nav a.active{color:#6b8cff;}
+nav .spacer{flex:1;}
+
+/* HERO search — shown when no results */
+.hero{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 44px);padding:20px;transition:all .4s;}
+.hero.has-results{min-height:auto;justify-content:flex-start;padding:16px 24px 0;}
+.hero-title{font-size:28px;font-weight:800;color:#e8ecf4;margin-bottom:6px;text-align:center;}
+.hero-sub{font-size:12px;color:rgba(200,210,230,.4);margin-bottom:32px;text-align:center;}
+
+/* Search bar */
+.search-wrap{width:100%;max-width:680px;position:relative;}
+.search-box{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(107,140,255,.25);color:#e8ecf4;padding:14px 56px 14px 18px;border-radius:12px;font-family:inherit;font-size:14px;outline:none;transition:border-color .2s;}
+.search-box:focus{border-color:#6b8cff;background:rgba(255,255,255,.08);}
+.search-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#6b8cff;border:none;color:#fff;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:opacity .2s;}
+.search-btn:hover{opacity:.85;}
+.search-opts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.sopt{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(200,210,230,.5);padding:4px 10px;border-radius:6px;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;}
+.sopt:hover,.sopt.active{background:rgba(107,140,255,.15);color:#6b8cff;border-color:rgba(107,140,255,.3);}
+
+/* RESULTS LAYOUT */
+.results-layout{display:grid;grid-template-columns:1fr 340px;gap:24px;max-width:1100px;margin:0 auto;padding:16px 24px 40px;}
+@media(max-width:800px){.results-layout{grid-template-columns:1fr;}}
+
+/* Answer panel */
+.answer-card{background:rgba(255,255,255,.02);border:1px solid rgba(107,140,255,.15);border-radius:14px;padding:20px;}
+.answer-model{font-size:9px;font-weight:700;color:rgba(107,140,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.model-dot{width:5px;height:5px;border-radius:50%;background:#3fdc8a;animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.answer-body{font-size:13px;line-height:1.8;color:#d8e4f0;}
+.answer-body h1,.answer-body h2,.answer-body h3{color:#e8ecf4;margin:14px 0 6px;font-size:13px;}
+.answer-body strong{color:#e8ecf4;}
+.answer-body a{color:#6b8cff;text-decoration:none;}
+.answer-body a:hover{text-decoration:underline;}
+.answer-body ul,.answer-body ol{padding-left:18px;margin:6px 0;}
+.answer-body li{margin:3px 0;}
+.answer-body code{background:rgba(107,140,255,.1);padding:1px 5px;border-radius:3px;font-size:11px;}
+.citation{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:rgba(107,140,255,.2);color:#6b8cff;border-radius:4px;font-size:9px;font-weight:800;margin:0 1px;vertical-align:middle;cursor:pointer;}
+.citation:hover{background:rgba(107,140,255,.4);}
+
+/* Status bar */
+.status-bar{font-size:11px;color:rgba(200,210,230,.4);display:flex;align-items:center;gap:6px;margin-bottom:12px;}
+.status-spinner{width:12px;height:12px;border:2px solid rgba(107,140,255,.3);border-top-color:#6b8cff;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Sources sidebar */
+.sources-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;}
+.sources-title{font-size:10px;font-weight:700;color:rgba(200,210,230,.35);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;}
+.source-item{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:all .2s;}
+.source-item:hover{background:rgba(107,140,255,.05);margin:-2px -8px;padding:10px 8px;border-radius:6px;}
+.source-item:last-child{border-bottom:none;}
+.source-num{width:18px;height:18px;border-radius:4px;background:rgba(107,140,255,.15);color:#6b8cff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;margin-top:2px;}
+.source-right{flex:1;min-width:0;}
+.source-domain{font-size:10px;color:rgba(200,210,230,.35);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.source-title{font-size:11px;color:#d8e4f0;line-height:1.4;}
+.source-snippet{font-size:10px;color:rgba(200,210,230,.35);line-height:1.4;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+/* Related questions */
+.related-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:14px;margin-top:12px;}
+.related-title{font-size:10px;font-weight:700;color:rgba(200,210,230,.35);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
+.related-q{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px;color:#6b8cff;cursor:pointer;transition:color .2s;}
+.related-q:hover{color:#8aa8ff;}
+.related-q:last-child{border-bottom:none;}
+
+/* Deep toggle */
+.deep-toggle{display:flex;align-items:center;gap:6px;margin-top:6px;}
+.toggle-sw{position:relative;width:32px;height:18px;cursor:pointer;}
+.toggle-sw input{opacity:0;width:0;height:0;}
+.toggle-sw .slider{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:9px;transition:.2s;}
+.toggle-sw input:checked+.slider{background:#6b8cff;}
+.toggle-sw .slider:before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.toggle-sw input:checked+.slider:before{transform:translateX(14px);}
+.toggle-label{font-size:10px;color:rgba(200,210,230,.4);}
+
+/* History chips */
+.history-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;max-width:680px;}
+.hist-chip{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);color:rgba(200,210,230,.5);padding:4px 10px;border-radius:20px;font-size:10px;cursor:pointer;transition:all .2s;}
+.hist-chip:hover{background:rgba(107,140,255,.12);color:#6b8cff;border-color:rgba(107,140,255,.3);}
+
+/* TG/share bar */
+.answer-actions{display:flex;gap:6px;margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05);}
+.aact-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);color:rgba(200,210,230,.5);padding:5px 12px;border-radius:6px;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;}
+.aact-btn:hover{background:rgba(107,140,255,.15);color:#6b8cff;}
+.aact-tg{background:rgba(41,182,246,.1);color:#29b6f6;border-color:rgba(41,182,246,.2);}
+.aact-tg:hover{background:rgba(41,182,246,.2);}
+
+/* Suggestions for empty state */
+.suggestions{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;max-width:680px;margin-top:24px;}
+.sug{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s;}
+.sug:hover{border-color:rgba(107,140,255,.3);background:rgba(107,140,255,.06);}
+.sug-icon{font-size:18px;margin-bottom:6px;}
+.sug-text{font-size:11px;color:rgba(200,210,230,.6);line-height:1.4;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">JARVIS</a>
+  <a href="/">Agent</a>
+  <a href="/search" class="active">🔍 Search</a>
+  <a href="/flights">✈️ Flights</a>
+  <a href="/sites">🌐 Sites</a>
+  <a href="/browser-jobs">Jobs</a>
+  <a href="/overlay/big">Overlay</a>
+  <a href="/manual">Docs</a>
+  <span class="spacer"></span>
+</nav>
+
+<!-- HERO STATE -->
+<div class="hero" id="hero">
+  <div class="hero-title">JARVIS Search</div>
+  <div class="hero-sub">AI-powered research — searches Google, reads pages, synthesises answers</div>
+
+  <div class="search-wrap">
+    <input class="search-box" id="search-box" placeholder="Ask anything… flights, prices, research, news"
+           onkeydown="if(event.key==='Enter')doSearch()" autofocus/>
+    <button class="search-btn" onclick="doSearch()">↵</button>
+    <div class="search-opts">
+      <button class="sopt active" id="mode-fast" onclick="setMode('fast')">⚡ Fast</button>
+      <button class="sopt" id="mode-deep" onclick="setMode('deep')">🔬 Deep (reads pages)</button>
+      <button class="sopt" id="mode-flight" onclick="quickSearch('cheapest flights this weekend')">✈️ Flights</button>
+      <button class="sopt" id="mode-news" onclick="quickSearch('latest news today UK')">📰 News</button>
+    </div>
+  </div>
+
+  <div class="suggestions" id="suggestions">
+    <div class="sug" onclick="quickSearch('cheapest flights London to Amsterdam next weekend')">
+      <div class="sug-icon">✈️</div>
+      <div class="sug-text">Cheapest flights London to Amsterdam next weekend</div>
+    </div>
+    <div class="sug" onclick="quickSearch('latest AI news today')">
+      <div class="sug-icon">🤖</div>
+      <div class="sug-text">Latest AI news today</div>
+    </div>
+    <div class="sug" onclick="quickSearch('3 bed flat for sale London under 500k rightmove')">
+      <div class="sug-icon">🏠</div>
+      <div class="sug-text">3-bed flat London under £500k</div>
+    </div>
+    <div class="sug" onclick="quickSearch('best USB-C hub for MacBook 2024 UK')">
+      <div class="sug-icon">🛒</div>
+      <div class="sug-text">Best USB-C hub for MacBook</div>
+    </div>
+    <div class="sug" onclick="quickSearch('weather London this week')">
+      <div class="sug-icon">🌤</div>
+      <div class="sug-text">Weather London this week</div>
+    </div>
+    <div class="sug" onclick="quickSearch('how to setup n8n workflow automation')">
+      <div class="sug-icon">⚙️</div>
+      <div class="sug-text">How to set up n8n workflow</div>
+    </div>
+  </div>
+
+  <div class="history-wrap" id="history-wrap" style="display:none"></div>
+</div>
+
+<!-- RESULTS STATE (hidden initially) -->
+<div id="results-area" style="display:none">
+  <div style="padding:12px 24px;border-bottom:1px solid rgba(255,255,255,.05);">
+    <div class="search-wrap" style="max-width:680px;">
+      <input class="search-box" id="search-box2" placeholder="Search again…" onkeydown="if(event.key==='Enter')doSearch2()" style="font-size:13px;padding:10px 46px 10px 14px;"/>
+      <button class="search-btn" onclick="doSearch2()" style="width:28px;height:28px;font-size:13px;">↵</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px;">
+      <button class="sopt active" id="r-mode-fast" onclick="setMode('fast')">⚡ Fast</button>
+      <button class="sopt" id="r-mode-deep" onclick="setMode('deep')">🔬 Deep</button>
+    </div>
+  </div>
+  <div class="results-layout">
+    <!-- Main answer -->
+    <div>
+      <div class="status-bar" id="status-bar" style="display:none">
+        <div class="status-spinner"></div>
+        <span id="status-msg">Searching…</span>
+      </div>
+      <div class="answer-card" id="answer-card">
+        <div class="answer-model" id="answer-model"></div>
+        <div class="answer-body" id="answer-body"></div>
+        <div class="answer-actions" id="answer-actions" style="display:none">
+          <button class="aact-btn aact-tg" onclick="sendTG()">📱 Telegram</button>
+          <button class="aact-btn" onclick="copyAnswer()">📋 Copy</button>
+          <button class="aact-btn" onclick="shareToOverlay()">📡 Overlay</button>
+        </div>
+      </div>
+    </div>
+    <!-- Sources + related -->
+    <div>
+      <div class="sources-card">
+        <div class="sources-title">Sources</div>
+        <div id="sources-list"><div style="color:rgba(200,210,230,.25);font-size:11px">Searching…</div></div>
+      </div>
+      <div class="related-card" id="related-card" style="display:none">
+        <div class="related-title">Related</div>
+        <div id="related-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let _mode = 'fast';  // fast | deep
+let _currentQuery = '';
+let _currentAnswer = '';
+let _currentSources = [];
+let _history = JSON.parse(localStorage.getItem('jarvis_search_history')||'[]');
+let _sse = null;
+
+function setMode(m) {
+  _mode = m;
+  ['fast','deep'].forEach(x => {
+    const b1=document.getElementById('mode-'+x);
+    const b2=document.getElementById('r-mode-'+x);
+    if(b1) b1.classList.toggle('active', x===m);
+    if(b2) b2.classList.toggle('active', x===m);
+  });
+}
+
+function quickSearch(q) {
+  document.getElementById('search-box').value = q;
+  doSearch();
+}
+
+function doSearch() {
+  const q = document.getElementById('search-box').value.trim();
+  if (!q) return;
+  runSearch(q);
+}
+
+function doSearch2() {
+  const q = document.getElementById('search-box2').value.trim();
+  if (!q) return;
+  runSearch(q);
+}
+
+function runSearch(query) {
+  _currentQuery = query;
+  _currentAnswer = '';
+  _currentSources = [];
+
+  // Update search boxes
+  document.getElementById('search-box').value = query;
+  document.getElementById('search-box2').value = query;
+
+  // Show results area, hide hero
+  document.getElementById('hero').style.display = 'none';
+  document.getElementById('results-area').style.display = 'block';
+
+  // Reset UI
+  document.getElementById('status-bar').style.display = 'flex';
+  document.getElementById('status-msg').textContent = 'Searching the web…';
+  document.getElementById('answer-model').innerHTML = '<div class="model-dot"></div> JARVIS is researching…';
+  document.getElementById('answer-body').innerHTML = '<div style="color:rgba(200,210,230,.3);font-size:11px">Reading sources…</div>';
+  document.getElementById('answer-actions').style.display = 'none';
+  document.getElementById('sources-list').innerHTML = '<div style="color:rgba(200,210,230,.25);font-size:11px">Searching…</div>';
+  document.getElementById('related-card').style.display = 'none';
+
+  // Close existing SSE
+  if (_sse) _sse.close();
+
+  // Use fetch + stream
+  streamSearch(query);
+
+  // Save to history
+  _history = [query, ..._history.filter(h=>h!==query)].slice(0,10);
+  localStorage.setItem('jarvis_search_history', JSON.stringify(_history));
+}
+
+async function streamSearch(query) {
+  try {
+    const resp = await fetch('/api/search', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({query, deep: _mode==='deep'})
+    });
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, {stream: true});
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const ev = JSON.parse(line.slice(6));
+          handleEvent(ev);
+        } catch {}
+      }
+    }
+  } catch (e) {
+    document.getElementById('status-bar').style.display = 'none';
+    document.getElementById('answer-body').innerHTML = `<div style="color:#f87171">Search failed: ${esc(e.message)}</div>`;
+  }
+}
+
+function handleEvent(ev) {
+  if (ev.type === 'status') {
+    document.getElementById('status-msg').textContent = ev.msg;
+  }
+  else if (ev.type === 'sources') {
+    _currentSources = ev.results || [];
+    renderSources(_currentSources);
+  }
+  else if (ev.type === 'answer') {
+    _currentAnswer = ev.text;
+    document.getElementById('status-bar').style.display = 'none';
+    document.getElementById('answer-model').innerHTML = `🧠 ${esc(ev.model||'JARVIS')}`;
+    document.getElementById('answer-body').innerHTML = renderMarkdown(ev.text);
+    document.getElementById('answer-actions').style.display = 'flex';
+    // Generate related questions
+    generateRelated(ev.text);
+  }
+  else if (ev.type === 'done') {
+    document.getElementById('status-bar').style.display = 'none';
+  }
+}
+
+function renderSources(results) {
+  const el = document.getElementById('sources-list');
+  if (!results.length) {
+    el.innerHTML = '<div style="color:rgba(200,210,230,.25);font-size:11px">No sources found</div>';
+    return;
+  }
+  el.innerHTML = results.slice(0,8).map((r,i) => {
+    const domain = (() => {
+      try { return new URL(r.url).hostname.replace('www.',''); } catch { return r.url.slice(0,30); }
+    })();
+    return `<div class="source-item" onclick="window.open('${esc(r.url)}','_blank')">
+      <div class="source-num">${i+1}</div>
+      <div class="source-right">
+        <div class="source-domain">${esc(domain)}</div>
+        <div class="source-title">${esc(r.title||'')}</div>
+        ${r.snippet?`<div class="source-snippet">${esc(r.snippet)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function generateRelated(answerText) {
+  // Generate related questions based on query
+  const suggestions = [
+    `More about ${_currentQuery}`,
+    `${_currentQuery} 2025 UK`,
+    `${_currentQuery} alternatives`,
+    `How to ${_currentQuery}`,
+    `Best ${_currentQuery} options`,
+  ].filter((_, i) => i < 4);
+  const el = document.getElementById('related-list');
+  el.innerHTML = suggestions.map(q =>
+    `<div class="related-q" onclick="runSearch('${esc(q.replace(/'/g,"\\'"))}')">→ ${esc(q)}</div>`
+  ).join('');
+  document.getElementById('related-card').style.display = 'block';
+}
+
+// Simple markdown renderer
+function renderMarkdown(text) {
+  if (!text) return '';
+  let h = esc(text);
+  // Bold **text**
+  h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Headers
+  h = h.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  h = h.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  h = h.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  // Bullet lists
+  h = h.replace(/^[*\-] (.+)$/gm, '<li>$1</li>');
+  h = h.replace(/(<li>.*<\/li>(\n)?)+/g, '<ul>$&</ul>');
+  // Citations [1][2] etc
+  h = h.replace(/\[(\d+)\]/g, (_, n) => {
+    const src = _currentSources[parseInt(n)-1];
+    const url = src ? src.url : '#';
+    return `<a class="citation" href="${url}" target="_blank">${n}</a>`;
+  });
+  // Links
+  h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  // Newlines
+  h = h.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br/>');
+  return '<p>' + h + '</p>';
+}
+
+async function sendTG() {
+  if (!_currentAnswer) return;
+  const msg = `🔍 <b>${esc(_currentQuery)}</b>\n\n${_currentAnswer.slice(0,800)}`;
+  try {
+    const r = await fetch('/telegram/send', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    alert('Sent to Telegram!');
+  } catch { alert('Telegram send failed — check /setup for config'); }
+}
+
+function copyAnswer() {
+  navigator.clipboard.writeText(_currentAnswer).then(()=>{ const b=document.querySelector('.aact-btn:nth-child(2)'); if(b){b.textContent='✓ Copied';setTimeout(()=>b.textContent='📋 Copy',1500);} });
+}
+
+async function shareToOverlay() {
+  if (!_currentAnswer) return;
+  try {
+    await fetch('/overlay/rc/push', {method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title:'🔍 '+_currentQuery,message:_currentAnswer.slice(0,500),source:'search',buttons:['✕ Dismiss']})
+    });
+    alert('Pushed to overlay!');
+  } catch { alert('Failed'); }
+}
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Show history chips
+function renderHistory() {
+  const h = JSON.parse(localStorage.getItem('jarvis_search_history')||'[]');
+  const wrap = document.getElementById('history-wrap');
+  if (h.length) {
+    wrap.style.display = 'flex';
+    wrap.innerHTML = h.slice(0,6).map(q=>`<div class="hist-chip" onclick="quickSearch('${q.replace(/'/g,"\\'")}')">${esc(q.slice(0,40))}</div>`).join('');
+  }
+}
+
+renderHistory();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

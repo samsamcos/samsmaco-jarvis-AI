@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JARVIS Pipeline</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+/* Header */
+#hdr{background:#0a0c14;border-bottom:1px solid #1e2030;padding:10px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+#hdr h1{font-size:15px;font-weight:700;color:#a78bfa}
+#hdr .sub{font-size:11px;color:#475569}
+.dot{width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 6px #4ade80;flex-shrink:0}
+#last-type{font-size:10px;padding:3px 10px;border-radius:20px;background:#1e2030;color:#94a3b8;margin-left:auto;font-family:monospace;transition:all .3s}
+#log-toggle{margin-left:8px;font-size:11px;color:#475569;cursor:pointer;padding:3px 10px;border:1px solid #1e2030;border-radius:6px;background:none}
+#log-toggle:hover{color:#e2e8f0;border-color:#2d3a52}
+
+/* Main area: chat + log side by side */
+#main{flex:1;display:flex;overflow:hidden}
+
+/* Chat */
+#chat-col{flex:1;display:flex;flex-direction:column;min-width:0}
+#chat{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+#chat::-webkit-scrollbar{width:3px}
+#chat::-webkit-scrollbar-thumb{background:#1e2030;border-radius:3px}
+
+.bubble-row{display:flex;gap:8px;align-items:flex-end}
+.bubble-row.me{flex-direction:row-reverse}
+.avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.av-me{background:#1e3a5f}.av-ai{background:#1a1232}
+.bubble{max-width:74%;padding:9px 13px;border-radius:16px;font-size:14px;line-height:1.5;word-break:break-word;white-space:pre-wrap}
+.bubble.me{background:#1e3a5f;color:#e2e8f0;border-radius:16px 16px 4px 16px}
+.bubble.ai{background:#120e24;color:#d4b8ff;border:1px solid #2d1f60;border-radius:16px 16px 16px 4px}
+.bubble.think{background:#07080d;color:#475569;border:1px dashed #1e2030;font-style:italic;font-size:13px}
+.pipe-tag{font-size:10px;margin-top:4px;display:flex;gap:5px;flex-wrap:wrap}
+.pipe-chip{padding:2px 8px;border-radius:10px;font-family:monospace}
+.chip-knowledge{background:#0d2a3a;color:#38bdf8}
+.chip-smart_home{background:#1a2f1a;color:#4ade80}
+.chip-jobs{background:#2a1a3a;color:#c084fc}
+.chip-browser_task{background:#2a1a0a;color:#fb923c}
+.chip-dispatch{background:#1e2030;color:#64748b}
+
+/* Log panel */
+#log-col{width:300px;overflow:hidden;transition:width .25s;flex-shrink:0;border-left:1px solid #1e2030;display:flex;flex-direction:column}
+#log-col.closed{width:0}
+#log-head{background:#0a0c14;padding:8px 12px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1e2030;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#log-body{flex:1;overflow-y:auto;padding:8px;font-family:monospace;font-size:10px;display:flex;flex-direction:column;gap:3px}
+#log-body::-webkit-scrollbar{width:3px}
+#log-body::-webkit-scrollbar-thumb{background:#1e2030;border-radius:3px}
+.log-entry{padding:4px 8px;border-radius:4px;line-height:1.4;word-break:break-word}
+.log-info{color:#475569}
+.log-step{color:#94a3b8;border-left:2px solid #1e2030;padding-left:6px}
+.log-type{border-left:2px solid #6b8cff;color:#a78bfa}
+.log-knowledge{border-left:2px solid #38bdf8;color:#38bdf8}
+.log-smart_home{border-left:2px solid #4ade80;color:#4ade80}
+.log-jobs{border-left:2px solid #c084fc;color:#c084fc}
+.log-browser_task{border-left:2px solid #fb923c;color:#fb923c}
+.log-dispatch{border-left:2px solid #f5c518;color:#f5c518}
+.log-reply{border-left:2px solid #4ade80;color:#64748b}
+.log-error{border-left:2px solid #f87171;color:#f87171}
+.log-ts{color:#334155;font-size:9px;margin-right:4px}
+
+/* Dispatch pills */
+#dp-bar{background:#020305;border-top:1px solid #0d1117;padding:6px 18px;display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;min-height:32px;align-items:center}
+.dp-pill{font-size:10px;padding:2px 10px;border-radius:20px;border:1px solid #1e2030;color:#475569;font-family:monospace;transition:all .4s}
+.dp-pill.fired{border-color:#4ade80;color:#4ade80;background:#0d1f0d;box-shadow:0 0 8px rgba(74,222,128,.2)}
+
+/* AI Router info bar */
+#router-bar{background:#07080d;border-top:1px solid #0d1117;padding:5px 18px;display:flex;gap:14px;align-items:center;flex-shrink:0;font-size:10px;font-family:monospace;min-height:28px}
+.rinfo{display:flex;align-items:center;gap:5px;color:#334155}
+.rinfo .lbl{color:#1e2030;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+.rinfo .val{transition:color .3s}
+.rinfo .val.active{color:#6b8cff}
+.ri-pc .val.active{color:#3fdc8a}
+.ri-model .val.active{color:#a78bfa}
+.ri-provider .val.active{color:#facc15}
+.ri-rule .val.active{color:#fb923c}
+.ri-rule{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Routing tag on bubble */
+.chip-router{background:#0d0f17;border:1px solid #1e2030;color:#6b8cff;font-size:9px;padding:1px 7px;border-radius:8px;display:inline-flex;align-items:center;gap:4px}
+.chip-router .rpc{color:#3fdc8a}
+.chip-router .rmod{color:#a78bfa}
+
+/* Input */
+#bar{background:#0a0c14;border-top:1px solid #1e2030;padding:12px 18px;display:flex;gap:8px;flex-shrink:0}
+#inp{flex:1;background:#020305;border:1px solid #2d3a52;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:14px;outline:none;resize:none;height:42px;max-height:120px;font-family:inherit;transition:border-color .2s}
+#inp:focus{border-color:#6b8cff}
+#send-btn{background:#6b8cff;border:none;color:#fff;border-radius:10px;padding:10px 20px;font-size:14px;cursor:pointer;font-weight:600;white-space:nowrap}
+#send-btn:hover{background:#8ba3ff}
+#send-btn:disabled{background:#1e2030;color:#475569;cursor:default}
+
+/* Person selector bar */
+#person-bar{background:#09080f;border-bottom:1px solid #1a1a2e;padding:6px 18px;display:flex;gap:6px;align-items:center;flex-shrink:0}
+#person-bar .lbl{font-size:9px;color:#334155;text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.p-btn{padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:all .2s;letter-spacing:.02em;background:none}
+.p-btn:not(.active){color:#334155;border-color:#1e2030}
+.p-btn:not(.active):hover{color:#94a3b8;border-color:#2d3a52}
+.p-btn.active{color:#fff}
+.p-btn.p-sam.active  {background:#1e3a5f;border-color:#3b82f6;box-shadow:0 0 8px rgba(59,130,246,.3)}
+.p-btn.p-gf.active   {background:#3a1040;border-color:#ec4899;box-shadow:0 0 8px rgba(236,72,153,.3)}
+.p-btn.p-house.active{background:#0f2a1a;border-color:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.3)}
+.p-btn.p-work.active {background:#2a1e08;border-color:#f59e0b;box-shadow:0 0 8px rgba(245,158,11,.3)}
+#wh-indicator{margin-left:auto;font-size:9px;font-family:monospace;color:#334155;display:flex;align-items:center;gap:5px}
+#wh-dot{width:6px;height:6px;border-radius:50%;background:#1e2030}
+#wh-dot.active{background:#4ade80;box-shadow:0 0 5px #4ade80}
+#wh-cfg-btn{padding:3px 10px;border:1px solid #1e2030;border-radius:5px;background:none;color:#334155;font-size:10px;cursor:pointer}
+#wh-cfg-btn:hover{color:#94a3b8;border-color:#2d3a52}
+
+/* Webhook config drawer */
+#wh-drawer{display:none;background:#09080f;border-bottom:1px solid #1a1a2e;padding:10px 18px;flex-shrink:0}
+#wh-drawer.open{display:block}
+#wh-drawer .wh-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+#wh-drawer .wh-row:last-child{margin-bottom:0}
+#wh-drawer label{width:55px;font-size:10px;color:#64748b;flex-shrink:0}
+#wh-drawer input{flex:1;background:#020305;border:1px solid #1e2030;color:#e2e8f0;border-radius:6px;padding:5px 9px;font-size:11px;font-family:monospace;outline:none}
+#wh-drawer input:focus{border-color:#6b8cff}
+#wh-save{padding:5px 16px;background:#1a2a4a;border:1px solid #2a4a6a;border-radius:6px;color:#6b8cff;font-size:11px;font-weight:700;cursor:pointer}
+
+/* Webhook info panel */
+#wh-info{display:none;background:#07080d;border-bottom:1px solid #1a1a2e;flex-shrink:0;overflow-y:auto;max-height:55vh}
+#wh-info.open{display:block}
+#wh-info-inner{padding:14px 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.whi-card{background:#0a0c14;border:1px solid #1e2030;border-radius:8px;padding:12px}
+.whi-card h3{font-size:11px;font-weight:700;margin-bottom:8px}
+.whi-label{font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 3px}
+.whi-url{font-family:monospace;font-size:10px;background:#020305;border:1px solid #1e2030;border-radius:4px;padding:5px 8px;word-break:break-all;color:#6b8cff;user-select:all;line-height:1.5}
+.whi-json{font-family:monospace;font-size:10px;background:#020305;border:1px solid #1e2030;border-radius:4px;padding:7px 9px;color:#94a3b8;white-space:pre;overflow-x:auto;line-height:1.6}
+.whi-btns{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.cp-btn{padding:2px 10px;border:1px solid #2d3a52;border-radius:4px;background:none;color:#475569;font-size:9px;font-family:monospace;cursor:pointer;letter-spacing:.04em}
+.cp-btn:hover{color:#e2e8f0;border-color:#6b8cff}
+.cp-btn.ok{color:#4ade80;border-color:#4ade80}
+
+/* Toast */
+#toast-wrap{position:fixed;top:60px;right:18px;display:flex;flex-direction:column;gap:8px;z-index:999;pointer-events:none}
+.toast{padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:toastIn .25s ease;pointer-events:none;min-width:180px}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.toast-knowledge{background:#0d2a3a;border:1px solid #38bdf8;color:#38bdf8}
+.toast-smart_home{background:#1a2f1a;border:1px solid #4ade80;color:#4ade80}
+.toast-jobs{background:#2a1a3a;border:1px solid #c084fc;color:#c084fc}
+.toast-browser_task{background:#2a1a0a;border:1px solid #fb923c;color:#fb923c}
+.toast-dispatch{background:#1a1a0d;border:1px solid #f5c518;color:#f5c518}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div class="dot"></div>
+  <h1>⚡ JARVIS Pipeline</h1>
+  <div class="sub">classify → answer → dispatch</div>
+  <div id="last-type">ready</div>
+  <button id="log-toggle" onclick="toggleLog()">✕ Logs</button>
+</div>
+
+<!-- Person selector -->
+<div id="person-bar">
+  <span class="lbl">Talking as</span>
+  <button class="p-btn p-sam active"  onclick="setPerson('sam')"  id="pb-sam">👤 Sam</button>
+  <button class="p-btn p-gf"          onclick="setPerson('gf')"   id="pb-gf">💕 GF</button>
+  <button class="p-btn p-house"       onclick="setPerson('house')" id="pb-house">🏠 House</button>
+  <button class="p-btn p-work"        onclick="setPerson('work')"  id="pb-work">💼 Work</button>
+  <div id="wh-indicator">
+    <div id="wh-dot"></div>
+    <span id="wh-label">no webhook</span>
+    <button id="wh-info-btn" onclick="toggleWhInfo()" style="padding:3px 10px;border:1px solid #2d3a52;border-radius:5px;background:none;color:#6b8cff;font-size:10px;cursor:pointer;font-weight:600">⟡ Webhooks</button>
+    <button id="wh-cfg-btn" onclick="toggleWhDrawer()">⚙ reply URLs</button>
+  </div>
+</div>
+
+<!-- Webhook info panel -->
+<div id="wh-info">
+  <div id="wh-info-inner">
+    <!-- filled by JS -->
+  </div>
+</div>
+
+<!-- Webhook config drawer (hidden by default) -->
+<div id="wh-drawer">
+  <div class="wh-row"><label>👤 Sam</label><input id="wh-sam"   placeholder="https://n8n.../webhook/sam-reply or leave blank" /></div>
+  <div class="wh-row"><label>💕 GF</label><input id="wh-gf"    placeholder="https://n8n.../webhook/gf-reply" /></div>
+  <div class="wh-row"><label>🏠 House</label><input id="wh-house" placeholder="https://n8n.../webhook/house-reply" /></div>
+  <div class="wh-row"><label>💼 Work</label><input id="wh-work"  placeholder="https://n8n.../webhook/work-reply" /></div>
+  <div class="wh-row" style="margin-top:8px">
+    <button id="wh-save" onclick="saveWebhooks()">Save webhooks</button>
+    <span style="font-size:10px;color:#334155;margin-left:10px">Webhooks are called after every JARVIS reply for that person</span>
+  </div>
+</div>
+
+<div id="main">
+  <div id="chat-col">
+    <div id="chat">
+      <div class="bubble-row">
+        <div class="avatar av-ai">🤖</div>
+        <div><div class="bubble ai">Hi — send me anything. I'll classify it, answer, and fire the right dispatch channels.</div></div>
+      </div>
+    </div>
+
+    <!-- AI Router live status bar -->
+    <div id="router-bar">
+      <span class="lbl" style="color:#1e3a52;font-size:9px;letter-spacing:.05em;margin-right:2px">AI ROUTER</span>
+      <div class="rinfo ri-provider"><span class="lbl">provider</span><span class="val" id="ri-provider">—</span></div>
+      <div class="rinfo ri-model"><span class="lbl">model</span><span class="val" id="ri-model">—</span></div>
+      <div class="rinfo ri-pc"><span class="lbl">PC</span><span class="val" id="ri-pc">—</span></div>
+      <div class="rinfo ri-rule"><span class="lbl">rule</span><span class="val" id="ri-rule">—</span></div>
+      <a href="/ai-router" target="_blank" style="margin-left:auto;font-size:9px;color:#1e3a52;text-decoration:none;padding:2px 8px;border:1px solid #1e2030;border-radius:4px" onmouseover="this.style.color='#6b8cff'" onmouseout="this.style.color='#1e3a52'">Router ↗</a>
+    </div>
+
+    <div id="dp-bar">
+      <span style="font-size:9px;color:#334155;margin-right:4px">DISPATCH →</span>
+      <div class="dp-pill" id="dp-execute">Execute</div>
+      <div class="dp-pill" id="dp-tts">TTS</div>
+      <div class="dp-pill" id="dp-mitos">Mitos</div>
+      <div class="dp-pill" id="dp-execute_browser">Browser</div>
+      <div class="dp-pill" id="dp-execute_jobs">Jobs</div>
+      <div class="dp-pill" id="dp-telegram">Telegram</div>
+    </div>
+
+    <div id="bar">
+      <textarea id="inp" placeholder="Ask anything or give a task…" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea>
+      <button id="send-btn" onclick="send()">Send</button>
+    </div>
+  </div>
+
+  <div id="log-col">
+    <div id="log-head">
+      <span>Pipeline Log</span>
+      <button onclick="clearLog()" style="background:none;border:none;color:#334155;cursor:pointer;font-size:10px">Clear</button>
+    </div>
+    <div id="log-body"></div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+const chat  = document.getElementById('chat');
+const inp   = document.getElementById('inp');
+const btn   = document.getElementById('send-btn');
+const badge = document.getElementById('last-type');
+const logBody = document.getElementById('log-body');
+
+const TYPE_LABELS = {
+  knowledge_question: {label:'💡 Knowledge',   cls:'chip-knowledge',  toast:'toast-knowledge',  icon:'💡'},
+  smart_home:         {label:'🏠 Smart Home',  cls:'chip-smart_home', toast:'toast-smart_home', icon:'🏠'},
+  jobs:               {label:'🧩 Jobs',         cls:'chip-jobs',       toast:'toast-jobs',       icon:'🧩'},
+  browser_task:       {label:'🌐 Browser Task', cls:'chip-browser_task',toast:'toast-browser_task',icon:'🌐'},
+};
+
+const DISPATCH_MAP = {
+  knowledge_question: [],
+  smart_home:         ['execute','tts','mitos'],
+  jobs:               ['execute_jobs','tts','mitos'],
+  browser_task:       ['execute_browser','tts','mitos','telegram'],
+};
+
+// ── Person config ─────────────────────────────────────────────────────────────
+const PERSONS = {
+  sam:   {label:'Sam',   icon:'👤', cls:'p-sam',   avatarBg:'#1e3a5f', bubbleBg:'#1e3a5f', door:'pipeline_sam'},
+  gf:    {label:'GF',    icon:'💕', cls:'p-gf',    avatarBg:'#3a1040', bubbleBg:'#3a1040', door:'pipeline_gf'},
+  house: {label:'House', icon:'🏠', cls:'p-house', avatarBg:'#0f2a1a', bubbleBg:'#0f2a1a', door:'pipeline_house'},
+  work:  {label:'Work',  icon:'💼', cls:'p-work',  avatarBg:'#2a1e08', bubbleBg:'#2a1e08', door:'pipeline_work'},
+};
+
+// Per-person conversation histories (survive person-switching)
+const personHistories = {sam:[], gf:[], house:[], work:[]};
+
+// Active person
+let activePerson = 'sam';
+
+// Webhook URLs per person (loaded from server)
+let personWebhooks = {sam:'', gf:'', house:'', work:''};
+
+function setPerson(key) {
+  if (!PERSONS[key]) return;
+  activePerson = key;
+  // Update button styles
+  Object.keys(PERSONS).forEach(k => {
+    document.getElementById('pb-'+k).classList.toggle('active', k === key);
+  });
+  // Update webhook indicator
+  updateWhIndicator();
+  // Show a separator in chat
+  const sep = document.createElement('div');
+  sep.style.cssText = 'text-align:center;font-size:10px;color:#334155;padding:4px 0;font-family:monospace';
+  sep.textContent = `── now talking as ${PERSONS[key].icon} ${PERSONS[key].label} ──`;
+  chat.appendChild(sep);
+  chat.scrollTop = chat.scrollHeight;
+  addLog(`👤 Person → ${PERSONS[key].icon} ${PERSONS[key].label}`, 'log-info');
+  inp.placeholder = `Message as ${PERSONS[key].label}…`;
+  inp.focus();
+}
+
+function updateWhIndicator() {
+  const url = personWebhooks[activePerson] || '';
+  const dot = document.getElementById('wh-dot');
+  const lbl = document.getElementById('wh-label');
+  if (url) {
+    dot.classList.add('active');
+    lbl.textContent = url.replace(/^https?:\/\/[^/]+/, '').slice(0,30) || 'webhook set';
+  } else {
+    dot.classList.remove('active');
+    lbl.textContent = 'no webhook';
+  }
+}
+
+// ── Webhook info panel ────────────────────────────────────────────────────────
+const BASE_URL = window.location.origin; // e.g. http://192.168.0.3:8080
+
+function toggleWhInfo() {
+  const panel = document.getElementById('wh-info');
+  const open  = panel.classList.toggle('open');
+  document.getElementById('wh-info-btn').style.color = open ? '#4ade80' : '#6b8cff';
+  if (open && !panel.dataset.built) { buildWhInfo(); panel.dataset.built='1'; }
+}
+
+function cpText(btn, text) {
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig = btn.textContent;
+    btn.textContent='✓ Copied'; btn.classList.add('ok');
+    setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('ok'); }, 1400);
+  }).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    btn.textContent='✓'; setTimeout(()=>btn.textContent=btn.dataset.orig||'COPY',1200);
+  });
+}
+
+function buildWhInfo() {
+  const persons = [
+    {key:'sam',   icon:'👤', label:'Sam',   color:'#3b82f6'},
+    {key:'gf',    icon:'💕', label:'GF',    color:'#ec4899'},
+    {key:'house', icon:'🏠', label:'House', color:'#22c55e'},
+    {key:'work',  icon:'💼', label:'Work',  color:'#f59e0b'},
+    {key:'all',   icon:'🌐', label:'All',   color:'#a78bfa'},
+  ];
+
+  const sendJson = (p) => JSON.stringify({"text": "your message here"}, null, 2);
+  const replyJson = (p) => JSON.stringify({
+    "ok": true,
+    "person": p,
+    "reply": "JARVIS reply text",
+    "type": "knowledge_question",
+    "provider": "groq",
+    "model": "llama-3.1-70b-versatile",
+    "pc": "192.168.0.3"
+  }, null, 2);
+
+  const inner = document.getElementById('wh-info-inner');
+  inner.innerHTML = persons.map(p => {
+    const url  = BASE_URL + '/pipeline/webhook/' + p.key;
+    const curl = `curl -s -X POST ${url} \\\n  -H "Content-Type: application/json" \\\n  -d '{"text":"hello"}'`;
+    const n8n  = `URL: ${url}\nMethod: POST\nBody (JSON):\n${sendJson(p.key)}`;
+    return `
+    <div class="whi-card" style="border-color:${p.color}33">
+      <h3 style="color:${p.color}">${p.icon} ${p.label}</h3>
+
+      <div class="whi-label">Inbound URL</div>
+      <div class="whi-url" id="whi-url-${p.key}">${url}</div>
+      <div class="whi-btns">
+        <button class="cp-btn" onclick="cpText(this,'${url}')">COPY URL</button>
+        <button class="cp-btn" onclick="cpText(this,document.getElementById('whi-url-${p.key}').textContent)">SELECT ALL</button>
+        <a href="${url}?text=test" target="_blank" class="cp-btn" style="text-decoration:none;display:inline-flex;align-items:center">OPEN ↗</a>
+      </div>
+
+      <div class="whi-label">Send JSON (POST body)</div>
+      <div class="whi-json">${JSON.stringify({"text": "your message"}, null, 2)}</div>
+      <div class="whi-btns">
+        <button class="cp-btn" onclick="cpText(this,'${JSON.stringify({"text":"your message"})}')">COPY JSON</button>
+        <button class="cp-btn" onclick="cpText(this,\`${curl.replace(/`/g,"'")}\`)">COPY CURL</button>
+        <button class="cp-btn" onclick="cpText(this,\`${n8n.replace(/`/g,"'")}\`)">COPY n8n</button>
+      </div>
+
+      <div class="whi-label">Reply JSON (response)</div>
+      <div class="whi-json">${JSON.stringify({"ok":true,"person":p.key,"reply":"...","type":"knowledge_question","provider":"groq","model":"llama-3.1-70b"}, null, 2)}</div>
+      <div class="whi-btns">
+        <button class="cp-btn" onclick="quickTest('${p.key}','${url}',this)">▶ Test now</button>
+      </div>
+      <div id="whi-test-${p.key}" style="display:none;margin-top:6px;font-family:monospace;font-size:10px;color:#4ade80;background:#020305;border:1px solid #1a3a1a;border-radius:4px;padding:6px 8px;white-space:pre-wrap;word-break:break-word"></div>
+    </div>`;
+  }).join('');
+}
+
+function quickTest(person, url, btn) {
+  const out = document.getElementById('whi-test-'+person);
+  out.style.display='block'; out.textContent='Sending…';
+  const orig = btn.textContent; btn.textContent='…'; btn.disabled=true;
+  fetch(url, {method:'POST',headers:{'Content-Type':'application/json'},body:'{"text":"hello"}'})
+    .then(r=>r.json()).then(d=>{
+      out.textContent = JSON.stringify(d, null, 2);
+      btn.textContent=orig; btn.disabled=false;
+    }).catch(e=>{ out.textContent='Error: '+e; btn.textContent=orig; btn.disabled=false; });
+}
+
+// ── Webhook drawer ────────────────────────────────────────────────────────────
+function toggleWhDrawer() {
+  document.getElementById('wh-drawer').classList.toggle('open');
+}
+
+function saveWebhooks() {
+  personWebhooks.sam   = document.getElementById('wh-sam').value.trim();
+  personWebhooks.gf    = document.getElementById('wh-gf').value.trim();
+  personWebhooks.house = document.getElementById('wh-house').value.trim();
+  personWebhooks.work  = document.getElementById('wh-work').value.trim();
+  fetch('/api/person-webhooks', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(personWebhooks),
+  }).then(()=>{
+    updateWhIndicator();
+    document.getElementById('wh-drawer').classList.remove('open');
+    toast('Webhooks saved', 'toast-dispatch', 2000);
+  }).catch(()=> toast('Saved locally (server error)', 'toast-dispatch', 2000));
+  localStorage.setItem('jarvis_person_webhooks', JSON.stringify(personWebhooks));
+}
+
+function loadWebhooks() {
+  const local = localStorage.getItem('jarvis_person_webhooks');
+  if (local) {
+    try {
+      Object.assign(personWebhooks, JSON.parse(local));
+      document.getElementById('wh-sam').value   = personWebhooks.sam   || '';
+      document.getElementById('wh-gf').value    = personWebhooks.gf    || '';
+      document.getElementById('wh-house').value = personWebhooks.house || '';
+      document.getElementById('wh-work').value  = personWebhooks.work  || '';
+    } catch(e){}
+  }
+  // Also load from server
+  fetch('/api/person-webhooks').then(r=>r.ok?r.json():null).then(d=>{
+    if (!d) return;
+    Object.assign(personWebhooks, d);
+    document.getElementById('wh-sam').value   = personWebhooks.sam   || '';
+    document.getElementById('wh-gf').value    = personWebhooks.gf    || '';
+    document.getElementById('wh-house').value = personWebhooks.house || '';
+    document.getElementById('wh-work').value  = personWebhooks.work  || '';
+    updateWhIndicator();
+  }).catch(()=>{});
+  updateWhIndicator();
+}
+
+async function firePersonWebhook(person, text, reply, type) {
+  const url = personWebhooks[person];
+  if (!url) return;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({person, message: text, reply, type, ts: Date.now()}),
+      signal: AbortSignal.timeout(8000),
+    });
+    addLog(`📤 Webhook fired → ${person}`, 'log-dispatch');
+  } catch(e) {
+    addLog(`⚠ Webhook error: ${e.message}`, 'log-error');
+  }
+}
+
+// ── Log panel ────────────────────────────────────────────────────────────────
+let logOpen = true;
+function toggleLog() {
+  logOpen = !logOpen;
+  document.getElementById('log-col').classList.toggle('closed', !logOpen);
+  document.getElementById('log-toggle').textContent = logOpen ? '✕ Logs' : '📋 Logs';
+}
+
+function addLog(text, cls='log-info') {
+  const ts = new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const el = document.createElement('div');
+  el.className = 'log-entry ' + cls;
+  el.innerHTML = `<span class="log-ts">${ts}</span>${text}`;
+  logBody.appendChild(el);
+  logBody.scrollTop = logBody.scrollHeight;
+}
+
+function clearLog() { logBody.innerHTML = ''; }
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(text, cls='toast-dispatch', duration=3500) {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + cls;
+  el.textContent = text;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(20px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(), 300); }, duration);
+}
+
+// ── Pills ─────────────────────────────────────────────────────────────────────
+function resetPills() { document.querySelectorAll('.dp-pill').forEach(p=>p.classList.remove('fired')); }
+function firePills(type) {
+  (DISPATCH_MAP[type]||[]).forEach(ch => {
+    const el = document.getElementById('dp-'+ch);
+    if (el) { el.classList.add('fired'); setTimeout(()=>el.classList.remove('fired'), 5000); }
+  });
+}
+
+// ── Router bar update ─────────────────────────────────────────────────────────
+function updateRouterBar(info) {
+  const fields = {
+    'ri-provider': info.provider || '—',
+    'ri-model':    info.model    || '—',
+    'ri-pc':       info.pc       || '—',
+    'ri-rule':     info.rule     || '—',
+  };
+  Object.entries(fields).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = val;
+    el.classList.toggle('active', val !== '—');
+  });
+}
+
+// ── Chat bubbles ──────────────────────────────────────────────────────────────
+function bubble(cls, text, tags=[], routerInfo=null) {
+  const isMe = cls==='me';
+  const row = document.createElement('div'); row.className='bubble-row'+(isMe?' me':'');
+  const pCfg = PERSONS[activePerson] || PERSONS.sam;
+  const av = document.createElement('div');
+  av.className = 'avatar ' + (isMe ? 'av-me' : 'av-ai');
+  av.textContent = isMe ? pCfg.icon : '🤖';
+  if (isMe) av.style.background = pCfg.avatarBg;
+  const wrap = document.createElement('div');
+  const bub = document.createElement('div'); bub.className='bubble '+cls; bub.textContent=text;
+  if (isMe) bub.style.background = pCfg.bubbleBg;
+  wrap.appendChild(bub);
+  if (tags.length || routerInfo) {
+    const tr = document.createElement('div'); tr.className='pipe-tag'; tr.style.justifyContent=isMe?'flex-end':'flex-start';
+    tags.forEach(t=>{const c=document.createElement('span');c.className='pipe-chip '+(t.cls||'chip-dispatch');c.textContent=t.label;tr.appendChild(c);});
+    // Router info chip on AI bubbles
+    if (routerInfo && !isMe) {
+      const rc = document.createElement('span');
+      rc.className = 'pipe-chip chip-router';
+      rc.title = `Provider: ${routerInfo.provider}\nModel: ${routerInfo.model}\nPC: ${routerInfo.pc}\nRule: ${routerInfo.rule||'none'}`;
+      rc.innerHTML = `<span style="color:#4a5568">via</span> <span class="rpc">${routerInfo.pc||'?'}</span> · <span class="rmod">${routerInfo.model||routerInfo.provider||'?'}</span>${routerInfo.rule?` · <span style="color:#fb923c">${routerInfo.rule}</span>`:''}`;
+      tr.appendChild(rc);
+    }
+    wrap.appendChild(tr);
+  }
+  if (isMe){row.appendChild(wrap);row.appendChild(av);}else{row.appendChild(av);row.appendChild(wrap);}
+  chat.appendChild(row); chat.scrollTop=chat.scrollHeight;
+  return row;
+}
+
+// ── Conversation history — per person ─────────────────────────────────────────
+function historyPush(role, content) {
+  const h = personHistories[activePerson];
+  h.push({role, content});
+  if (h.length > 20) h.splice(0, 2); // keep last 10 turns
+}
+function getHistory() { return personHistories[activePerson] || []; }
+
+// ── Trigger keywords — when user says these, skip chat and go straight to worker
+const EXECUTE_TRIGGERS = /\b(go|run it|do it|set it up|execute|start it|kick it off|launch it|book it|order it|confirm|yes go|yeah go|go ahead)\b/i;
+
+// ── Send ──────────────────────────────────────────────────────────────────────
+async function send() {
+  const text = inp.value.trim(); if (!text) return;
+  inp.value=''; inp.style.height='42px';
+  btn.disabled=true; resetPills();
+
+  bubble('me', text);
+  historyPush('user', text);
+  const thinkRow = bubble('think','…');
+  badge.textContent='thinking…'; badge.style.color='#f5c518';
+
+  const t0 = Date.now();
+  const ms = () => `+${Date.now()-t0}ms`;
+  addLog(`◀ "${text.slice(0,55)}${text.length>55?'…':''}"`, 'log-step');
+
+  const wantsExecution = EXECUTE_TRIGGERS.test(text);
+  let type = '', reply = '', fpDone = false, routerInfo = null;
+
+  // Step 1: call FullPipeline to classify + fire dispatch
+  // (always runs — classifies type and handles smart home / jobs routing)
+  try {
+    addLog('⏳ Classifying intent…', 'log-step');
+    const fp = await fetch('/webhook/FullPipeline', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text, source:'pipeline_ui', person: activePerson}),
+      signal: AbortSignal.timeout(12000),
+    });
+    const fd = fp.ok ? await fp.json() : {};
+    type = fd.type || '';
+    const typeInfo = TYPE_LABELS[type];
+
+    if (type) {
+      addLog(`✔ Intent: ${type} (${ms()})`, 'log-'+type);
+      toast((typeInfo?.icon||'•')+' '+type.replace(/_/g,' '), typeInfo?.toast||'toast-dispatch', 4000);
+      badge.textContent = typeInfo?.label || type;
+      badge.style.color = '';
+    } else {
+      addLog(`⚡ Pipeline responded (${ms()})`, 'log-info');
+    }
+
+    const dispatched = DISPATCH_MAP[type] || [];
+    if (dispatched.length) {
+      firePills(type);
+      addLog(`📡 Dispatching → ${dispatched.join(' · ')}`, 'log-dispatch');
+      toast('📡 Firing: '+dispatched.join(' · '), 'toast-dispatch', 3000);
+    }
+
+    // Use FullPipeline reply only for non-conversational types (smart_home, jobs with reply)
+    const fpReply = fd.reply || '';
+    if (fpReply && !fpReply.startsWith('Understood:') && !fpReply.startsWith('Got it') && fpReply.length > 5
+        && (type === 'smart_home' || wantsExecution)) {
+      reply = fpReply;
+      fpDone = true;
+      addLog(`✅ Answer from pipeline (${ms()})`, 'log-reply');
+    }
+
+    if (fd.session_id) addLog(`🔑 Session: ${fd.session_id.slice(0,16)}`, 'log-info');
+  } catch(e) {
+    addLog(`❌ Pipeline error: ${e.message}`, 'log-error');
+  }
+
+  // Step 2: conversational AI answer (includes history so JARVIS knows the full conversation)
+  if (!fpDone) {
+    addLog('🧠 Thinking…', 'log-step');
+    try {
+      const r = await fetch('/api/jarvis/chat', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          text,
+          quick: true,
+          person: activePerson,
+          door: PERSONS[activePerson]?.door || 'pipeline_web',
+          history: getHistory().slice(0, -1), // all but the current message (already in text)
+          wants_execution: wantsExecution,
+          last_type: type,
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const d = r.ok ? await r.json() : await r.json().catch(()=>({}));
+      reply = d.reply || d.answer || 'My AI keys are busy — try again in a sec.';
+      if (d.provider || d.model || d.pc) {
+        routerInfo = {provider: d.provider||'', model: d.model||'', pc: d.pc||'', rule: d.rule||''};
+        updateRouterBar(routerInfo);
+        addLog(`🤖 ${d.provider||'?'} › ${d.model||'?'} on ${d.pc||'?'} (${ms()})`, 'log-step');
+        if (d.rule) addLog(`📌 Rule: ${d.rule}`, 'log-info');
+      } else {
+        addLog(`✅ Got reply (${ms()})`, 'log-reply');
+      }
+    } catch(e) {
+      reply = 'Something went wrong on my end — '+e.message;
+      addLog(`❌ Chat error: ${e.message}`, 'log-error');
+    }
+  }
+
+  thinkRow.remove();
+  historyPush('assistant', reply);
+
+  // Build reply bubble tags
+  const typeInfo = TYPE_LABELS[type];
+  const tags = typeInfo ? [{label:typeInfo.label, cls:typeInfo.cls}] : [];
+  (DISPATCH_MAP[type]||[]).forEach(ch=>tags.push({label:ch,cls:'chip-dispatch'}));
+  bubble('ai', reply, tags, routerInfo);
+
+  addLog(`◀ "${reply.slice(0,72)}${reply.length>72?'…':''}"`, 'log-reply');
+  addLog(`⏱ Total: ${ms()}`, 'log-info');
+
+  // Fire person-specific webhook if configured
+  firePersonWebhook(activePerson, text, reply, type);
+  addLog('─────────────────────', 'log-info');
+
+  btn.disabled=false; inp.focus();
+}
+
+inp.addEventListener('input',()=>{inp.style.height='42px';inp.style.height=Math.min(inp.scrollHeight,120)+'px';});
+
+// Init
+loadWebhooks();
+inp.placeholder = `Message as ${PERSONS[activePerson].label}…`;
+</script>
+<script src="/fix-widget.js"></script>
+<script src="/solo.js"></script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Slave VMs — Browser Fleet</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#090b12;--panel:#0d0f1a;--border:rgba(255,255,255,.07);--accent:#00d4ff;--green:#3fdc8a;--red:#f87171;--yellow:#facc15;--text:#c8d2e6;--dim:rgba(200,210,230,.35);}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace,system-ui;font-size:12px;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:12px;height:48px;flex-shrink:0;}
+.logo{color:var(--accent);font-weight:800;font-size:14px;letter-spacing:1px;}
+.sep{width:1px;height:20px;background:var(--border);}
+.spacer{flex:1;}
+.top-nav a{color:var(--dim);font-size:10px;text-decoration:none;margin-left:12px;}
+.top-nav a:hover{color:var(--accent);}
+.ctrlbar{background:#0b0d18;border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.stat-box{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:6px 12px;display:flex;flex-direction:column;align-items:center;min-width:70px;}
+.stat-val{font-size:20px;font-weight:800;color:var(--accent);}
+.stat-lbl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:1px;}
+.btn{padding:7px 14px;border-radius:6px;border:none;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-blue{background:rgba(0,212,255,.15);color:var(--accent);border:1px solid rgba(0,212,255,.25);}
+.btn-blue:hover{background:rgba(0,212,255,.25);}
+.btn-green{background:rgba(63,220,138,.15);color:var(--green);border:1px solid rgba(63,220,138,.25);}
+.btn-green:hover{background:rgba(63,220,138,.25);}
+.btn-yellow{background:rgba(250,204,21,.15);color:var(--yellow);border:1px solid rgba(250,204,21,.25);}
+.content{flex:1;padding:16px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px;}
+.vm-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.vm-card.online{border-color:rgba(63,220,138,.2);}
+.vm-card.offline{border-color:rgba(248,113,113,.15);}
+.vm-header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);}
+.vm-num{width:32px;height:32px;border-radius:8px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--accent);flex-shrink:0;}
+.vm-name{font-size:13px;font-weight:800;color:#fff;}
+.vm-ip{font-size:10px;color:var(--dim);}
+.health-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.health-dot.online{background:var(--green);box-shadow:0 0 5px var(--green);}
+.health-dot.offline{background:var(--red);}
+.health-dot.checking{background:var(--yellow);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.vm-body{padding:12px 14px;}
+.vm-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.tag{padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;}
+.tag-pia{background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.2);}
+.tag-profile{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.15);}
+.tag-squid{background:rgba(63,220,138,.1);color:var(--green);border:1px solid rgba(63,220,138,.15);}
+.vm-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.vbtn{padding:5px 10px;border-radius:5px;border:none;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+.vbtn-blue{background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+.vbtn-green{background:rgba(63,220,138,.12);color:var(--green);border:1px solid rgba(63,220,138,.2);}
+.vbtn-yellow{background:rgba(250,204,21,.12);color:var(--yellow);border:1px solid rgba(250,204,21,.2);}
+.vbtn-red{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.vbtn-dim{background:rgba(255,255,255,.06);color:var(--dim);border:1px solid var(--border);}
+.vbtn:hover{opacity:.8;}
+.vnc-frame{width:100%;height:240px;border:1px solid var(--border);border-radius:6px;background:#000;margin-top:10px;display:none;}
+.vnc-frame.visible{display:block;}
+.sync-status{font-size:10px;margin-top:6px;color:var(--dim);}
+.sync-status.ok{color:var(--green);}
+.sync-status.err{color:var(--red);}
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1f2e;border:1px solid rgba(0,212,255,.3);border-radius:8px;padding:8px 14px;font-size:11px;color:#e8ecf4;z-index:9999;display:none;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">🖥 SLAVE VM FLEET</span>
+  <div class="sep"></div>
+  <span style="font-size:10px;color:var(--dim)">8 Browser Nodes · PIA Proxy · Chrome VNC</span>
+  <div class="spacer"></div>
+  <div class="top-nav">
+    <a href="/">Agent</a>
+    <a href="/gemini-fleet">Gemini Fleet</a>
+    <a href="/network">Network</a>
+    <a href="/setup">Setup</a>
+  </div>
+</div>
+
+<div class="ctrlbar">
+  <div class="stat-box"><div class="stat-val" id="stat-total">8</div><div class="stat-lbl">Nodes</div></div>
+  <div class="stat-box"><div class="stat-val" id="stat-online">…</div><div class="stat-lbl">Online</div></div>
+  <div class="stat-box"><div class="stat-val" id="stat-offline">…</div><div class="stat-lbl">Offline</div></div>
+  <div class="spacer"></div>
+  <button class="btn btn-yellow" onclick="syncAll()">⬆ Sync All</button>
+  <button class="btn btn-green" onclick="loadNodes()">↺ Refresh</button>
+</div>
+
+<div class="content">
+  <div class="grid" id="grid">
+    <div style="color:var(--dim);font-size:11px">Loading nodes…</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let _nodes = [];
+
+async function loadNodes() {
+  try {
+    const d = await fetch('/api/slaves/fleet').then(r => r.json());
+    _nodes = d.nodes || [];
+    renderGrid(_nodes);
+    const online = _nodes.filter(n => n.health === 'online').length;
+    document.getElementById('stat-online').textContent = online;
+    document.getElementById('stat-offline').textContent = _nodes.length - online;
+  } catch(e) {
+    document.getElementById('grid').innerHTML = `<div style="color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+function renderGrid(nodes) {
+  document.getElementById('grid').innerHTML = nodes.map(n => renderCard(n)).join('');
+}
+
+function renderCard(n) {
+  const online   = n.health === 'online';
+  const dotClass = online ? 'online' : 'offline';
+  const healthTxt= online ? 'Online' : 'Offline';
+  return `
+  <div class="vm-card ${online ? 'online' : 'offline'}" id="card-${n.id}">
+    <div class="vm-header">
+      <div class="vm-num">${n.id}</div>
+      <div>
+        <div class="vm-name">${esc(n.name)}</div>
+        <div class="vm-ip">${n.ip} · Profile ${n.profile}</div>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+        <div class="health-dot ${dotClass}"></div>
+        <span style="font-size:10px;color:var(--dim)">${healthTxt}</span>
+      </div>
+    </div>
+    <div class="vm-body">
+      <div class="vm-tags">
+        <span class="tag tag-pia">PIA ${esc(n.pia)}</span>
+        <span class="tag tag-profile">Profile ${n.profile}</span>
+        <span class="tag tag-squid">Squid :3128</span>
+      </div>
+      <div class="vm-actions">
+        <a href="${n.vnc_url}" target="_blank" class="vbtn vbtn-blue">🖥 VNC</a>
+        <a href="${n.site_url}" target="_blank" class="vbtn vbtn-green">↗ Site</a>
+        <a href="${n.site_url}/gemini-fleet" target="_blank" class="vbtn vbtn-blue">⚡ Fleet</a>
+        <button class="vbtn vbtn-yellow" onclick="showVnc(${n.id},'${n.ip}')">📺 Inline VNC</button>
+        <button class="vbtn vbtn-yellow" onclick="syncNode('${n.ip}')">⬆ Sync</button>
+      </div>
+      <div class="sync-status" id="sync-${n.id}"></div>
+      <iframe id="vnc-frame-${n.id}" class="vnc-frame"
+        src="" allow="clipboard-read; clipboard-write"></iframe>
+    </div>
+  </div>`;
+}
+
+function showVnc(id, ip) {
+  const frame = document.getElementById(`vnc-frame-${id}`);
+  if (frame.classList.contains('visible')) {
+    frame.classList.remove('visible');
+    frame.src = '';
+  } else {
+    frame.src = `http://${ip}:6082/vnc.html?host=${ip}&port=6082&autoconnect=1&resize=scale`;
+    frame.classList.add('visible');
+  }
+}
+
+async function syncNode(ip) {
+  const node = _nodes.find(n => n.ip === ip);
+  const id   = node?.id;
+  const el   = document.getElementById(`sync-${id}`);
+  if (el) { el.textContent = '⏳ Syncing…'; el.className = 'sync-status'; }
+  try {
+    const r = await fetch('/api/slaves/sync', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ips: [ip]})
+    });
+    const d = await r.json();
+    const res = d.results?.[ip];
+    if (el) {
+      el.textContent = res?.ok ? `✓ ${res.msg}` : `✗ ${res?.msg || 'Error'}`;
+      el.className = 'sync-status ' + (res?.ok ? 'ok' : 'err');
+    }
+    toast(res?.ok ? `✓ ${ip} synced` : `✗ ${ip}: ${res?.msg}`, !res?.ok);
+  } catch(e) {
+    if (el) { el.textContent = `✗ ${e.message}`; el.className = 'sync-status err'; }
+    toast(`✗ ${e.message}`, true);
+  }
+}
+
+async function syncAll() {
+  toast('⏳ Syncing all nodes…');
+  const onlineIps = _nodes.filter(n => n.health === 'online').map(n => n.ip);
+  if (!onlineIps.length) { toast('No nodes online', true); return; }
+  try {
+    const r = await fetch('/api/slaves/sync', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ips: onlineIps})
+    });
+    const d = await r.json();
+    let ok = 0, fail = 0;
+    for (const [ip, res] of Object.entries(d.results || {})) {
+      const node = _nodes.find(n => n.ip === ip);
+      const el = document.getElementById(`sync-${node?.id}`);
+      if (el) {
+        el.textContent = res.ok ? `✓ ${res.msg}` : `✗ ${res.msg}`;
+        el.className = 'sync-status ' + (res.ok ? 'ok' : 'err');
+      }
+      res.ok ? ok++ : fail++;
+    }
+    toast(`Sync complete: ${ok} ok, ${fail} failed`, fail > 0);
+  } catch(e) { toast(`✗ ${e.message}`, true); }
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+let _tt;
+function toast(msg, isErr=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.display = 'block'; el.style.opacity = '1';
+  el.style.borderColor = isErr ? 'rgba(248,113,113,.4)' : 'rgba(0,212,255,.3)';
+  clearTimeout(_tt);
+  _tt = setTimeout(() => { el.style.opacity='0'; setTimeout(()=>el.style.display='none',400); }, 4000);
+}
+
+loadNodes();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

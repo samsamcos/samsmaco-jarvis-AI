@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS — All Pages (Port 8080)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'JetBrains Mono',monospace,system-ui;font-size:13px;min-height:100vh}
+a{color:#5b9cf6;text-decoration:none}
+.top{background:#0d0f17;border-bottom:1px solid #1e2030;padding:11px 20px;display:flex;align-items:center;gap:12px}
+.logo{font-size:15px;font-weight:700;color:#fff}.logo span{color:#5b9cf6}
+.badge{background:#1e2030;border:1px solid #2a3a5a;border-radius:20px;padding:3px 12px;font-size:11px;color:#5b9cf6;font-weight:700}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 18px}
+.hero{margin-bottom:28px}
+h1{font-size:17px;font-weight:700;color:#fff;margin-bottom:4px}
+.sub{color:#4a5568;font-size:11px}
+.stats-row{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap}
+.stat{background:#0d0f17;border:1px solid #1e2030;border-radius:8px;padding:10px 16px;display:flex;flex-direction:column;gap:2px;min-width:110px}
+.stat-n{font-size:22px;font-weight:700;color:#5b9cf6;font-family:monospace}
+.stat-l{font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:.06em}
+
+.section{margin-bottom:28px}
+.sec-hd{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #1e2030}
+.sec-title{font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.06em}
+.sec-count{background:#1e2030;border-radius:10px;padding:2px 8px;font-size:10px;color:#5b9cf6;font-weight:700}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.card{background:#0d0f17;border:1px solid #1e2030;border-radius:9px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;transition:border-color .15s,transform .1s;cursor:pointer}
+.card:hover{border-color:#5b9cf6;transform:translateY(-1px)}
+.icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.info{flex:1;min-width:0}
+.name{font-size:12px;font-weight:700;color:#dde1f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.url{font-size:10px;color:#5b9cf6;font-family:monospace;margin:2px 0}
+.desc{font-size:10px;color:#4a5568;line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.card:hover .desc{color:#6b7280}
+.pinned-badge{background:rgba(91,156,246,.15);border:1px solid rgba(91,156,246,.25);border-radius:4px;font-size:9px;color:#5b9cf6;padding:1px 5px;flex-shrink:0;margin-top:2px}
+
+.search-bar{display:flex;gap:8px;margin-bottom:20px}
+.search-inp{background:#0d0f17;border:1px solid #1e2030;border-radius:7px;padding:8px 12px;font-size:12px;color:#dde1f5;outline:none;font-family:inherit;flex:1}
+.search-inp:focus{border-color:#5b9cf6}
+.search-inp::placeholder{color:#374151}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">JAR<span>VIS</span></div>
+  <div class="badge" id="totalBadge">… pages</div>
+  <div style="margin-left:auto;font-size:10px;color:#374151">192.168.0.33:8080</div>
+</div>
+<div class="wrap">
+  <div class="hero">
+    <h1>All Pages — Port 8080</h1>
+    <div class="sub">AI Browser Agent Server · VM that controls browsers · Click any card to open</div>
+    <div class="stats-row" id="statsRow"></div>
+  </div>
+
+  <div class="search-bar">
+    <input class="search-inp" id="search" placeholder="Filter pages…" oninput="filterCards(this.value)">
+  </div>
+
+  <div id="sections"></div>
+</div>
+
+<script>
+const SECTIONS = [
+  {
+    title:'JARVIS Core',
+    icon:'⬡',
+    pages:[
+      {url:'/',          name:'Home',              icon:'🏠', desc:'Main dashboard — pinned to this machine', pinned:true},
+      {url:'/jarvis',    name:'JARVIS HUD',         icon:'⬡', desc:'Platform overview — features, links, live status'},
+      {url:'/jarvis-chat',name:'JARVIS Chat',       icon:'🤖', desc:'Real-time holographic HUD — persona switching, arc reactor'},
+      {url:'/jarvis/setup',name:'JARVIS Setup',     icon:'⚙️', desc:'Function-calling agent — tools, memory, HA, SSH, briefings'},
+      {url:'/jarvis-setup',name:'JARVIS Keys',      icon:'🔑', desc:'Room assignment, webhooks, staff switch, API reference'},
+      {url:'/fix',       name:'Fix Dashboard',      icon:'🔧', desc:'API keys, provider setup — Groq, Gemini, HA, NocoDB'},
+      {url:'/update',    name:'Updates',            icon:'🆙', desc:'Fix notes, alerts, live logs, Claude auto-fix'},
+    ]
+  },
+  {
+    title:'AI Brain & Routing',
+    icon:'🧠',
+    pages:[
+      {url:'/agent',     name:'Agent',              icon:'🧠', desc:'System Intelligence Panel — upgrade log, tool registry, CLI, roadmap'},
+      {url:'/pipeline',  name:'Pipeline',           icon:'💬', desc:'Main AI chat interface'},
+      {url:'/mobile',    name:'Mobile',             icon:'📱', desc:'Full chat pipeline — classify + dispatch + answer'},
+      {url:'/search',    name:'Search',             icon:'🔍', desc:'Mobile-optimised chat'},
+      {url:'/masterclass',name:'Masterclass',       icon:'🎓', desc:'Direct web search UI'},
+      {url:'/ai-router', name:'AI Router',          icon:'🔀', desc:'Central AI brain — routes Gemini + Pollinations'},
+      {url:'/gemini-fleet',name:'LiteLLM Fleet',    icon:'🛰', desc:'Distributed LiteLLM fleet — nodes, keys, sync'},
+      {url:'/gemini-keys',name:'Gemini Keys',       icon:'🔑', desc:'Gemini API key pool — lease, stats, cooldown'},
+      {url:'/groq-keys', name:'Groq Keys',          icon:'⚡', desc:'Groq API key pool — shared, PC-specific, PIA VMs'},
+      {url:'/pollinations',name:'Pollinations',     icon:'🌻', desc:'Pollinations.ai config and test'},
+    ]
+  },
+  {
+    title:'Jobs & Automation',
+    icon:'📋',
+    pages:[
+      {url:'/jobs',      name:'Jobs',               icon:'📋', desc:'AI masterclass — bots, flows, fleet setup'},
+      {url:'/browser-jobs',name:'Browser Jobs',     icon:'🔄', desc:'Job management — create, track, verify tasks'},
+      {url:'/n8nflow',   name:'n8n Flow',           icon:'🔀', desc:'Scheduled background browser jobs'},
+      {url:'/webhooks',  name:'Webhooks',           icon:'🔔', desc:'n8n webhook flows — all channels & config'},
+      {url:'/worker',    name:'Worker',             icon:'🔧', desc:'Webhook config, history and test'},
+      {url:'/demo',      name:'Demo Mode',          icon:'🎬', desc:'Demo job sequence — test the full pipeline'},
+    ]
+  },
+  {
+    title:'Staff & People',
+    icon:'👤',
+    pages:[
+      {url:'/staff',     name:'Staff',              icon:'👤', desc:'Persona management dashboard'},
+      {url:'/staff-accounts',name:'Staff Accounts', icon:'👥', desc:'20 groups × 30 slots — full persona management'},
+    ]
+  },
+  {
+    title:'Browser VMs & Nodes',
+    icon:'🖥️',
+    pages:[
+      {url:'/slaves',    name:'Slave Nodes',        icon:'🖥️', desc:'Browser slave VMs + VNC + sync'},
+      {url:'/nodes',     name:'Node Registry',      icon:'🗺️', desc:'All nodes, lanes, swarm mesh'},
+      {url:'/vm',        name:'VM Manager',         icon:'💻', desc:'Proxmox VM start/stop/reset'},
+      {url:'/network',   name:'Network',            icon:'📡', desc:'Network topology, map, Wake-on-LAN'},
+      {url:'/system',    name:'System',             icon:'📊', desc:'System resource monitor'},
+      {url:'/browser',   name:'Browser',            icon:'🌐', desc:'VNC browser + profile switcher'},
+      {url:'/sites',     name:'Sites',              icon:'📌', desc:'Chrome profile & site manager'},
+    ]
+  },
+  {
+    title:'Travel & External',
+    icon:'✈️',
+    pages:[
+      {url:'/flights',   name:'Flights',            icon:'✈️', desc:'Flight search & booking automation'},
+      {url:'/travel-agent',name:'Travel Agent',     icon:'🗺️', desc:'AI travel planning agent'},
+      {url:'/ha-setup',  name:'Home Assistant',     icon:'🏡', desc:'HA entity scan, service calls, instances'},
+    ]
+  },
+  {
+    title:'Overlays & MITOS',
+    icon:'📟',
+    pages:[
+      {url:'/mitos2',    name:'MITOS2',             icon:'📟', desc:'MITOS overlay management — 20 instances'},
+      {url:'/overlay/rc',name:'Overlay RC',         icon:'🪟', desc:'Remote control overlay — tablet interactive'},
+      {url:'/overlay/big',name:'Overlay Big',       icon:'🖥️', desc:'Large display overlay'},
+      {url:'/overlay/popup',name:'Overlay Popup',   icon:'💬', desc:'Floating AI overlay panel'},
+    ]
+  },
+  {
+    title:'Tools & Config',
+    icon:'🔧',
+    pages:[
+      {url:'/rules',     name:'Rules',              icon:'🛡️', desc:'Guardrails — money, send, purchase gates'},
+      {url:'/tools-page',name:'Tools',              icon:'🔧', desc:'Custom tool registry and CLI execution'},
+      {url:'/setup',     name:'Setup',              icon:'🛠️', desc:'Config, API keys & Proxmox'},
+      {url:'/routing-rules',name:'Routing Rules',   icon:'📐', desc:'Smart routing rules — person/location/group'},
+      {url:'/stats',     name:'Stats',              icon:'📈', desc:'Job and key statistics'},
+      {url:'/status',    name:'Status',             icon:'🟢', desc:'Platform health check'},
+    ]
+  },
+  {
+    title:'Docs & Reference',
+    icon:'📖',
+    pages:[
+      {url:'/manual',    name:'Manual',             icon:'📋', desc:'System manual & API reference — all 21 tools, CLI, memory'},
+      {url:'/about',     name:'About',              icon:'📖', desc:'System guide & architecture'},
+      {url:'/home-doc',  name:'Platform Doc',       icon:'📄', desc:'Download full Word document guide'},
+      {url:'/links',     name:'Links',              icon:'🔗', desc:'This page — all pages on port 8080', pinned:true},
+    ]
+  },
+];
+
+function renderAll() {
+  const total = SECTIONS.reduce((s,sec)=>s+sec.pages.length,0);
+  document.getElementById('totalBadge').textContent = total + ' pages';
+
+  const statsRow = document.getElementById('statsRow');
+  statsRow.innerHTML = SECTIONS.map(s =>
+    `<div class="stat"><div class="stat-n">${s.pages.length}</div><div class="stat-l">${s.title}</div></div>`
+  ).join('');
+
+  const container = document.getElementById('sections');
+  container.innerHTML = SECTIONS.map(sec => `
+    <div class="section" data-section>
+      <div class="sec-hd">
+        <span>${sec.icon}</span>
+        <span class="sec-title">${sec.title}</span>
+        <span class="sec-count">${sec.pages.length} pages</span>
+      </div>
+      <div class="grid">
+        ${sec.pages.map(p => `
+          <a class="card" href="${p.url}" data-name="${p.name.toLowerCase()} ${p.url.toLowerCase()} ${(p.desc||'').toLowerCase()}">
+            <div class="icon">${p.icon}</div>
+            <div class="info">
+              <div class="name">${p.name}${p.pinned ? ' <span class="pinned-badge">PINNED</span>' : ''}</div>
+              <div class="url">${p.url}</div>
+              <div class="desc">${p.desc || ''}</div>
+            </div>
+          </a>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterCards(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.card').forEach(c => {
+    const match = !q || c.dataset.name.includes(q);
+    c.style.display = match ? '' : 'none';
+  });
+  document.querySelectorAll('[data-section]').forEach(sec => {
+    const visible = [...sec.querySelectorAll('.card')].some(c => c.style.display !== 'none');
+    sec.style.display = visible ? '' : 'none';
+  });
+}
+
+renderAll();
+
+// Live page count from server
+fetch('/api/pages').then(r=>r.json()).then(d=>{
+  if(d.count) document.getElementById('totalBadge').textContent = d.count + ' files on disk';
+}).catch(()=>{});
+</script>
+</body>
+</html>

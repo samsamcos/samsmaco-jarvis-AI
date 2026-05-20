@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MemPalace — JARVIS Memory</title>
+<style>
+  :root {
+    --bg: #0f0f1a; --panel: #161625; --border: #2a2a3e; --accent: #7c3aed;
+    --accent2: #a78bfa; --text: #e2e8f0; --muted: #64748b; --green: #22c55e;
+    --red: #ef4444; --yellow: #f59e0b; --blue: #3b82f6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header h1 { font-size: 1.15rem; font-weight: 600; }
+  .hdr-links { display: flex; gap: 8px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+  .hdr-link { font-size: .78rem; color: var(--muted); text-decoration: none; padding: 4px 10px; border: 1px solid var(--border); border-radius: 6px; white-space: nowrap; }
+  .hdr-link:hover { color: var(--accent2); border-color: var(--accent); }
+  .hdr-stats { color: var(--accent2); font-size: .8rem; }
+  .layout { display: grid; grid-template-columns: 230px 1fr; gap: 0; height: calc(100vh - 53px); }
+  .sidebar { background: var(--panel); border-right: 1px solid var(--border); padding: 14px 10px; overflow-y: auto; }
+  .sidebar h3 { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 12px 0 6px; padding: 0 6px; }
+  .sidebar h3:first-child { margin-top: 0; }
+  .wing-btn { display: block; width: 100%; text-align: left; padding: 6px 10px; border-radius: 6px; background: transparent; border: none; color: var(--text); cursor: pointer; font-size: .86rem; transition: background .15s; margin-bottom: 2px; }
+  .wing-btn:hover { background: #1e1e30; }
+  .wing-btn.active { background: var(--accent); color: #fff; }
+  .wing-count { float: right; background: #2a2a3e; border-radius: 10px; padding: 1px 7px; font-size: .73rem; color: var(--muted); }
+  .wing-btn.active .wing-count { background: rgba(255,255,255,.2); color: #fff; }
+  .noco-source-btn { display: block; width: 100%; text-align: left; padding: 5px 10px 5px 22px; border-radius: 6px; background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: .8rem; margin-bottom: 1px; }
+  .noco-source-btn:hover { background: #1e1e30; color: var(--text); }
+  .noco-source-btn.active { color: var(--green); background: #0d1f12; }
+  .main { display: flex; flex-direction: column; overflow: hidden; }
+  .toolbar { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 200px; background: #1e1e30; border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; color: var(--text); font-size: .9rem; }
+  .toolbar input:focus { outline: none; border-color: var(--accent); }
+  .btn { padding: 7px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: .86rem; font-weight: 500; transition: opacity .15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-secondary { background: #2a2a3e; color: var(--text); }
+  .btn-green { background: #166534; color: #86efac; }
+  .btn-blue { background: #1e3a5f; color: #93c5fd; }
+  .btn:hover { opacity: .85; }
+  .btn-sm { padding: 4px 10px; font-size: .76rem; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .content { flex: 1; overflow-y: auto; padding: 14px 18px; }
+  .stats-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; min-width: 110px; }
+  .stat-card .val { font-size: 1.5rem; font-weight: 700; color: var(--accent2); }
+  .stat-card .lbl { font-size: .76rem; color: var(--muted); margin-top: 2px; }
+  /* NocoDB sync panel */
+  .noco-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .noco-panel-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .noco-panel-hdr h3 { font-size: .95rem; display: flex; align-items: center; gap: 8px; }
+  .noco-badge { background: #1a2a1a; border: 1px solid #22c55e55; color: var(--green); border-radius: 6px; padding: 2px 9px; font-size: .72rem; }
+  .noco-table-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .noco-tbl { background: #1a1a2e; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: .8rem; }
+  .noco-tbl .tbl-name { color: var(--accent2); font-weight: 600; }
+  .noco-tbl .tbl-count { color: var(--muted); font-size: .73rem; margin-top: 2px; }
+  .sync-log { background: #0d0d18; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-family: monospace; font-size: .78rem; color: #94a3b8; max-height: 140px; overflow-y: auto; white-space: pre-wrap; margin-top: 10px; }
+  /* Drawers */
+  .drawer-list { display: flex; flex-direction: column; gap: 8px; }
+  .drawer { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; }
+  .drawer:hover { border-color: var(--accent); }
+  .drawer-meta { font-size: .73rem; color: var(--muted); margin-bottom: 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .drawer-meta span { background: #2a2a3e; padding: 2px 8px; border-radius: 10px; }
+  .tag-wing { background: #1e1e38 !important; color: var(--accent2) !important; border: 1px solid var(--accent); }
+  .tag-room { background: #1e2e1e !important; color: var(--green) !important; border: 1px solid var(--green); }
+  .tag-noco { background: #1a2a1a !important; color: #4ade80 !important; border: 1px solid #22c55e55; }
+  .tag-src { background: #1e2030 !important; color: var(--blue) !important; border: 1px solid #3b82f655; }
+  .drawer-text { font-size: .86rem; line-height: 1.55; color: #cbd5e1; white-space: pre-wrap; word-break: break-word; max-height: 120px; overflow: hidden; transition: max-height .2s; }
+  .drawer-text.expanded { max-height: none; }
+  .drawer-actions { margin-top: 8px; display: flex; gap: 6px; }
+  /* Forms */
+  .store-form { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .store-form h3 { font-size: .9rem; margin-bottom: 12px; }
+  .store-form textarea { width: 100%; background: #1e1e30; border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: var(--text); font-size: .86rem; resize: vertical; min-height: 80px; }
+  .store-form textarea:focus { outline: none; border-color: var(--accent); }
+  .form-row { display: flex; gap: 10px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+  .form-row select, .form-row input[type=text] { background: #1e1e30; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; color: var(--text); font-size: .86rem; }
+  .sync-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .sync-panel h3 { font-size: .9rem; margin-bottom: 12px; }
+  .node-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .node-chip { padding: 5px 11px; border-radius: 8px; background: #1e1e30; border: 1px solid var(--border); font-size: .8rem; cursor: pointer; user-select: none; }
+  .node-chip.selected { border-color: var(--accent); background: #1e1028; color: var(--accent2); }
+  .result-count { color: var(--muted); font-size: .82rem; }
+  .empty { text-align: center; padding: 40px; color: var(--muted); }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: .88rem; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  #loading { text-align: center; padding: 30px; color: var(--muted); }
+  .section-title { font-size: .95rem; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:1.4rem">🧠</span>
+  <h1>MemPalace</h1>
+  <span class="hdr-stats" id="hdr-stats">Loading...</span>
+  <div class="hdr-links">
+    <a href="http://192.168.0.107:8080" target="_blank" class="hdr-link">🗄️ NocoDB ↗</a>
+    <a href="/links" class="hdr-link">🔗 Links</a>
+    <a href="/" class="hdr-link">← JARVIS</a>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h3>Wings (Users)</h3>
+    <button class="wing-btn active" onclick="selectWing('')" id="wing-all">
+      All <span class="wing-count" id="cnt-all">0</span>
+    </button>
+    <div id="wing-list"></div>
+
+    <h3>NocoDB Sources</h3>
+    <div id="noco-sources">
+      <span style="font-size:.75rem;color:var(--muted);padding:0 6px">Loading...</span>
+    </div>
+
+    <h3>Actions</h3>
+    <button class="wing-btn" onclick="showSection('noco')">🗄️ NocoDB Sync</button>
+    <button class="wing-btn" onclick="showSection('store')">➕ Add Memory</button>
+    <button class="wing-btn" onclick="showSection('sync')">🔄 Sync Nodes</button>
+    <button class="wing-btn" onclick="doSearch()">🔍 Search</button>
+    <button class="wing-btn" onclick="loadDrawers()">📂 Browse All</button>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <div class="toolbar">
+      <input type="text" id="search-input" placeholder="Search memories (semantic)..." onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="btn btn-primary" onclick="doSearch()">Search</button>
+      <button class="btn btn-secondary" onclick="loadDrawers()">Browse</button>
+      <span class="result-count" id="result-count"></span>
+    </div>
+
+    <div class="content">
+      <!-- Stats row -->
+      <div class="stats-row" id="stats-row"></div>
+
+      <!-- NocoDB sync panel -->
+      <div class="noco-panel" id="section-noco" style="display:none">
+        <div class="noco-panel-hdr">
+          <h3>🗄️ NocoDB → MemPalace Sync
+            <span class="noco-badge">Daily 6:05 AM</span>
+          </h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a href="http://192.168.0.107:8080" target="_blank" class="btn btn-secondary btn-sm">Open NocoDB ↗</a>
+            <button class="btn btn-green btn-sm" id="sync-noco-btn" onclick="triggerNocoSync()">▶ Sync Now</button>
+          </div>
+        </div>
+        <p style="color:var(--muted);font-size:.8rem;margin-bottom:12px">
+          All NocoDB tables are pulled into MemPalace daily so the AI can search them. Each row becomes a searchable memory tagged <code style="color:var(--green)">room=noco/&lt;table&gt;</code>.
+          The AI automatically injects relevant memories into every response.
+        </p>
+        <div class="noco-table-grid" id="noco-table-grid">
+          <span style="font-size:.78rem;color:var(--muted)">Run a sync to see table stats...</span>
+        </div>
+        <div class="sync-log" id="noco-sync-log" style="display:none"></div>
+      </div>
+
+      <!-- Store form -->
+      <div class="store-form" id="section-store" style="display:none">
+        <h3>➕ Add Memory</h3>
+        <textarea id="store-text" placeholder="Enter memory content..."></textarea>
+        <div class="form-row">
+          <select id="store-wing">
+            <option value="jarvis">jarvis</option>
+            <option value="sam">sam</option>
+            <option value="gf">gf</option>
+            <option value="house">house</option>
+            <option value="work-ltd">work-ltd</option>
+            <option value="work-sole">work-sole</option>
+            <option value="work-full">work-full</option>
+            <option value="auto">auto</option>
+            <option value="ai">ai</option>
+            <option value="orders">orders</option>
+          </select>
+          <input type="text" id="store-room" placeholder="room (e.g. 2026-05-03 or topic)" style="flex:1">
+          <button class="btn btn-primary" onclick="storeMemory()">Save</button>
+        </div>
+      </div>
+
+      <!-- Node sync panel -->
+      <div class="sync-panel" id="section-sync" style="display:none">
+        <h3>🔄 Sync with Nodes</h3>
+        <p style="color:var(--muted);font-size:.82rem;margin-bottom:12px">Push local memories to other nodes and pull theirs.</p>
+        <div class="node-grid" id="node-grid">Loading nodes...</div>
+        <div class="form-row" style="margin-bottom:10px">
+          <span style="font-size:.82rem;color:var(--muted)">Wings:</span>
+          <select id="sync-wings-sel" multiple style="background:#1e1e30;border:1px solid var(--border);border-radius:8px;padding:6px;color:var(--text);font-size:.82rem;height:80px">
+            <option value="jarvis" selected>jarvis</option>
+            <option value="sam" selected>sam</option>
+            <option value="gf" selected>gf</option>
+            <option value="house" selected>house</option>
+            <option value="work-ltd" selected>work-ltd</option>
+            <option value="work-sole" selected>work-sole</option>
+            <option value="work-full" selected>work-full</option>
+            <option value="auto" selected>auto</option>
+            <option value="ai" selected>ai</option>
+            <option value="orders" selected>orders</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="doSync()">Sync Now</button>
+        <div id="sync-result" style="margin-top:12px;font-size:.82rem;color:var(--muted)"></div>
+      </div>
+
+      <!-- Drawers list -->
+      <div id="drawers-section">
+        <div id="loading" style="display:none">Loading...</div>
+        <div class="drawer-list" id="drawer-list"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WINGS = ['jarvis','sam','gf','house','work-ltd','work-sole','work-full','auto','ai','orders'];
+const NOCO_TABLES = ['ALL_STAFF','All-Jobs','Composio','Demo Jobs','acount','cli',
+  'ha_entities','ha_instances','jarvis_memory','job_workflows','masterclass',
+  'rules','tools','pc_nodes'];
+let activeWing = '';
+let activeRoom = '';
+let allNodes = [];
+
+async function api(path, opts={}) {
+  const r = await fetch(path, opts);
+  return r.json().catch(() => ({}));
+}
+
+// ── Status + sidebar ──────────────────────────────────────────────────────────
+async function loadStatus() {
+  const d = await api('/api/mempalace/status');
+  if (!d.ok) {
+    document.getElementById('hdr-stats').textContent = 'MemPalace offline';
+    return;
+  }
+  const total = d.total || 0;
+  document.getElementById('hdr-stats').textContent = `${total.toLocaleString()} memories`;
+  document.getElementById('cnt-all').textContent = total.toLocaleString();
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="val">${total.toLocaleString()}</div><div class="lbl">Total Memories</div></div>
+    ${WINGS.map(w => `<div class="stat-card">
+      <div class="val" style="font-size:1.15rem">${(d.per_wing?.[w] ?? 0).toLocaleString()}</div>
+      <div class="lbl">${w}</div>
+    </div>`).join('')}
+  `;
+
+  document.getElementById('wing-list').innerHTML = WINGS.map(w => `
+    <button class="wing-btn" onclick="selectWing('${w}')" id="wing-${w}">
+      ${w} <span class="wing-count">${(d.per_wing?.[w] ?? 0).toLocaleString()}</span>
+    </button>
+  `).join('');
+
+  loadNocoSources();
+}
+
+async function loadNocoSources() {
+  // Show NocoDB-sourced rooms in sidebar (rooms starting with noco/)
+  const el = document.getElementById('noco-sources');
+  // Load rooms for jarvis wing (most noco data lands here or in specific wings)
+  const rows = [];
+  for (const w of ['jarvis','auto','house','sam']) {
+    const d = await api(`/api/mempalace/rooms/${w}`);
+    (d.rooms || []).filter(r => r.startsWith('noco/')).forEach(r => {
+      const tbl = r.replace('noco/', '');
+      if (!rows.find(x => x.tbl === tbl)) rows.push({tbl, wing: w, room: r});
+    });
+  }
+  if (!rows.length) {
+    el.innerHTML = '<span style="font-size:.75rem;color:var(--muted);padding:0 6px">None yet — run NocoDB sync</span>';
+    return;
+  }
+  el.innerHTML = rows.map(r =>
+    `<button class="noco-source-btn${activeRoom===r.room?' active':''}" onclick="filterByRoom('${r.wing}','${r.room}')">📋 ${r.tbl}</button>`
+  ).join('');
+}
+
+function selectWing(wing) {
+  activeWing = wing;
+  activeRoom = '';
+  document.querySelectorAll('.wing-btn').forEach(b => b.classList.remove('active'));
+  const t = document.getElementById(wing ? `wing-${wing}` : 'wing-all');
+  if (t) t.classList.add('active');
+  document.querySelectorAll('.noco-source-btn').forEach(b => b.classList.remove('active'));
+  loadDrawers();
+}
+
+function filterByRoom(wing, room) {
+  activeWing = wing;
+  activeRoom = room;
+  document.querySelectorAll('.wing-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.noco-source-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  hideAllSections();
+  loadDrawersByRoom(wing, room);
+}
+
+// ── Browse / search ───────────────────────────────────────────────────────────
+async function loadDrawers() {
+  activeRoom = '';
+  hideAllSections();
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('drawer-list').innerHTML = '';
+  let drawers = [];
+  if (activeWing) {
+    const d = await api(`/api/mempalace/drawers/${activeWing}?limit=100`);
+    drawers = d.drawers || [];
+  } else {
+    for (const w of WINGS) {
+      const d = await api(`/api/mempalace/drawers/${w}?limit=25`);
+      drawers = drawers.concat(d.drawers || []);
+    }
+  }
+  document.getElementById('loading').style.display = 'none';
+  renderDrawers(drawers);
+  document.getElementById('result-count').textContent = `${drawers.length} memories`;
+}
+
+async function loadDrawersByRoom(wing, room) {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('drawer-list').innerHTML = '';
+  const d = await api(`/api/mempalace/drawers/${wing}?room=${encodeURIComponent(room)}&limit=200`);
+  document.getElementById('loading').style.display = 'none';
+  const drawers = d.drawers || [];
+  renderDrawers(drawers);
+  const label = room.replace('noco/','');
+  document.getElementById('result-count').textContent = `${drawers.length} rows from NocoDB "${label}"`;
+}
+
+async function doSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) { loadDrawers(); return; }
+  hideAllSections();
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('drawer-list').innerHTML = '';
+  const d = await api('/api/mempalace/search', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({query: q, wing: activeWing, n: 30})
+  });
+  document.getElementById('loading').style.display = 'none';
+  renderDrawers(d.results || []);
+  document.getElementById('result-count').textContent = `${(d.results||[]).length} results for "${q}"`;
+}
+
+function renderDrawers(drawers) {
+  const el = document.getElementById('drawer-list');
+  if (!drawers.length) {
+    el.innerHTML = '<div class="empty">No memories found</div>';
+    return;
+  }
+  el.innerHTML = drawers.map(d => {
+    const isNoco = (d.room||'').startsWith('noco/');
+    const src = d.source || d.meta?.source || '';
+    return `
+    <div class="drawer" id="dr-${d.id}">
+      <div class="drawer-meta">
+        <span class="tag-wing">${d.wing || '—'}</span>
+        ${d.room ? `<span class="${isNoco?'tag-noco':'tag-room'}">${d.room}</span>` : ''}
+        ${src && src!=='pipeline' ? `<span class="tag-src">${src}</span>` : ''}
+        ${d.ts ? `<span>${(d.ts||'').substring(0,16)}</span>` : ''}
+      </div>
+      <div class="drawer-text" id="dt-${d.id}">${escHtml(d.text)}</div>
+      <div class="drawer-actions">
+        <button class="btn btn-secondary btn-sm" onclick="toggleExpand('${d.id}')">expand</button>
+        <button class="btn btn-secondary btn-sm" onclick="deleteDrawer('${d.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleExpand(id) {
+  const el = document.getElementById('dt-' + id);
+  if (el) el.classList.toggle('expanded');
+}
+
+// ── NocoDB sync ───────────────────────────────────────────────────────────────
+async function triggerNocoSync() {
+  const btn = document.getElementById('sync-noco-btn');
+  const log = document.getElementById('noco-sync-log');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">⟳</span> Syncing...';
+  log.style.display = 'block';
+  log.textContent = 'Starting NocoDB → MemPalace sync...\n';
+
+  // Trigger sync
+  const d = await api('/api/mempalace/sync-noco', {method:'POST'});
+  if (d.started) {
+    log.textContent += 'Sync running in background...\n';
+    // Poll status every 2s
+    let polls = 0;
+    const poll = setInterval(async () => {
+      polls++;
+      const s = await api('/api/mempalace/sync-noco');
+      if (s.status === 'running') {
+        log.textContent = `Running... (${polls*2}s elapsed)\n`;
+        if (s.last_result) log.textContent += JSON.stringify(s.last_result, null, 2);
+      } else if (s.status === 'done') {
+        clearInterval(poll);
+        btn.disabled = false;
+        btn.innerHTML = '▶ Sync Now';
+        const res = s.last_result || {};
+        log.textContent = `Done! ${res.total || 0} memories stored across ${Object.keys(res.tables||{}).length} tables\n\n`;
+        if (res.tables) {
+          Object.entries(res.tables).forEach(([t, st]) => {
+            log.textContent += `  ${t.padEnd(22)} ${(st.stored||0).toString().padStart(4)}/${(st.rows||0).toString().padStart(4)} rows\n`;
+          });
+        }
+        renderNocoTableGrid(res.tables || {});
+        loadStatus();
+        toast('NocoDB sync complete ✅');
+      } else {
+        clearInterval(poll);
+        btn.disabled = false;
+        btn.innerHTML = '▶ Sync Now';
+        log.textContent += '\n' + JSON.stringify(s, null, 2);
+      }
+    }, 2000);
+  } else if (d.status === 'running') {
+    log.textContent = 'Sync already running...\n';
+    btn.disabled = false;
+    btn.innerHTML = '▶ Sync Now';
+  } else {
+    log.textContent = 'Error: ' + (d.error || JSON.stringify(d));
+    btn.disabled = false;
+    btn.innerHTML = '▶ Sync Now';
+  }
+}
+
+function renderNocoTableGrid(tables) {
+  const el = document.getElementById('noco-table-grid');
+  if (!Object.keys(tables).length) return;
+  el.innerHTML = Object.entries(tables).map(([name, stat]) => `
+    <div class="noco-tbl">
+      <div class="tbl-name">${name}</div>
+      <div class="tbl-count">${stat.stored||0} / ${stat.rows||0} rows</div>
+    </div>
+  `).join('');
+}
+
+// ── Store memory ──────────────────────────────────────────────────────────────
+async function storeMemory() {
+  const text = document.getElementById('store-text').value.trim();
+  const wing = document.getElementById('store-wing').value;
+  const room = document.getElementById('store-room').value.trim();
+  if (!text) { toast('Enter content first'); return; }
+  const d = await api('/api/mempalace/store', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({content: text, wing, room, source: 'manual'})
+  });
+  if (d.ok) {
+    toast('Memory saved ✅');
+    document.getElementById('store-text').value = '';
+    loadStatus();
+  } else {
+    toast('Failed: ' + (d.error || 'unknown'));
+  }
+}
+
+// ── Node sync ─────────────────────────────────────────────────────────────────
+async function loadNodes() {
+  const nd = await api('/api/staff-nodes/').catch(()=>({nodes:[]}));
+  allNodes = (nd.nodes || []).map(n => n.ip || n).filter(Boolean);
+  const known = ['192.168.0.4','192.168.0.5','192.168.0.6',
+    '192.168.0.222','192.168.0.223','192.168.0.224','192.168.0.225','192.168.0.226'];
+  known.forEach(ip => { if (!allNodes.includes(ip)) allNodes.push(ip); });
+  const grid = document.getElementById('node-grid');
+  grid.innerHTML = allNodes.map(ip =>
+    `<div class="node-chip selected" onclick="this.classList.toggle('selected')" data-ip="${ip}">${ip}</div>`
+  ).join('');
+}
+
+async function doSync() {
+  const selected = [...document.querySelectorAll('.node-chip.selected')].map(c => c.dataset.ip);
+  const wings = [...document.getElementById('sync-wings-sel').selectedOptions].map(o => o.value);
+  if (!selected.length) { toast('Select at least one node'); return; }
+  document.getElementById('sync-result').textContent = 'Syncing...';
+  const d = await api('/api/mempalace/sync', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({nodes: selected, wings})
+  });
+  if (d.ok) {
+    const lines = (d.report||[]).map(r =>
+      `${r.ip}: pushed ${r.pushed} pulled ${r.pulled}${r.errors?.length?' ⚠️ '+r.errors[0]:''}`
+    );
+    document.getElementById('sync-result').innerHTML = lines.join('<br>') || 'Done';
+    toast(`Sync complete — ${d.synced_nodes} nodes`);
+    loadStatus();
+  } else {
+    document.getElementById('sync-result').textContent = 'Error: ' + (d.error||'unknown');
+  }
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deleteDrawer(id) {
+  if (!confirm('Delete this memory?')) return;
+  const d = await api('/api/mempalace/delete', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id})
+  });
+  if (d.ok) {
+    document.getElementById('dr-' + id)?.remove();
+    toast('Deleted');
+    loadStatus();
+  }
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function showSection(name) {
+  hideAllSections();
+  document.getElementById('section-' + name).style.display = 'block';
+  if (name === 'sync') loadNodes();
+  if (name === 'noco') {
+    // Check last sync status
+    api('/api/mempalace/sync-noco').then(s => {
+      if (s.last_result?.tables) renderNocoTableGrid(s.last_result.tables);
+    });
+  }
+}
+
+function hideAllSections() {
+  ['store','sync','noco'].forEach(s => {
+    const el = document.getElementById('section-' + s);
+    if (el) el.style.display = 'none';
+  });
+}
+
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// Init
+loadStatus();
+loadDrawers();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

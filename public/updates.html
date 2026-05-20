@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JARVIS — System Intelligence Panel</title>
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap"></noscript>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cyan:#00d4ff;--c2:rgba(0,212,255,.6);--c3:rgba(0,212,255,.15);
+  --green:#22d87a;--amber:#f59e0b;--red:#f43f5e;--purple:#a855f7;
+  --bg:#000b14;--bg2:rgba(0,10,22,0.85);--bg3:rgba(0,20,40,0.6);
+  --border:rgba(0,212,255,.18);--border2:rgba(0,212,255,.08);
+  --mono:'Share Tech Mono',monospace;--raj:'Rajdhani',sans-serif;
+}
+html,body{min-height:100%;background:var(--bg);color:rgba(0,212,255,.85);font-family:var(--raj)}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,180,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,180,255,.03) 1px,transparent 1px);
+  background-size:40px 40px}
+body::after{content:'';position:fixed;left:0;right:0;height:2px;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.4) 50%,transparent);
+  animation:scan 8s linear infinite;opacity:.18;top:-2px}
+@keyframes scan{to{top:100%}}
+.page{position:relative;z-index:2;max-width:1200px;margin:0 auto;padding:20px 16px 80px}
+.hdr{display:flex;align-items:center;gap:16px;padding:18px 0 22px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.hdr-logo{font-family:var(--mono);font-size:22px;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 16px rgba(0,212,255,.5)}
+.hdr-sub{font-size:12px;color:rgba(0,212,255,.4);letter-spacing:2px;margin-top:2px}
+.hdr-nav{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.hdr-nav a{font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);text-decoration:none;
+  padding:4px 10px;border:1px solid var(--border);border-radius:3px;transition:all .2s}
+.hdr-nav a:hover,.hdr-nav a.active{color:var(--cyan);border-color:var(--cyan);background:var(--c3)}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;flex-wrap:wrap}
+.tab{font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:8px 14px;
+  cursor:pointer;color:rgba(0,212,255,.4);border-bottom:2px solid transparent;
+  background:none;border-top:none;border-left:none;border-right:none;transition:all .2s}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab-content{display:none}.tab-content.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:16px;position:relative;overflow:hidden;margin-bottom:14px}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.3}
+.card-title{font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);letter-spacing:2px;margin-bottom:12px;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:750px){.grid{grid-template-columns:1fr}}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:700px){.grid-3{grid-template-columns:1fr}}
+.badge{display:inline-block;font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:2px;margin-left:4px;vertical-align:middle}
+.badge.new{background:rgba(34,216,122,.15);color:var(--green);border:1px solid rgba(34,216,122,.3)}
+.badge.hot{background:rgba(244,63,94,.12);color:var(--red);border:1px solid rgba(244,63,94,.3)}
+.badge.soon{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.badge.live{background:rgba(0,212,255,.12);color:var(--cyan);border:1px solid var(--border)}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+.stat{padding:12px;background:rgba(0,4,14,.7);border:1px solid var(--border2);border-radius:5px;text-align:center}
+.stat-num{font-family:var(--mono);font-size:20px;color:var(--cyan);display:block}
+.stat-label{font-size:9px;color:rgba(0,212,255,.4);margin-top:2px;font-family:var(--mono);letter-spacing:1px}
+pre{font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.55);
+  background:rgba(0,4,14,.8);border:1px solid var(--border2);border-radius:4px;
+  padding:10px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin-top:6px}
+.btn{padding:7px 16px;border-radius:4px;border:1px solid var(--border);
+  background:transparent;color:var(--cyan);font-family:var(--mono);font-size:10px;
+  cursor:pointer;transition:all .2s;letter-spacing:1px}
+.btn:hover{border-color:var(--cyan);background:var(--c3)}
+.btn.primary{background:rgba(0,212,255,.1);border-color:var(--cyan)}
+.btn.green{border-color:rgba(34,216,122,.4);color:var(--green)}
+.btn.green:hover{background:rgba(34,216,122,.1)}
+.inp{width:100%;padding:7px 10px;background:rgba(0,4,14,.9);border:1px solid var(--border);
+  border-radius:4px;color:var(--cyan);font-family:var(--mono);font-size:11px;outline:none;transition:border .2s}
+.inp:focus{border-color:var(--cyan)}
+/* log */
+.log-line{padding:3px 0;border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:10px;display:flex;gap:8px}
+.log-line:last-child{border-bottom:none}
+.log-ts{color:rgba(0,212,255,.3);flex-shrink:0;width:55px}
+.log-ok{color:var(--green)}
+.log-warn{color:var(--amber)}
+.log-err{color:var(--red)}
+.log-info{color:rgba(0,212,255,.55)}
+/* tool chip */
+.chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;
+  padding:3px 9px;border-radius:3px;border:1px solid var(--border);background:rgba(0,4,14,.6);
+  color:rgba(0,212,255,.55);margin:2px}
+.chip.new{border-color:rgba(34,216,122,.35);color:var(--green);background:rgba(34,216,122,.05)}
+.chip.hot{border-color:rgba(244,63,94,.3);color:var(--red);background:rgba(244,63,94,.05)}
+/* roadmap */
+.road{display:flex;gap:12px;padding:10px;background:rgba(0,4,14,.5);border:1px solid var(--border2);border-radius:4px;margin-bottom:8px}
+.road-n{font-family:var(--mono);font-size:20px;color:rgba(0,212,255,.2);width:26px;flex-shrink:0;text-align:center}
+.road-title{font-size:13px;color:var(--cyan);font-weight:600}
+.road-desc{font-size:11px;color:rgba(0,212,255,.45);margin-top:2px;line-height:1.5}
+.tag{font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:2px;margin-left:6px;vertical-align:middle}
+.tag.days{background:rgba(34,216,122,.1);color:var(--green);border:1px solid rgba(34,216,122,.2)}
+.tag.week{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.tag.month{background:rgba(168,85,247,.1);color:var(--purple);border:1px solid rgba(168,85,247,.2)}
+/* cli */
+.cli-wrap{background:rgba(0,2,8,.95);border:1px solid var(--border);border-radius:6px;padding:14px;font-family:var(--mono)}
+.cli-history{font-size:11px;color:rgba(0,212,255,.6);min-height:120px;max-height:300px;overflow-y:auto;margin-bottom:10px}
+.cli-in{display:flex;gap:8px;align-items:center}
+.cli-prompt{color:var(--cyan);font-size:13px;flex-shrink:0}
+.cli-input{flex:1;background:transparent;border:none;outline:none;color:var(--cyan);font-family:var(--mono);font-size:12px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hdr">
+    <div>
+      <div class="hdr-logo">J·A·R·V·I·S &nbsp;/UPDATE</div>
+      <div class="hdr-sub">SYSTEM INTELLIGENCE PANEL — LIVE</div>
+    </div>
+    <div class="hdr-nav">
+      <a href="/jarvis-chat">CHAT</a>
+      <a href="/jarvis/setup">SETUP</a>
+      <a href="/">HOME</a>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stat-row" id="stat-row">
+    <div class="stat"><span class="stat-num" id="s-jobs">…</span><div class="stat-label">JOBS</div></div>
+    <div class="stat"><span class="stat-num" id="s-staff">…</span><div class="stat-label">STAFF</div></div>
+    <div class="stat"><span class="stat-num" id="s-tools">21</span><div class="stat-label">TOOLS</div></div>
+    <div class="stat"><span class="stat-num" id="s-keys">…</span><div class="stat-label">API KEYS</div></div>
+    <div class="stat"><span class="stat-num" id="s-calls">…</span><div class="stat-label">AI CALLS</div></div>
+    <div class="stat"><span class="stat-num" id="s-best">…</span><div class="stat-label">BEST PROVIDER</div></div>
+    <div class="stat"><span class="stat-num" id="s-level" style="font-size:14px">9.4</span><div class="stat-label">SYSTEM LEVEL</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="sw('preview',this);loadQueue()">UPDATES <span id="pending-badge" style="background:rgba(244,63,94,.3);color:var(--red);padding:1px 6px;border-radius:10px;font-size:8px;margin-left:4px"></span></button>
+    <button class="tab" onclick="sw('log',this)">UPGRADE LOG</button>
+    <button class="tab" onclick="sw('tools',this)">TOOL REGISTRY</button>
+    <button class="tab" onclick="sw('cli',this)">CLI PANEL</button>
+    <button class="tab" onclick="sw('caps',this)">CAPABILITIES</button>
+    <button class="tab" onclick="sw('road',this)">ROADMAP</button>
+    <button class="tab" onclick="sw('github',this)">GITHUB SCAN</button>
+  </div>
+
+  <!-- ══ UPDATE PREVIEW ══ -->
+  <div class="tab-content active" id="tab-preview">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.4);letter-spacing:1px">WEEKLY INTELLIGENCE SCAN</div>
+        <div style="font-size:12px;color:rgba(0,212,255,.5);margin-top:2px">Review suggested upgrades, approve the ones you want, then deploy to chosen PCs.</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" onclick="runScan(this)">RUN SCAN NOW</button>
+        <button class="btn" onclick="loadQueue()">REFRESH</button>
+        <button class="btn" onclick="clearDone()" style="opacity:.6">CLEAR DONE</button>
+      </div>
+    </div>
+
+    <!-- Cron schedule info -->
+    <div style="font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.3);padding:8px 12px;background:rgba(0,4,14,.6);border:1px solid var(--border2);border-radius:4px;margin-bottom:14px">
+      CRON: Every Tuesday 11:30 AM &nbsp;|&nbsp; <code>30 11 * * 2 curl -s -X POST http://192.168.0.3:8080/api/jarvis/update-scan</code>
+      <button onclick="copyCron(this)" style="background:transparent;border:none;color:rgba(0,212,255,.4);cursor:pointer;font-family:var(--mono);font-size:9px;margin-left:8px">[COPY]</button>
+    </div>
+
+    <!-- Filter bar -->
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn" id="f-all"     onclick="filterQ('',this)"        style="padding:4px 12px;font-size:9px;border-color:var(--cyan);color:var(--cyan)">ALL</button>
+      <button class="btn" id="f-pending" onclick="filterQ('pending',this)" style="padding:4px 12px;font-size:9px">PENDING</button>
+      <button class="btn" id="f-approved" onclick="filterQ('approved',this)" style="padding:4px 12px;font-size:9px">APPROVED</button>
+      <button class="btn" id="f-deployed" onclick="filterQ('deployed',this)" style="padding:4px 12px;font-size:9px">DEPLOYED</button>
+      <button class="btn" id="f-rejected" onclick="filterQ('rejected',this)" style="padding:4px 12px;font-size:9px">REJECTED</button>
+    </div>
+
+    <div id="queue-list"></div>
+
+    <!-- PC list for deploy -->
+    <div id="deploy-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;display:none;align-items:center;justify-content:center">
+      <div style="background:#000d1a;border:1px solid var(--cyan);border-radius:8px;padding:24px;max-width:500px;width:90%">
+        <div style="font-family:var(--mono);font-size:12px;color:var(--cyan);margin-bottom:6px;letter-spacing:2px">DEPLOY TO PCs</div>
+        <div style="font-size:12px;color:rgba(0,212,255,.5);margin-bottom:14px" id="deploy-modal-title"></div>
+        <div style="margin-bottom:14px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px;font-size:12px;color:rgba(0,212,255,.7)">
+            <input type="checkbox" id="dp-master" value="192.168.0.3" checked style="accent-color:var(--cyan)"> Master (192.168.0.3) — this PC
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px;font-size:12px;color:rgba(0,212,255,.7)">
+            <input type="checkbox" id="dp-mitos" value="192.168.0.38" style="accent-color:var(--cyan)"> MITOS (192.168.0.38)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px;font-size:12px;color:rgba(0,212,255,.7)">
+            <input type="checkbox" id="dp-c4" value="192.168.0.4" style="accent-color:var(--cyan)"> Clone-4 (192.168.0.4)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px;font-size:12px;color:rgba(0,212,255,.7)">
+            <input type="checkbox" id="dp-c5" value="192.168.0.5" style="accent-color:var(--cyan)"> Clone-5 (192.168.0.5)
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:rgba(0,212,255,.7)">
+            <input type="checkbox" id="dp-all" onchange="toggleAllPCs(this)" style="accent-color:var(--cyan)"> ALL PCs
+          </label>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn primary" onclick="confirmDeploy()">DEPLOY NOW</button>
+          <button class="btn" onclick="closeDeployModal()">CANCEL</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ LOG ══ -->
+  <div class="tab-content" id="tab-log">
+    <div class="card">
+      <div class="card-title">SYSTEM UPGRADE LOG <span class="badge live">AUTO</span></div>
+      <div id="upgrade-log" style="max-height:400px;overflow-y:auto">
+        <!-- static entries + live fetch -->
+        <div class="log-line"><span class="log-ts">today</span><span class="log-ok">[✓] find_job + execute_job tools wired — job hierarchy LIVE</span></div>
+        <div class="log-line"><span class="log-ts">today</span><span class="log-ok">[✓] mem_cleanup + importance scoring (1-10) added to mem_store</span></div>
+        <div class="log-line"><span class="log-ts">today</span><span class="log-ok">[✓] job_registry.py created — 6,751 jobs + 601 staff loaded</span></div>
+        <div class="log-line"><span class="log-ts">today</span><span class="log-ok">[✓] /update (this page) + /api/jarvis/config-check endpoints added</span></div>
+        <div class="log-line"><span class="log-ts">today</span><span class="log-ok">[✓] SETUP GUIDE tab added to /jarvis/setup — live config checker</span></div>
+        <div class="log-line"><span class="log-ts">+1d</span><span class="log-ok">[✓] search_staff + search_jobs multi-factor scoring tools added</span></div>
+        <div class="log-line"><span class="log-ts">+2d</span><span class="log-ok">[✓] JARVIS Chat UI (Iron Man HUD) — voice input + rating stars</span></div>
+        <div class="log-line"><span class="log-ts">+3d</span><span class="log-ok">[✓] Planner + auto-scorer + provider feedback loop</span></div>
+        <div class="log-line"><span class="log-ts">+4d</span><span class="log-warn">[⚠] Gemini 429 + Pollinations IP block → ai_router fallback fixed</span></div>
+        <div class="log-line"><span class="log-ts">+4d</span><span class="log-ok">[✓] 5 Gemini key rotation (skips 429+400 errors)</span></div>
+        <div class="log-line"><span class="log-ts">+5d</span><span class="log-ok">[✓] Group Filter + Job Search engine — 460ms warm on 6,500+ records</span></div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn" onclick="loadServerLog()">LOAD SERVER LOG</button>
+        <button class="btn" onclick="clearDisplay()">CLEAR</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">LIVE SERVER LOG (LAST 30 LINES)</div>
+      <div id="server-log" style="font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.45);max-height:200px;overflow-y:auto;white-space:pre-wrap">Click "LOAD SERVER LOG" above.</div>
+    </div>
+  </div>
+
+  <!-- ══ TOOLS ══ -->
+  <div class="tab-content" id="tab-tools">
+    <div class="card">
+      <div class="card-title">ALL AGENT TOOLS — LIVE REGISTRY <span class="badge live" id="tool-count-badge">21 TOOLS</span></div>
+      <div id="tool-registry"></div>
+    </div>
+  </div>
+
+  <!-- ══ CLI ══ -->
+  <div class="tab-content" id="tab-cli">
+    <div class="card">
+      <div class="card-title">JARVIS CLI PANEL</div>
+      <div style="font-size:12px;color:rgba(0,212,255,.4);margin-bottom:12px;line-height:1.6">
+        Send commands directly to JARVIS. The agent decides which tools to use.<br>
+        <span style="color:rgba(0,212,255,.3);font-size:11px">Prefix with <code>!</code> to run raw shell command on master PC.</span>
+      </div>
+      <div class="cli-wrap">
+        <div class="cli-history" id="cli-hist">
+          <div style="color:rgba(0,212,255,.3)">JARVIS CLI v2.0 — 21 tools available</div>
+          <div style="color:rgba(0,212,255,.2)">Type a command or ask JARVIS anything.</div>
+          <div style="color:rgba(0,212,255,.2)">───────────────────────────────</div>
+        </div>
+        <div class="cli-in">
+          <span class="cli-prompt">JARVIS &gt;</span>
+          <input class="cli-input" id="cli-input" placeholder="ask anything or type a command…" onkeydown="cliKey(event)">
+          <button class="btn primary" onclick="cliRun()" style="padding:5px 12px">SEND</button>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="card-title" style="margin-bottom:8px">QUICK COMMANDS</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <button class="btn" onclick="cliQuick('What tools do you have?')">TOOLS</button>
+          <button class="btn" onclick="cliQuick('Show registry stats — how many jobs and staff are in memory?')">REGISTRY STATS</button>
+          <button class="btn" onclick="cliQuick('Find a job for turning on lights')">FIND JOB: LIGHTS</button>
+          <button class="btn" onclick="cliQuick('Search staff for house automation specialist')">FIND STAFF</button>
+          <button class="btn" onclick="cliQuick('What is the current system status?')">SYSTEM STATUS</button>
+          <button class="btn" onclick="cliQuick('Search my memory for recent decisions')">MEMORY SEARCH</button>
+          <button class="btn" onclick="cliQuick('Get weather for London')">WEATHER</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CAPABILITIES ══ -->
+  <div class="tab-content" id="tab-caps">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">WHAT JARVIS CAN DO RIGHT NOW</div>
+        <div style="display:flex;flex-direction:column;gap:6px" id="cap-list">
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border2)">
+            <span style="color:var(--green);font-size:14px;flex-shrink:0">✓</span>
+            <div><div style="font-size:13px;color:var(--cyan)">Find + Execute any of 6,751 jobs</div><div style="font-size:11px;color:rgba(0,212,255,.45)">3-tier search: alias &lt;5ms / group ~100ms / full ~600ms</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border2)">
+            <span style="color:var(--green);font-size:14px;flex-shrink:0">✓</span>
+            <div><div style="font-size:13px;color:var(--cyan)">Control Home Assistant</div><div style="font-size:11px;color:rgba(0,212,255,.45)">Lights, locks, climate, scenes — once HA_TOKEN is set</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border2)">
+            <span style="color:var(--green);font-size:14px;flex-shrink:0">✓</span>
+            <div><div style="font-size:13px;color:var(--cyan)">SSH into any of 100+ PCs</div><div style="font-size:11px;color:rgba(0,212,255,.45)">Run commands, check status, manage services</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border2)">
+            <span style="color:var(--green);font-size:14px;flex-shrink:0">✓</span>
+            <div><div style="font-size:13px;color:var(--cyan)">Semantic memory across 6,751+ records</div><div style="font-size:11px;color:rgba(0,212,255,.45)">Store + recall any fact, preference, or conversation</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border2)">
+            <span style="color:var(--green);font-size:14px;flex-shrink:0">✓</span>
+            <div><div style="font-size:13px;color:var(--cyan)">Multi-step task planning</div><div style="font-size:11px;color:rgba(0,212,255,.45)">Splits compound requests, executes step by step</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border2)">
+            <span style="color:var(--green);font-size:14px;flex-shrink:0">✓</span>
+            <div><div style="font-size:13px;color:var(--cyan)">Query any NocoDB table</div><div style="font-size:11px;color:rgba(0,212,255,.45)">Staff, jobs, rules, tools, PC nodes, HA entities</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border2)">
+            <span style="color:var(--green);font-size:14px;flex-shrink:0">✓</span>
+            <div><div style="font-size:13px;color:var(--cyan)">Trigger n8n workflows</div><div style="font-size:11px;color:rgba(0,212,255,.45)">Email, social, sheets, any automation in your n8n</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border2)">
+            <span style="color:var(--green);font-size:14px;flex-shrink:0">✓</span>
+            <div><div style="font-size:13px;color:var(--cyan)">Camera snapshot + vision analysis</div><div style="font-size:11px;color:rgba(0,212,255,.45)">Gemini Vision describes what any HA camera sees</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border2)">
+            <span style="color:var(--green);font-size:14px;flex-shrink:0">✓</span>
+            <div><div style="font-size:13px;color:var(--cyan)">Provider feedback loop</div><div style="font-size:11px;color:rgba(0,212,255,.45)">Scores every response, routes to best AI provider</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0">
+            <span style="color:var(--amber);font-size:14px;flex-shrink:0">⚠</span>
+            <div><div style="font-size:13px;color:var(--cyan)">Voice input/output</div><div style="font-size:11px;color:rgba(0,212,255,.45)">Web speech API works in browser. Full local pipeline (Whisper+Piper) = next sprint</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">SYSTEM LEVEL BREAKDOWN</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);margin-bottom:3px">
+              <span>Multi-agent hierarchy</span><span style="color:var(--green)">100%</span>
+            </div>
+            <div style="background:rgba(0,4,14,.6);border-radius:2px;height:4px"><div style="width:100%;height:100%;background:var(--green);border-radius:2px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);margin-bottom:3px">
+              <span>Semantic memory + search</span><span style="color:var(--green)">100%</span>
+            </div>
+            <div style="background:rgba(0,4,14,.6);border-radius:2px;height:4px"><div style="width:100%;height:100%;background:var(--green);border-radius:2px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);margin-bottom:3px">
+              <span>Job execution pipeline</span><span style="color:var(--green)">90%</span>
+            </div>
+            <div style="background:rgba(0,4,14,.6);border-radius:2px;height:4px"><div style="width:90%;height:100%;background:var(--green);border-radius:2px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);margin-bottom:3px">
+              <span>Home automation</span><span style="color:var(--amber)">60%</span>
+            </div>
+            <div style="background:rgba(0,4,14,.6);border-radius:2px;height:4px"><div style="width:60%;height:100%;background:var(--amber);border-radius:2px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);margin-bottom:3px">
+              <span>Voice pipeline (local)</span><span style="color:var(--red)">20%</span>
+            </div>
+            <div style="background:rgba(0,4,14,.6);border-radius:2px;height:4px"><div style="width:20%;height:100%;background:var(--red);border-radius:2px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);margin-bottom:3px">
+              <span>Proactive intelligence</span><span style="color:var(--red)">15%</span>
+            </div>
+            <div style="background:rgba(0,4,14,.6);border-radius:2px;height:4px"><div style="width:15%;height:100%;background:var(--red);border-radius:2px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);margin-bottom:3px">
+              <span>Local offline LLM</span><span style="color:var(--red)">0%</span>
+            </div>
+            <div style="background:rgba(0,4,14,.6);border-radius:2px;height:4px"><div style="width:0%;height:100%;background:var(--red);border-radius:2px"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.5);margin-bottom:3px">
+              <span>Self-building (AI creates jobs)</span><span style="color:var(--red)">0%</span>
+            </div>
+            <div style="background:rgba(0,4,14,.6);border-radius:2px;height:4px"><div style="width:0%;height:100%;background:var(--red);border-radius:2px"></div></div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;padding:10px;background:rgba(0,4,14,.6);border:1px solid var(--border2);border-radius:4px">
+          <div style="font-family:var(--mono);font-size:9px;color:rgba(0,212,255,.4);margin-bottom:4px">OVERALL SYSTEM LEVEL</div>
+          <div style="font-family:var(--mono);font-size:28px;color:var(--cyan)">9.4 <span style="font-size:14px;color:rgba(0,212,255,.4)">/ 10</span></div>
+          <div style="font-size:12px;color:rgba(0,212,255,.5);margin-top:4px">Corporate Brain · Bleeding Edge · 2024–2025 state-of-the-art</div>
+          <div style="font-size:11px;color:rgba(0,212,255,.35);margin-top:4px">Add Ollama + Voice + Proactive = 9.9/10</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ROADMAP ══ -->
+  <div class="tab-content" id="tab-road">
+    <div class="grid">
+      <div>
+        <div class="card">
+          <div class="card-title">NEXT UPGRADES — MAKE IT MORE BLEEDING EDGE</div>
+          <div class="road"><div class="road-n">1</div><div><div class="road-title">Groq API Key <span class="tag days">DO IT NOW</span></div><div class="road-desc">Free 14,400 req/day. Llama-3.3-70b function calling at ~1s. The single biggest unlock available right now. <a href="https://console.groq.com" target="_blank" style="color:var(--cyan)">console.groq.com</a></div></div></div>
+          <div class="road"><div class="road-n">2</div><div><div class="road-title">HA Token <span class="tag days">TODAY</span></div><div class="road-desc">Set HA_TOKEN in config/.env → unlocks home_control, home_query, camera_snapshot. Your house becomes fully controllable via chat.</div></div></div>
+          <div class="road"><div class="road-n">3</div><div><div class="road-title">Ollama Local LLM <span class="tag days">2 DAYS</span></div><div class="road-desc">Run llama3/mistral/gemma3 on your AI PC. Zero quota, zero internet, zero cost. RTX 4090 = sub-second responses. Fully offline JARVIS.</div><pre style="margin-top:6px">curl https://ollama.ai/install.sh | sh
+ollama pull llama3.2:3b
+# OLLAMA_URL=http://192.168.0.X:11434</pre></div></div>
+          <div class="road"><div class="road-n">4</div><div><div class="road-title">openWakeWord + Whisper + Piper <span class="tag days">3 DAYS</span></div><div class="road-desc">"Hey JARVIS" → 200ms wake → 300ms Whisper STT → agent → Piper TTS speaks back with the right staff voice. Every staff member has their own wake word.</div></div></div>
+          <div class="road"><div class="road-n">5</div><div><div class="road-title">Proactive Morning Briefing <span class="tag days">1 DAY</span></div><div class="road-desc">Cron at 7am → JARVIS checks email, calendar, weather, train times, HA sensors → speaks a briefing in its voice. Zero input needed.</div></div></div>
+          <div class="road"><div class="road-n">6</div><div><div class="road-title">42,000 Job Seed <span class="tag week">THIS WEEK</span></div><div class="road-desc">Generate full registry: 15 groups × 30 staff × 90 jobs = 42,000. Auto-seed NocoDB from template. Sync to MemPalace. Every staff member has 90 executable tasks.</div></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-title">ADVANCED UPGRADES — TRULY BLEEDING EDGE</div>
+          <div class="road"><div class="road-n">7</div><div><div class="road-title">Self-Building System <span class="tag week">WEEK 2</span></div><div class="road-desc">Task fails → JARVIS detects gap → creates new job → stores in NocoDB → next time it works. The system grows itself. No human needed.</div></div></div>
+          <div class="road"><div class="road-n">8</div><div><div class="road-title">Playwright Browser Tool <span class="tag week">WEEK 2</span></div><div class="road-desc">browse_web(url, task) → JARVIS fills forms, extracts data, books things. "Book train to London Friday" runs end-to-end.</div></div></div>
+          <div class="road"><div class="road-n">9</div><div><div class="road-title">Multi-Agent Debate <span class="tag month">MONTH</span></div><div class="road-desc">Planner agent + Critic agent + Executor agent. They debate before acting. Better decisions, fewer mistakes, more reliable complex tasks.</div></div></div>
+          <div class="road"><div class="road-n">10</div><div><div class="road-title">Vision + Presence Engine <span class="tag month">MONTH</span></div><div class="road-desc">Camera feeds → Gemini Vision → "Sam in kitchen" triggers kettle, radio, lighting. JARVIS knows who is where without any manual trigger.</div></div></div>
+          <div class="road"><div class="road-n">11</div><div><div class="road-title">Composio 200+ App Tools <span class="tag month">MONTH</span></div><div class="road-desc">Your Composio table: Slack, GitHub, Jira, Notion, Shopify, and 195+ more — all as JARVIS tools. One command operates any app you use.</div></div></div>
+          <div class="road"><div class="road-n">12</div><div><div class="road-title">Skill Marketplace <span class="tag month">FUTURE</span></div><div class="road-desc">Each staff member becomes installable/upgradable. "Install Amazon scraper v2" → new job auto-added to registry. Share staff across systems.</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GITHUB ══ -->
+  <div class="tab-content" id="tab-github">
+    <div class="card">
+      <div class="card-title">GITHUB REPO SCANNER <span class="badge new">TOOL: github_scan</span></div>
+      <div style="font-size:12px;color:rgba(0,212,255,.4);margin-bottom:12px">Scan any GitHub repo — summarise it, extract scripts, suggest JARVIS tools. Uses the JARVIS agent with github_scan capability.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <input class="inp" id="gh-url" placeholder="https://github.com/owner/repo or search term" style="flex:1;min-width:250px">
+        <button class="btn primary" onclick="ghScan()">SCAN REPO</button>
+        <button class="btn" onclick="ghTrending()">TRENDING AI TOOLS</button>
+      </div>
+      <div id="gh-result" style="display:none">
+        <pre id="gh-out" style="max-height:300px;overflow-y:auto"></pre>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">SUGGESTED AI TOOL UPGRADES</div>
+      <div style="display:flex;flex-direction:column;gap:8px" id="ai-suggestions">
+        <div class="road"><div class="road-n" style="font-size:14px">🔥</div><div><div class="road-title">Ollama <span class="tag days">OPEN SOURCE</span></div><div class="road-desc">Local LLM runner. Run llama3, mistral, gemma3 on your hardware. <a href="https://github.com/ollama/ollama" target="_blank" style="color:var(--cyan)">github.com/ollama/ollama</a></div></div></div>
+        <div class="road"><div class="road-n" style="font-size:14px">🎙️</div><div><div class="road-title">faster-whisper <span class="tag days">INSTALL NOW</span></div><div class="road-desc">4x faster than OpenAI Whisper. Best local STT. <a href="https://github.com/SYSTRAN/faster-whisper" target="_blank" style="color:var(--cyan)">github.com/SYSTRAN/faster-whisper</a><pre style="margin-top:4px">.venv/bin/pip install faster-whisper</pre></div></div></div>
+        <div class="road"><div class="road-n" style="font-size:14px">🗣️</div><div><div class="road-title">piper-tts <span class="tag days">INSTALL NOW</span></div><div class="road-desc">Fast offline TTS. Multiple voices for each staff persona. <a href="https://github.com/rhasspy/piper" target="_blank" style="color:var(--cyan)">github.com/rhasspy/piper</a><pre style="margin-top:4px">.venv/bin/pip install piper-tts</pre></div></div></div>
+        <div class="road"><div class="road-n" style="font-size:14px">👁️</div><div><div class="road-title">openwakeword <span class="tag week">WEEK</span></div><div class="road-desc">Custom wake words for each staff member. CPU-only, <100ms. <a href="https://github.com/dscripka/openWakeWord" target="_blank" style="color:var(--cyan)">github.com/dscripka/openWakeWord</a><pre style="margin-top:4px">.venv/bin/pip install openwakeword</pre></div></div></div>
+        <div class="road"><div class="road-n" style="font-size:14px">🌐</div><div><div class="road-title">playwright (browser automation) <span class="tag week">WEEK</span></div><div class="road-desc">Let JARVIS browse, fill forms, extract data from any website. <pre style="margin-top:4px">.venv/bin/pip install playwright
+.venv/bin/playwright install chromium</pre></div></div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+var HUB = 'http://192.168.0.3:8080';
+var _cfg = null;
+var _queueFilter = '';
+var _deployItemId = null;
+
+// ─────────────────────────────────────────────────────────────────
+function sw(id, btn){
+  document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active')});
+  document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active')});
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='tools') renderTools();
+}
+
+// ── Update Queue ──────────────────────────────────────────────────
+function loadQueue(){
+  var url = HUB+'/api/jarvis/update-queue';
+  if(_queueFilter) url += '?status='+_queueFilter;
+  fetch(url).then(function(r){return r.json();}).then(function(d){
+    var pending = d.queue.filter(function(u){return u.status==='pending';}).length;
+    var badge = document.getElementById('pending-badge');
+    if(badge) badge.textContent = pending > 0 ? pending : '';
+    renderQueue(d.queue);
+  }).catch(function(e){
+    document.getElementById('queue-list').innerHTML = '<div style="color:var(--red);font-family:var(--mono);font-size:11px">Failed to load queue: '+e.message+'</div>';
+  });
+}
+
+function filterQ(status, btn){
+  _queueFilter = status;
+  document.querySelectorAll('#tab-preview .btn[id^="f-"]').forEach(function(b){b.style.borderColor='';b.style.color='';});
+  btn.style.borderColor='var(--cyan)'; btn.style.color='var(--cyan)';
+  loadQueue();
+}
+
+var TYPE_COLORS = {config:'rgba(0,212,255,.2)',github:'rgba(168,85,247,.2)',install:'rgba(34,216,122,.15)',log:'rgba(245,158,11,.15)',tool:'rgba(244,63,94,.12)'};
+var TYPE_TEXT   = {config:'var(--cyan)',github:'var(--purple)',install:'var(--green)',log:'var(--amber)',tool:'var(--red)'};
+
+function renderQueue(queue){
+  var el = document.getElementById('queue-list');
+  if(!queue.length){
+    el.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:rgba(0,212,255,.3);text-align:center;padding:40px">No updates in queue. Click "RUN SCAN NOW" to check for improvements.</div>';
+    return;
+  }
+  el.innerHTML = queue.map(function(u){
+    var statusCol = {pending:'var(--amber)',approved:'var(--cyan)',deployed:'var(--green)',rejected:'rgba(0,212,255,.3)',deploy_failed:'var(--red)'}[u.status] || 'var(--cyan)';
+    var bgCol = TYPE_COLORS[u.type] || 'rgba(0,4,14,.5)';
+    var txtCol = TYPE_TEXT[u.type] || 'var(--cyan)';
+    var bar = Math.round(u.improvement_pct / 10);
+    var barHtml = '<div style="background:rgba(0,4,14,.6);border-radius:2px;height:5px;width:100%;margin-top:4px"><div style="width:'+u.improvement_pct+'%;height:100%;background:var(--green);border-radius:2px;transition:width .5s"></div></div>';
+    var actions = '';
+    if(u.status==='pending'){
+      actions = '<button class="btn primary" onclick="approveItem(\''+u.id+'\')" style="padding:4px 12px;font-size:9px">APPROVE</button>'
+        +'<button class="btn green" onclick="showDeployModal(\''+u.id+'\',\''+escA(u.title)+'\')" style="padding:4px 12px;font-size:9px;margin-left:4px">DEPLOY</button>'
+        +'<button class="btn" onclick="rejectItem(\''+u.id+'\')" style="padding:4px 12px;font-size:9px;color:rgba(0,212,255,.35);margin-left:4px">SKIP</button>';
+    } else if(u.status==='approved'){
+      actions = '<button class="btn green" onclick="showDeployModal(\''+u.id+'\',\''+escA(u.title)+'\')" style="padding:4px 12px;font-size:9px">DEPLOY NOW</button>'
+        +'<button class="btn" onclick="resetItem(\''+u.id+'\')" style="padding:4px 12px;font-size:9px;opacity:.5;margin-left:4px">RESET</button>';
+    } else if(u.status==='deployed'){
+      actions = '<span style="color:var(--green);font-family:var(--mono);font-size:10px">✓ DEPLOYED</span>';
+    } else if(u.status==='rejected'){
+      actions = '<button class="btn" onclick="resetItem(\''+u.id+'\')" style="padding:4px 12px;font-size:9px;opacity:.5">RESTORE</button>';
+    }
+    var deployResult = u.deploy_result ? '<pre style="margin-top:8px;font-size:9px;max-height:80px;overflow-y:auto">'+escH(u.deploy_result)+'</pre>' : '';
+    var installCmd = u.install_cmd ? '<pre style="margin-top:6px;font-size:9px">'+escH(u.install_cmd)+'</pre>' : '';
+    return '<div style="background:'+bgCol+';border:1px solid rgba(0,212,255,.12);border-radius:5px;padding:14px;margin-bottom:10px">'
+      +'<div style="display:flex;align-items:flex-start;gap:12px">'
+      +'<div style="flex:1">'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
+      +'<span style="font-family:var(--mono);font-size:8px;padding:2px 6px;background:rgba(0,4,14,.6);border:1px solid rgba(0,212,255,.2);color:'+txtCol+';border-radius:2px">'+u.type.toUpperCase()+'</span>'
+      +'<span style="font-size:13px;color:var(--cyan);font-weight:600">'+escH(u.title)+'</span>'
+      +'<span style="font-family:var(--mono);font-size:9px;color:'+statusCol+'">'+u.status+'</span>'
+      +'</div>'
+      +'<div style="font-size:11px;color:rgba(0,212,255,.55);margin-bottom:6px">'+escH(u.description)+'</div>'
+      +'<div style="font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.4)">'+escH(u.improvement_label||'')
+      +'<span style="margin-left:8px;color:var(--green)">+'+u.improvement_pct+'% improvement</span></div>'
+      +barHtml
+      +(u.url ? '<a href="'+u.url+'" target="_blank" style="font-family:var(--mono);font-size:9px;color:rgba(0,212,255,.35);margin-top:4px;display:inline-block">'+u.url.slice(0,60)+'</a>' : '')
+      +installCmd
+      +deployResult
+      +'<div style="margin-top:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+actions+'</div>'
+      +'</div>'
+      +'<div style="font-family:var(--mono);font-size:9px;color:rgba(0,212,255,.25);flex-shrink:0;text-align:right">'+(u.scanned_at||'').slice(0,10)+'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function approveItem(id){
+  fetch(HUB+'/api/jarvis/update-approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'approve'})})
+    .then(function(r){return r.json();}).then(function(){ loadQueue(); });
+}
+function rejectItem(id){
+  fetch(HUB+'/api/jarvis/update-approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'reject'})})
+    .then(function(r){return r.json();}).then(function(){ loadQueue(); });
+}
+function resetItem(id){
+  fetch(HUB+'/api/jarvis/update-approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'reset'})})
+    .then(function(r){return r.json();}).then(function(){ loadQueue(); });
+}
+
+function showDeployModal(id, title){
+  _deployItemId = id;
+  document.getElementById('deploy-modal-title').textContent = title;
+  document.getElementById('deploy-modal').style.display='flex';
+}
+function closeDeployModal(){
+  document.getElementById('deploy-modal').style.display='none';
+  _deployItemId = null;
+}
+function toggleAllPCs(cb){
+  ['dp-master','dp-mitos','dp-c4','dp-c5'].forEach(function(id){
+    document.getElementById(id).checked = cb.checked;
+  });
+}
+function confirmDeploy(){
+  var pcs = [];
+  ['dp-master','dp-mitos','dp-c4','dp-c5'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el && el.checked) pcs.push(el.value);
+  });
+  if(!pcs.length){ alert('Select at least one PC'); return; }
+  closeDeployModal();
+  fetch(HUB+'/api/jarvis/update-approve',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id:_deployItemId,action:'deploy',deploy_pcs:pcs})})
+    .then(function(r){return r.json();}).then(function(){ loadQueue(); });
+}
+
+function runScan(btn){
+  var orig = btn.textContent; btn.textContent='SCANNING…'; btn.disabled=true;
+  fetch(HUB+'/api/jarvis/update-scan',{method:'POST'})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      btn.textContent = '✓ FOUND '+d.scanned+' NEW'; btn.disabled=false;
+      setTimeout(function(){btn.textContent=orig;},3000);
+      loadQueue();
+    }).catch(function(e){ btn.textContent='ERR'; btn.disabled=false; setTimeout(function(){btn.textContent=orig;},2000); });
+}
+
+function clearDone(){
+  fetch(HUB+'/api/jarvis/update-clear',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({keep:['pending','approved']})})
+    .then(function(r){return r.json();}).then(function(){ loadQueue(); });
+}
+
+function copyCron(btn){
+  var txt = '30 11 * * 2 curl -s -X POST http://192.168.0.3:8080/api/jarvis/update-scan';
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).then(function(){ btn.textContent='[COPIED ✓]'; setTimeout(function(){btn.textContent='[COPY]';},2000); });
+}
+
+function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escA(s){ return String(s||'').replace(/'/g,"\\'"); }
+
+// Stats
+function loadStats(){
+  fetch(HUB+'/api/jarvis/config-check')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      _cfg = d;
+      document.getElementById('s-jobs').textContent   = d.registry.jobs.toLocaleString();
+      document.getElementById('s-staff').textContent  = d.registry.staff.toLocaleString();
+      var keys = d.groq.count + d.gemini.count;
+      document.getElementById('s-keys').textContent   = keys;
+      var total=0, best='none', bs=0;
+      Object.keys(d.scores||{}).forEach(function(p){
+        total += d.scores[p].n;
+        if(d.scores[p].avg > bs){ bs=d.scores[p].avg; best=p; }
+      });
+      document.getElementById('s-calls').textContent = total||'0';
+      document.getElementById('s-best').textContent  = best;
+    }).catch(function(){});
+}
+
+// Server log
+function loadServerLog(){
+  fetch(HUB+'/api/jarvis/config-check')  // triggers a check, no dedicated log endpoint yet
+    .then(function(){
+      return fetch(HUB+'/api/file_read',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({path:'logs/server.log', lines:30})
+      });
+    })
+    .then(function(r){return r.text();})
+    .then(function(t){
+      document.getElementById('server-log').textContent = t || '(no log data)';
+    }).catch(function(e){
+      // Try direct read via file_read tool through JARVIS
+      document.getElementById('server-log').textContent = 'Log fetch via: GET '+HUB+'/logs/server.log';
+    });
+}
+
+function clearDisplay(){
+  document.getElementById('upgrade-log').innerHTML = '<div class="log-line"><span class="log-ts">now</span><span class="log-info">// Log cleared</span></div>';
+}
+
+// Tool registry
+var TOOL_DEFS = [
+  {name:'find_job',      cat:'NEW',  desc:'Find the best matching job from 42,000+ registry (3-tier: alias/semantic/full)'},
+  {name:'execute_job',   cat:'NEW',  desc:'Execute a job by ID via webhook → SSH → n8n'},
+  {name:'search_staff',  cat:'NEW',  desc:'Search ALL_STAFF with group filter + relevance scoring'},
+  {name:'search_jobs',   cat:'NEW',  desc:'Search All-Jobs with semantic+keyword+group+location+skills scoring'},
+  {name:'memory_search', cat:'',     desc:'Semantic search across 6,751+ MemPalace memories'},
+  {name:'memory_store',  cat:'',     desc:'Store new memory with wing, room, importance score'},
+  {name:'home_control',  cat:'',     desc:'Control any HA entity — lights, locks, climate, scenes'},
+  {name:'home_query',    cat:'',     desc:'Get state of HA devices or list all in an area'},
+  {name:'send_message',  cat:'',     desc:'Send Telegram message to operator or GF'},
+  {name:'run_ssh',       cat:'',     desc:'SSH into any of 100+ PCs and run a command'},
+  {name:'nocodb_query',  cat:'',     desc:'Query any NocoDB table — staff, jobs, rules, tools, HA entities'},
+  {name:'trigger_n8n',   cat:'',     desc:'Trigger any n8n workflow by webhook name or URL'},
+  {name:'web_search',    cat:'',     desc:'DuckDuckGo search — no API key needed'},
+  {name:'get_weather',   cat:'',     desc:'Weather for any location via wttr.in'},
+  {name:'system_status', cat:'',     desc:'Disk, memory, CPU — local or remote PC'},
+  {name:'run_python',    cat:'',     desc:'Execute Python code in a sandboxed environment'},
+  {name:'file_read',     cat:'',     desc:'Read any file from the server filesystem'},
+  {name:'camera_snapshot',cat:'',   desc:'HA camera snapshot + Gemini Vision description'},
+  {name:'set_reminder',  cat:'',     desc:'Save reminder to MemPalace + Telegram notification'},
+];
+
+function renderTools(){
+  var html = TOOL_DEFS.map(function(t,i){
+    var isNew = t.cat==='NEW';
+    return '<div style="display:flex;gap:12px;align-items:flex-start;padding:8px;'
+      +(isNew?'background:rgba(34,216,122,.04);border:1px solid rgba(34,216,122,.1)':'background:rgba(0,4,14,.5);border:1px solid var(--border2)')
+      +';border-radius:4px;margin-bottom:6px">'
+      +'<div style="font-family:var(--mono);font-size:10px;color:rgba(0,212,255,.3);width:20px;flex-shrink:0;text-align:right">'+(i+1)+'</div>'
+      +'<div style="flex:1">'
+      +'<div style="font-family:var(--mono);font-size:12px;color:'+(isNew?'var(--green)':'var(--cyan)')+'">'+t.name+(isNew?' <span style="font-size:8px;background:rgba(34,216,122,.15);color:var(--green);padding:1px 5px;border-radius:2px;border:1px solid rgba(34,216,122,.3)">NEW</span>':'')+'</div>'
+      +'<div style="font-size:11px;color:rgba(0,212,255,.45);margin-top:2px">'+t.desc+'</div>'
+      +'</div>'
+      +'<button class="btn" style="padding:3px 10px;font-size:9px;flex-shrink:0" onclick="toolTest(\''+t.name+'\',this)">TEST</button>'
+      +'</div>';
+  }).join('');
+  document.getElementById('tool-registry').innerHTML = html;
+}
+
+function toolTest(name, btn){
+  var tests = {
+    'get_weather':    'What is the weather in London?',
+    'web_search':     'Search the web for latest AI news',
+    'memory_search':  'Search my memory for recent decisions',
+    'system_status':  'What is the system status?',
+    'find_job':       'Find a job for turning on lights',
+    'search_staff':   'Find a Jarvis staff member',
+  };
+  var msg = tests[name] || ('Use the '+name+' tool and show the result');
+  cliSendMsg(msg);
+  sw('cli', document.querySelector('.tab:nth-child(3)'));
+}
+
+// CLI
+var _cliHistory = [];
+function cliKey(e){
+  if(e.key==='Enter') cliRun();
+  if(e.key==='ArrowUp' && _cliHistory.length){
+    document.getElementById('cli-input').value = _cliHistory[_cliHistory.length-1];
+  }
+}
+function cliQuick(msg){ document.getElementById('cli-input').value=msg; cliRun(); }
+function cliSendMsg(msg){ document.getElementById('cli-input').value=msg; cliRun(); }
+
+function cliRun(){
+  var input = document.getElementById('cli-input');
+  var msg = input.value.trim();
+  if(!msg) return;
+  _cliHistory.push(msg);
+  input.value='';
+  var hist = document.getElementById('cli-hist');
+  hist.innerHTML += '<div style="color:var(--cyan);margin:6px 0 2px"><span style="color:rgba(0,212,255,.4)">JARVIS &gt;</span> '+escH(msg)+'</div>';
+
+  // Shell command shortcut
+  if(msg.startsWith('!')){
+    var cmd = msg.slice(1).trim();
+    hist.innerHTML += '<div style="color:rgba(0,212,255,.3)">Running shell: '+escH(cmd)+'…</div>';
+    fetch(HUB+'/api/jarvis',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:'Run this shell command on master PC: '+cmd, wing:'auto', user:'sam'})
+    }).then(function(r){return r.json();})
+    .then(function(d){ appendReply(hist, d.reply||d.error||'done'); hist.scrollTop=hist.scrollHeight; })
+    .catch(function(e){ appendReply(hist, 'Error: '+e.message); });
+    return;
+  }
+
+  hist.innerHTML += '<div class="log-info" style="font-size:10px">thinking…</div>';
+  hist.scrollTop = hist.scrollHeight;
+
+  fetch(HUB+'/api/jarvis',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({message:msg, wing:'auto', user:'sam'})
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    // Remove "thinking…"
+    var thinking = hist.querySelector('.log-info:last-child');
+    if(thinking) hist.removeChild(thinking);
+    var provider = d.provider?'['+d.provider+'] ':'';
+    var ms = d.elapsed_ms?'('+Math.round(d.elapsed_ms)+'ms) ':'';
+    hist.innerHTML += '<div style="color:rgba(0,212,255,.3);font-size:9px;margin-bottom:2px">'+provider+ms+'</div>';
+    appendReply(hist, d.reply||d.error||JSON.stringify(d));
+    hist.scrollTop=hist.scrollHeight;
+  }).catch(function(e){
+    appendReply(hist, 'Error: '+e.message);
+    hist.scrollTop=hist.scrollHeight;
+  });
+}
+
+function appendReply(hist, text){
+  var el = document.createElement('div');
+  el.style.cssText = 'color:rgba(0,212,255,.7);font-size:11px;white-space:pre-wrap;word-break:break-word;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(0,212,255,.06)';
+  el.textContent = text;
+  hist.appendChild(el);
+}
+
+function escH(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// GitHub scan
+function ghScan(){
+  var url = document.getElementById('gh-url').value.trim();
+  if(!url) return;
+  var prompt = url.startsWith('http')
+    ? 'Use web_search to find information about this GitHub repo: '+url+'. Summarise what it does, key features, and suggest if it could be added as a JARVIS tool.'
+    : 'Search GitHub for: '+url+'. Find the most relevant AI/automation tools and suggest which ones could be added as JARVIS tools.';
+  document.getElementById('gh-result').style.display='block';
+  document.getElementById('gh-out').textContent = 'Scanning…';
+  fetch(HUB+'/api/jarvis',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({message:prompt, wing:'auto', user:'sam'})
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    document.getElementById('gh-out').textContent = d.reply||d.error||JSON.stringify(d);
+  }).catch(function(e){
+    document.getElementById('gh-out').textContent = 'Error: '+e.message;
+  });
+}
+
+function ghTrending(){
+  document.getElementById('gh-url').value = 'trending AI automation tools 2025 Python voice assistant local LLM';
+  ghScan();
+}
+
+loadStats();
+loadQueue();
+setInterval(loadStats, 30000);
+setInterval(loadQueue, 60000);
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

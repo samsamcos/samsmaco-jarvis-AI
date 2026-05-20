@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JARVIS — Master Keys</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'Segoe UI',sans-serif;font-size:13px}
+:root{
+  --grn:#22c55e;--red:#ef4444;--yel:#f5c518;--blu:#6b8cff;--pur:#a855f7;
+  --cyn:#06b6d4;--org:#f97316;--bg2:#0f0f18;--brd:#1e1e2e
+}
+.hdr{background:#0f0f18;border-bottom:1px solid var(--brd);padding:10px 20px;
+     display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.hdr-title{font-size:15px;font-weight:700;color:var(--yel)}
+.hdr-sub{font-size:11px;color:#475569}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:6px;
+     font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;background:transparent}
+.btn-grn{border-color:var(--grn);color:var(--grn)}.btn-grn:hover{background:var(--grn);color:#000}
+.btn-red{border-color:var(--red);color:var(--red)}.btn-red:hover{background:var(--red);color:#fff}
+.btn-ghost{border-color:#2a2a3a;color:#64748b}.btn-ghost:hover{border-color:#444;color:#ccc}
+.btn-sm{padding:3px 9px;font-size:11px}
+
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:14px 20px;
+       border-bottom:1px solid var(--brd)}
+.stat{background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:10px 14px;text-align:center}
+.stat-val{font-size:22px;font-weight:800}
+.stat-lbl{font-size:10px;color:#475569;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+.body{display:grid;grid-template-columns:310px 1fr;min-height:calc(100vh - 180px)}
+
+.add-panel{background:#09090e;border-right:1px solid var(--brd);padding:16px;overflow-y:auto}
+.panel-title{font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.form-row{margin-bottom:9px}
+.form-row label{font-size:11px;color:#64748b;display:block;margin-bottom:3px}
+.form-row input,
+.form-row select,
+.form-row textarea{
+  width:100%;background:#0f0f18;border:1px solid #1e1e2e;border-radius:5px;
+  color:#dde1f5;padding:6px 9px;font-size:12px;font-family:monospace;
+  resize:vertical;outline:none;transition:border .15s
+}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--blu)}
+.form-row textarea{min-height:72px}
+.divider{border:none;border-top:1px solid var(--brd);margin:14px 0}
+
+.int-block{background:#0f0f18;border:1px solid var(--brd);border-radius:6px;
+           padding:9px 11px;margin-bottom:8px}
+.int-title{font-size:11px;font-weight:700;margin-bottom:5px}
+.int-url{font-family:monospace;font-size:10px;color:#64748b;background:#07080d;
+         border:1px solid #1a1a28;border-radius:3px;padding:3px 7px;
+         word-break:break-all;cursor:pointer;display:block;margin-bottom:3px}
+.int-url:hover{border-color:var(--blu);color:var(--blu)}
+.int-note{font-size:10px;color:#334155;line-height:1.7}
+code{background:#14141e;border-radius:3px;padding:1px 4px;
+     font-family:monospace;font-size:10px;color:var(--yel)}
+
+.nodes-panel{overflow-y:auto;padding:16px}
+.nodes-grid{display:flex;flex-direction:column;gap:10px}
+.node-card{background:#0f0f18;border:1px solid var(--brd);border-radius:8px;overflow:hidden}
+.node-hdr{padding:9px 14px;display:flex;align-items:center;gap:10px;
+          border-bottom:1px solid var(--brd);background:#0a0a13}
+.node-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-ok{background:var(--grn)}.dot-empty{background:#334155}.dot-busy{background:var(--org)}
+.node-name{font-size:13px;font-weight:700;color:#e2e8f0}
+.node-ip{font-size:10px;color:#475569;font-family:monospace}
+.node-badges{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap}
+.badge{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;border:1px solid}
+.badge-free{border-color:var(--grn);color:var(--grn);background:#051a0e}
+.badge-leased{border-color:var(--org);color:var(--org);background:#1a0e05}
+.badge-cool{border-color:#334155;color:#475569;background:#0a0a13}
+.badge-empty{border-color:#1e1e2e;color:#334155;background:#07080d}
+
+.keys-table{width:100%;border-collapse:collapse}
+.keys-table th{font-size:10px;color:#334155;text-transform:uppercase;letter-spacing:.4px;
+               padding:5px 12px;text-align:left;border-bottom:1px solid #0f0f18}
+.keys-table td{padding:5px 12px;font-size:11px;border-bottom:1px solid #0a0a13}
+.keys-table tr:last-child td{border-bottom:none}
+.keys-table tr:hover td{background:#0a0a13}
+.k-hint{font-family:monospace;color:#94a3b8}
+.k-email{color:#475569}
+.k-free{color:var(--grn);font-weight:600}
+.k-leased{color:var(--org);font-weight:600}
+.k-cool{color:#475569}
+.k-held{font-size:10px;color:#334155}
+.k-del{cursor:pointer;color:#334155;font-size:13px;padding:0 4px}
+.k-del:hover{color:var(--red)}
+.node-empty{padding:12px;font-size:11px;color:#334155;font-style:italic}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1a2e;border:1px solid var(--blu);
+       border-radius:8px;padding:9px 15px;font-size:12px;color:var(--blu);
+       display:none;z-index:999}
+
+/* Model Keys Section */
+.model-keys-section{background:#08091000;border-bottom:1px solid var(--brd);padding:14px 20px}
+.mk-header{font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;
+           letter-spacing:.7px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.mk-header span{color:#e2e8f0;font-size:13px}
+.mk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mk-card{background:#0f0f18;border:1px solid var(--brd);border-radius:8px;padding:12px 14px;
+         display:flex;flex-direction:column;gap:7px;position:relative;overflow:hidden}
+.mk-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.mk-flash::before{background:linear-gradient(90deg,var(--cyn),var(--blu))}
+.mk-pro::before{background:linear-gradient(90deg,var(--pur),var(--red))}
+.mk-lite::before{background:linear-gradient(90deg,var(--grn),var(--cyn))}
+.mk-title{font-size:13px;font-weight:700;color:#e2e8f0}
+.mk-id{font-size:10px;font-family:monospace;color:#475569}
+.mk-desc{font-size:10px;color:#475569;line-height:1.5}
+.mk-status{font-size:11px;font-weight:600;padding:2px 0}
+.mk-row{display:flex;gap:6px;align-items:center}
+.mk-row input{flex:1;background:#07080d;border:1px solid #1e1e2e;border-radius:5px;
+              color:#dde1f5;padding:5px 8px;font-size:11px;font-family:monospace;outline:none}
+.mk-row input:focus{border-color:var(--blu)}
+.mk-save{padding:5px 10px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;
+         border:1px solid var(--grn);color:var(--grn);background:transparent;white-space:nowrap}
+.mk-save:hover{background:var(--grn);color:#000}
+.mk-badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;border:1px solid;display:inline-block}
+.mk-set{border-color:var(--grn);color:var(--grn);background:#051a0e}
+.mk-unset{border-color:#1e1e2e;color:#334155;background:#07080d}
+.mk-active{border-color:var(--org);color:var(--org);background:#1a0e05}
+.mk-lease-url{font-family:monospace;font-size:10px;color:#475569;background:#07080d;
+              border:1px solid #1a1a28;border-radius:3px;padding:4px 7px;
+              word-break:break-all;cursor:pointer;display:block;margin-top:5px;line-height:1.6}
+.mk-lease-url:hover{border-color:var(--blu);color:var(--cyn)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-title">🔑 JARVIS — Master Key Broker</div>
+    <div class="hdr-sub">1 key · 1 task · VM round-robin · 429 auto-rotate · used by site, staff, n8n, all PCs</div>
+  </div>
+  <div class="spacer"></div>
+  <a href="/gemini-fleet" class="btn btn-ghost btn-sm" style="margin-right:4px">🛰 Fleet</a>
+  <a href="/masterclass" class="btn btn-ghost btn-sm" style="margin-right:4px">⚙ Masterclass</a>
+  <a href="/" class="btn btn-ghost btn-sm">💬 Chat</a>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-val" id="s-total" style="color:var(--blu)">—</div>
+    <div class="stat-lbl">Total Keys</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-free" style="color:var(--grn)">—</div>
+    <div class="stat-lbl">Free</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-leased" style="color:var(--org)">—</div>
+    <div class="stat-lbl">In Use</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-cool" style="color:#475569">—</div>
+    <div class="stat-lbl">Cooling 429</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-nodes" style="color:var(--pur)">—</div>
+    <div class="stat-lbl">VMs Online</div>
+  </div>
+</div>
+
+<!-- 3 Master Model Keys -->
+<div class="model-keys-section">
+  <div class="mk-header">🤖 <span>3 Model Endpoints</span> — share the round-robin key pool · add your keys below · works in n8n, site, staff, any system</div>
+  <div class="mk-grid">
+
+    <div class="mk-card mk-flash">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div>
+          <div class="mk-title">⚡ Gemini 2.5 Flash</div>
+          <div class="mk-id">gemini-2.5-flash</div>
+        </div>
+        <div style="margin-left:auto" id="mk-status-gemini-2.5-flash"><span class="mk-badge mk-unset">pool: 0 free</span></div>
+      </div>
+      <div class="mk-desc">Fast, efficient — default for most tasks</div>
+      <div class="mk-lease-url" onclick="copyText(this)">POST /api/gemini-key/model-lease  →  {"model":"gemini-2.5-flash","task_id":"…","pc":"n8n"}</div>
+      <div class="mk-lease-url" onclick="copyText(this)">POST /api/gemini-key/model-release  →  {"key":"{{$json.key}}"}</div>
+      <div style="font-size:10px;color:#334155;margin-top:2px">Returns: <code>key · key_hint · model · model_endpoint · base_url</code></div>
+    </div>
+
+    <div class="mk-card mk-pro">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div>
+          <div class="mk-title">🧠 Gemini 2.5 Pro</div>
+          <div class="mk-id">gemini-2.5-pro</div>
+        </div>
+        <div style="margin-left:auto" id="mk-status-gemini-2.5-pro"><span class="mk-badge mk-unset">pool: 0 free</span></div>
+      </div>
+      <div class="mk-desc">Most capable — blueprints, reasoning, long context</div>
+      <div class="mk-lease-url" onclick="copyText(this)">POST /api/gemini-key/model-lease  →  {"model":"gemini-2.5-pro","task_id":"…","pc":"n8n"}</div>
+      <div class="mk-lease-url" onclick="copyText(this)">POST /api/gemini-key/model-release  →  {"key":"{{$json.key}}"}</div>
+      <div style="font-size:10px;color:#334155;margin-top:2px">Returns: <code>key · key_hint · model · model_endpoint · base_url</code></div>
+    </div>
+
+    <div class="mk-card mk-lite">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div>
+          <div class="mk-title">🔹 Flash-Lite</div>
+          <div class="mk-id">gemini-2.0-flash-lite</div>
+        </div>
+        <div style="margin-left:auto" id="mk-status-gemini-2.0-flash-lite"><span class="mk-badge mk-unset">pool: 0 free</span></div>
+      </div>
+      <div class="mk-desc">Lightest, fastest — classification, quick tasks</div>
+      <div class="mk-lease-url" onclick="copyText(this)">POST /api/gemini-key/model-lease  →  {"model":"gemini-2.0-flash-lite","task_id":"…","pc":"n8n"}</div>
+      <div class="mk-lease-url" onclick="copyText(this)">POST /api/gemini-key/model-release  →  {"key":"{{$json.key}}"}</div>
+      <div style="font-size:10px;color:#334155;margin-top:2px">Returns: <code>key · key_hint · model · model_endpoint · base_url</code></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- Left: Add key + integrations -->
+  <div class="add-panel">
+    <div class="panel-title">➕ Add API Key</div>
+    <div class="form-row">
+      <label>Node / VM</label>
+      <select id="add-node"></select>
+    </div>
+    <div class="form-row">
+      <label>Email / Label (optional)</label>
+      <input type="text" id="add-email" placeholder="myaccount@gmail.com">
+    </div>
+    <div class="form-row">
+      <label>API Key(s) — paste one or many</label>
+      <textarea id="add-keys" placeholder="AIzaSy...&#10;AIzaSy...&#10;AIzaSy..."></textarea>
+    </div>
+    <button class="btn btn-grn" style="width:100%;justify-content:center" onclick="addKeys()">➕ Add to Master Pool</button>
+
+    <hr class="divider">
+
+    <!-- ── Auto Distribute ── -->
+    <div class="panel-title">⚡ Auto-Distribute Across Fleet</div>
+    <div style="font-size:10px;color:#475569;margin-bottom:8px;line-height:1.6">
+      Scans which VMs are online → splits all keys evenly → updates LiteLLM automatically.<br>
+      e.g. 2 nodes online + 6 keys → 3 keys each
+    </div>
+    <div id="dist-status" style="font-size:11px;color:#334155;margin-bottom:8px;min-height:16px"></div>
+    <button class="btn btn-grn" style="width:100%;justify-content:center;margin-bottom:6px" onclick="distributeKeys()">
+      🛰 Scan &amp; Distribute Keys
+    </button>
+    <button class="btn" style="width:100%;justify-content:center;border-color:var(--cyn);color:var(--cyn)" onclick="applyLiteLLM()">
+      ⚙ Apply to LiteLLM
+    </button>
+
+    <hr class="divider">
+    <div class="panel-title">🔗 Integrate From Any System</div>
+
+    <div class="int-block">
+      <div class="int-title" style="color:var(--blu)">🌐 Site / Direct HTTP</div>
+      <div class="int-url" onclick="copyText(this)">POST http://192.168.0.3:8080/api/gemini-key/lease</div>
+      <div class="int-url" onclick="copyText(this)">POST http://192.168.0.3:8080/api/gemini-key/release</div>
+      <div class="int-url" onclick="copyText(this)">GET  http://192.168.0.3:8080/api/gemini-key/status</div>
+      <div class="int-url" onclick="copyText(this)">POST http://192.168.0.3:8080/api/gemini-key/model-lease</div>
+      <div class="int-url" onclick="copyText(this)">POST http://192.168.0.3:8080/api/gemini-key/model-release</div>
+      <div class="int-url" onclick="copyText(this)">GET  http://192.168.0.3:8080/api/gemini-key/models</div>
+      <div class="int-note">
+        Lease: <code>{"task_id":"t1","pc":"192.168.0.8"}</code><br>
+        Returns: <code>{"ok":true,"key":"AIza...","key_hint":"...VKoA"}</code><br>
+        Release: <code>{"key":"AIza...","status":"ok"}</code>
+      </div>
+    </div>
+
+    <div class="int-block">
+      <div class="int-title" style="color:var(--cyn)">⚙️ n8n — AI Agent Node (Gemini)</div>
+      <div class="int-note">
+        <b>Step 1 — HTTP Request node (before AI Agent):</b><br>
+        Method: <code>POST</code><br>
+        URL: <code>/api/gemini-key/model-lease</code><br>
+        Body: <code>{"model":"gemini-2.5-flash","task_id":"{{$runIndex}}","pc":"n8n"}</code><br>
+        → Returns: <code>{"ok":true,"key":"AIza...","model":"gemini-2.5-flash"}</code><br><br>
+        <b>Step 2 — AI Agent node:</b><br>
+        Credential Type: <code>Google Gemini API</code><br>
+        API Key: <code>={{$node['Lease Key'].json.key}}</code> (expression)<br>
+        Model: <code>gemini-2.5-flash</code> (or pro / lite)<br><br>
+        <b>Step 3 — Release (after AI Agent):</b><br>
+        URL: <code>/api/gemini-key/model-release</code><br>
+        Body: <code>{"model":"gemini-2.5-flash"}</code>
+      </div>
+    </div>
+
+    <div class="int-block">
+      <div class="int-title" style="color:var(--cyn)">⚙️ n8n — HTTP Request (pool key)</div>
+      <div class="int-note">
+        <b>Lease any key (round-robin):</b><br>
+        Method: <code>POST</code><br>
+        URL: <code>http://192.168.0.3:8080/api/gemini-key/lease</code><br>
+        Body: <code>{"task_id":"{{$runIndex}}","pc":"n8n"}</code><br><br>
+        Use <code>{{$json.key}}</code> as Gemini API key in next node.<br><br>
+        <b>Release key</b> (after task):<br>
+        URL: <code>http://192.168.0.3:8080/api/gemini-key/release</code><br>
+        Body: <code>{"key":"{{$node['lease'].json.key}}"}</code>
+      </div>
+    </div>
+
+    <div class="int-block">
+      <div class="int-title" style="color:var(--grn)">👥 Staff / Other PC</div>
+      <div class="int-note">
+        Add key from any PC on network:<br>
+        <code>POST /api/gemini-key/add</code><br>
+        <code>{"node_id":2,"keys":["AIza..."],"email":"me@x.com"}</code><br><br>
+        Keys appear instantly — no restart needed.<br>
+        All PCs share the same pool automatically.
+      </div>
+    </div>
+
+    <div class="int-block">
+      <div class="int-title" style="color:var(--pur)">🐍 Worker VM (.8 / run_worker.py)</div>
+      <div class="int-note">
+        Already wired up. Every task on .8 leases from .3 broker.<br>
+        New VM: copy <code>run_worker.py</code>, set<br>
+        <code>MASTER = "http://192.168.0.3:8080"</code>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <button class="btn btn-red btn-sm" style="width:100%;justify-content:center" onclick="resetCooldowns()">🔄 Clear All 429 Cooldowns</button>
+  </div>
+
+  <!-- Right: Node cards -->
+  <div class="nodes-panel">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:#94a3b8">Nodes &amp; Keys — live view</div>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost btn-sm" onclick="load()">↺ Refresh</button>
+    </div>
+    <div class="nodes-grid" id="nodes-grid">
+      <div style="color:#334155;padding:20px">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+async function load() {
+  try {
+    const [st, kl, fl] = await Promise.all([
+      fetch('/api/gemini-key/status').then(r=>r.json()),
+      fetch('/api/gemini-key/keys').then(r=>r.json()),
+      fetch('/api/gemini-fleet').then(r=>r.json()),
+    ]);
+    window._lastFleet = fl;
+    renderStats(st);
+    renderNodes(st, kl, fl);
+    buildNodeSelect(fl);
+  } catch(e) { console.error(e); }
+}
+
+function renderStats(s) {
+  set('s-total', s.total??'—');
+  set('s-free',  s.free??'—');
+  set('s-leased',s.leased??'—');
+  set('s-cool',  s.cooling??'—');
+  set('s-nodes', (s.nodes||[]).filter(n=>n.keys_total>0).length);
+}
+
+function renderNodes(st, kl, fl) {
+  const nodes   = st.nodes || [];
+  const leases  = st.leases || {};
+  const cools   = st.cooling_keys || {};
+  const grid    = document.getElementById('nodes-grid');
+
+  if (!nodes.length) {
+    grid.innerHTML = '<div style="color:#334155;padding:20px">No nodes found.</div>';
+    return;
+  }
+
+  grid.innerHTML = nodes.map(node => {
+    const dotCls = node.keys_total===0 ? 'dot-empty' : node.leased>0 ? 'dot-busy' : 'dot-ok';
+    const badges = [
+      node.free>0    ? `<span class="badge badge-free">${node.free} free</span>` : '',
+      node.leased>0  ? `<span class="badge badge-leased">${node.leased} in use</span>` : '',
+      node.cooling>0 ? `<span class="badge badge-cool">${node.cooling} cooling</span>` : '',
+      node.keys_total===0 ? `<span class="badge badge-empty">no keys yet</span>` : '',
+    ].filter(Boolean).join('');
+
+    const flNode   = (fl.nodes||[]).find(n=>n.id===node.id);
+    const accounts = flNode ? (flNode.accounts||[]) : [];
+
+    let rows = '';
+    if (!accounts.length) {
+      rows = `<tr><td colspan="5" class="node-empty">No keys — add via panel ↙</td></tr>`;
+    } else {
+      rows = accounts.map(acct => {
+        const k    = (acct.keys||{}).flash || (acct.keys||{}).pro || '';
+        const hint = k ? `...${k.slice(-8)}` : '';
+        const lk   = k ? `...${k.slice(-6)}` : '';
+        const lease = leases[lk];
+        const coolVal = Object.entries(cools).find(([h])=>h.includes(k.slice(-6)));
+        const coolSec = coolVal ? coolVal[1] : 0;
+        let sc='k-cool', st2='—', held='';
+        if (lease)       { sc='k-leased'; st2='⚡ in use'; held=`${lease.held_secs}s · ${lease.task_id||''} · ${lease.pc||''}`; }
+        else if(coolSec) { sc='k-cool';   st2=`⏳ ${coolSec}s`; }
+        else if(k)       { sc='k-free';   st2='✅ free'; }
+        return `<tr>
+          <td class="k-hint">${hint||'—'}</td>
+          <td class="k-email">${esc(acct.email||acct.slot||'')}</td>
+          <td class="${sc}">${st2}</td>
+          <td class="k-held">${esc(held)}</td>
+          <td style="white-space:nowrap">
+            <span class="k-del" onclick="openFixAccount(${node.id},'${acct.slot}')" title="Move to different node/slot" style="color:#6b8cff;font-size:11px;margin-right:4px">⇄</span>
+            <span class="k-del" onclick="removeKey('${esc(k)}','${esc(hint)}')" title="Remove">✕</span>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    return `<div class="node-card">
+      <div class="node-hdr">
+        <div class="node-dot ${dotCls}"></div>
+        <div>
+          <div class="node-name">Node ${node.id} — ${esc(node.name)}</div>
+          <div class="node-ip">${esc(node.ip)}</div>
+        </div>
+        <div class="node-badges">${badges}</div>
+      </div>
+      <table class="keys-table">
+        <thead><tr><th>Key</th><th>Account</th><th>Status</th><th>Detail</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+function buildNodeSelect(fl) {
+  const sel = document.getElementById('add-node');
+  const cur = sel.value;
+  sel.innerHTML = (fl.nodes||[]).map(n=>
+    `<option value="${n.id}" ${n.id==cur?'selected':''}>${n.id} — ${esc(n.name)} (${n.ip||'?'})</option>`
+  ).join('');
+}
+
+async function addKeys() {
+  const nodeId = parseInt(document.getElementById('add-node').value);
+  const email  = document.getElementById('add-email').value.trim();
+  const raw    = document.getElementById('add-keys').value.trim();
+  const keys   = raw.split(/[\n\r,;]+/).map(k=>k.trim()).filter(k=>k.startsWith('AIza'));
+  if (!keys.length) { toast('No valid keys (must start AIza)', 'red'); return; }
+  const r = await fetch('/api/gemini-key/add', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({node_id:nodeId, keys, email})
+  }).then(r=>r.json());
+  if (r.ok) {
+    toast(`✅ Added ${r.added} key(s) → ${r.node_name||'Node '+nodeId}: ${r.hints.join(' ')}`,'green');
+    document.getElementById('add-keys').value='';
+    load();
+  } else { toast(r.error||'Failed','red'); }
+}
+
+async function removeKey(key, hint) {
+  if (!confirm(`Remove key ${hint}?\nThis will release any active lease.`)) return;
+  const r = await fetch('/api/gemini-key/remove', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({key, hint})
+  }).then(r=>r.json());
+  r.ok ? (toast('Key removed'), load()) : toast(r.error||'Failed','red');
+}
+
+async function resetCooldowns() {
+  await fetch('/gemini-keys/reset', {method:'POST'});
+  toast('All 429 cooldowns cleared','green');
+  load();
+}
+
+function copyText(el) {
+  navigator.clipboard.writeText(el.textContent.trim());
+  toast('Copied!');
+}
+function set(id, v) { const e=document.getElementById(id); if(e) e.textContent=v; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg, type='blue') {
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  const c={blue:'var(--blu)',green:'var(--grn)',red:'var(--red)'}[type]||'var(--blu)';
+  t.style.borderColor=c; t.style.color=c; t.style.display='block';
+  clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none',3000);
+}
+
+// ── Model pool status badges ─────────────────────────────────────────────────
+const MODEL_IDS = ['gemini-2.5-flash','gemini-2.5-pro','gemini-2.0-flash-lite'];
+
+async function loadModelKeys() {
+  try {
+    const st = await fetch('/api/gemini-key/status').then(r=>r.json());
+    const free   = st.free   || 0;
+    const leased = st.leased || 0;
+    const cool   = st.cooling|| 0;
+    // All 3 model endpoints share the same pool — show pool health on each card
+    MODEL_IDS.forEach(mid => {
+      const el = document.getElementById('mk-status-'+mid);
+      if (!el) return;
+      let cls, badge;
+      if (free > 0) {
+        cls = 'mk-set';
+        badge = `✅ pool: ${free} free`;
+      } else if (leased > 0 || cool > 0) {
+        cls = 'mk-active';
+        badge = `⏳ pool busy — ${leased} in use`;
+      } else {
+        cls = 'mk-unset';
+        badge = 'pool: 0 keys — add keys below';
+      }
+      el.innerHTML = `<span class="mk-badge ${cls}">${badge}</span>`;
+    });
+  } catch(e) { console.error('model keys:', e); }
+}
+
+// ── Distribute keys across online nodes ──────────────────────────────────────
+async function distributeKeys() {
+  const el = document.getElementById('dist-status');
+  el.style.color='var(--yel)'; el.textContent='⟳ Scanning nodes…';
+  try {
+    const r = await fetch('/api/gemini-fleet/distribute', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
+    }).then(r=>r.json());
+    if (r.ok) {
+      const online = r.online_nodes.join(', ') || '—';
+      const offline = r.offline_nodes.length ? ` | offline: ${r.offline_nodes.join(', ')}` : '';
+      el.style.color='var(--grn)';
+      el.textContent = `✅ ${r.total_keys} keys → ${r.online_nodes.length} nodes (${r.keys_per_node}/node) | online: ${online}${offline}`;
+      toast(`Distributed ${r.total_keys} keys across ${r.online_nodes.length} node(s) · LiteLLM updated`, 'green');
+      load();
+    } else {
+      el.style.color='var(--red)'; el.textContent='✗ '+( r.error||'Failed');
+      toast(r.error||'Failed','red');
+    }
+  } catch(e) { el.style.color='var(--red)'; el.textContent='✗ '+e.message; toast(e.message,'red'); }
+}
+
+// ── Apply current fleet config to LiteLLM ────────────────────────────────────
+async function applyLiteLLM() {
+  toast('⟳ Applying to LiteLLM…','blue');
+  try {
+    const r = await fetch('/api/gemini-fleet/apply-litellm', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
+    }).then(r=>r.json());
+    r.ok
+      ? toast(`✅ LiteLLM updated — ${r.models_written} model entries written`, 'green')
+      : toast('✗ '+( r.error||'Failed'),'red');
+  } catch(e) { toast(e.message,'red'); }
+}
+
+// ── Fix / Move account between nodes ─────────────────────────────────────────
+let _fixSrc = null;
+function openFixAccount(nodeId, slot) {
+  _fixSrc = {nodeId, slot};
+  const existing = document.getElementById('fix-modal');
+  if (existing) existing.remove();
+  // Build node+slot options from current fleet
+  const fl = window._lastFleet;
+  const opts = (fl && fl.nodes ? fl.nodes : []).map(n =>
+    ['A','B','C','D','E'].map(s =>
+      `<option value="${n.id}:${s}">Node ${n.id} — ${esc(n.name)} · Slot ${s}</option>`
+    ).join('')
+  ).join('');
+  const modal = document.createElement('div');
+  modal.id = 'fix-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML=`
+    <div style="background:#0f0f18;border:1px solid var(--blu);border-radius:10px;padding:22px;width:360px">
+      <div style="font-weight:700;font-size:14px;color:#e2e8f0;margin-bottom:14px">⇄ Move Account</div>
+      <div style="font-size:11px;color:#475569;margin-bottom:10px">From: Node ${nodeId} · Slot ${slot}</div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:5px">Move to:</div>
+      <select id="fix-dest" style="width:100%;background:#07080d;border:1px solid #1e1e2e;border-radius:5px;color:#dde1f5;padding:6px 9px;font-size:12px;margin-bottom:14px">
+        ${opts}
+      </select>
+      <div style="display:flex;gap:8px">
+        <button onclick="doFixAccount()" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--grn);color:var(--grn);background:transparent;cursor:pointer;font-weight:700;font-size:12px">✓ Move</button>
+        <button onclick="document.getElementById('fix-modal').remove()" style="padding:8px 14px;border-radius:6px;border:1px solid #334155;color:#64748b;background:transparent;cursor:pointer;font-size:12px">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function doFixAccount() {
+  const dest = document.getElementById('fix-dest').value.split(':');
+  const r = await fetch('/api/gemini-fleet/fix-account', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({from_node:_fixSrc.nodeId, from_slot:_fixSrc.slot, to_node:parseInt(dest[0]), to_slot:dest[1]})
+  }).then(r=>r.json());
+  document.getElementById('fix-modal').remove();
+  r.ok ? (toast('✅ Account moved · LiteLLM updated','green'), load()) : toast(r.error||'Failed','red');
+}
+
+load();
+loadModelKeys();
+setInterval(load, 3000);
+setInterval(loadModelKeys, 3000);
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

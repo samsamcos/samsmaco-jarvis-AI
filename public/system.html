@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System Monitor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#dde1f5;font-family:'Segoe UI',sans-serif;font-size:13px;min-height:100vh}
+:root{--grn:#22c55e;--red:#ef4444;--yel:#f5c518;--blu:#6b8cff;--cyn:#06b6d4;--org:#f97316;--bg2:#0f0f18;--brd:#1e1e2e}
+
+/* Header */
+.hdr{background:#0f0f18;border-bottom:1px solid var(--brd);padding:10px 20px;
+     display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100}
+.hdr-title{font-size:15px;font-weight:700;color:#dde1f5}
+.hdr-sub{font-size:11px;color:#475569}
+.spacer{flex:1}
+.badge{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;border:1px solid}
+.badge-ok{border-color:var(--grn);color:var(--grn)}
+.badge-warn{border-color:var(--yel);color:var(--yel)}
+.badge-crit{border-color:var(--red);color:var(--red)}
+.btn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;
+     border:1px solid var(--brd);background:transparent;color:#64748b;transition:.15s}
+.btn:hover{border-color:#6b8cff;color:#6b8cff}
+.btn-active{border-color:#6b8cff;color:#6b8cff;background:#0d1220}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;padding:10px 20px 0;border-bottom:1px solid var(--brd);background:#0d0e17}
+.tab{padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;color:#475569;
+     border-radius:6px 6px 0 0;border:1px solid transparent;border-bottom:none;transition:.12s}
+.tab:hover{color:#94a3b8}
+.tab.active{background:#07080d;border-color:var(--brd);color:#b57aff}
+
+/* Content */
+.content{padding:18px 20px;display:none}
+.content.active{display:block}
+
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{background:#0d0f17;border:1px solid var(--brd);border-radius:10px;padding:14px 16px}
+.stat-label{font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.stat-val{font-size:28px;font-weight:800;line-height:1}
+.stat-sub{font-size:11px;color:#475569;margin-top:4px}
+.stat-pct-grn{color:var(--grn)}
+.stat-pct-yel{color:var(--yel)}
+.stat-pct-red{color:var(--red)}
+.stat-pct-blu{color:var(--blu)}
+
+/* Gauge ring */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+.gauges-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px}
+.gauge-card{background:#0d0f17;border:1px solid var(--brd);border-radius:10px;
+            padding:16px 14px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.gauge-title{font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.6px}
+.gauge-ring{position:relative;width:110px;height:110px}
+.gauge-ring svg{width:110px;height:110px;transform:rotate(-90deg)}
+.gauge-bg{fill:none;stroke:#1e2030;stroke-width:10}
+.gauge-arc{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+.gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;
+              align-items:center;justify-content:center}
+.gauge-num{font-size:20px;font-weight:800}
+.gauge-unit{font-size:9px;color:#475569}
+
+/* Progress bar */
+.prog-row{margin-bottom:10px}
+.prog-label{display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-bottom:4px}
+.prog-bar{height:6px;background:#1e2030;border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .5s ease}
+
+/* Disk cards */
+.disk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:18px}
+.disk-card{background:#0d0f17;border:1px solid var(--brd);border-radius:8px;padding:12px 14px}
+.disk-mount{font-size:11px;font-weight:700;color:#e2e8f0;margin-bottom:6px}
+.disk-info{font-size:10px;color:#475569;margin-bottom:6px}
+
+/* Process table */
+.proc-wrap{background:#0d0f17;border:1px solid var(--brd);border-radius:10px;overflow:hidden}
+.proc-search{padding:10px 14px;border-bottom:1px solid var(--brd);display:flex;gap:10px;align-items:center}
+.proc-search input{background:#07080d;border:1px solid var(--brd);border-radius:6px;color:#dde1f5;
+                   padding:5px 10px;font-size:12px;width:240px;outline:none}
+.proc-search input:focus{border-color:#6b8cff}
+.proc-filter{display:flex;gap:6px}
+.proc-filter button{padding:3px 10px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;
+                    border:1px solid var(--brd);background:transparent;color:#475569;transition:.12s}
+.proc-filter button.on{border-color:#6b8cff;color:#6b8cff;background:#0d1220}
+.proc-table{width:100%;border-collapse:collapse;font-size:11px}
+.proc-table th{padding:7px 12px;text-align:left;color:#334155;text-transform:uppercase;
+               font-size:9px;letter-spacing:.4px;border-bottom:1px solid #0a0a13;background:#08090e}
+.proc-table td{padding:6px 12px;border-bottom:1px solid #0a0a13}
+.proc-table tr:hover td{background:#0a0b12}
+.proc-table tr:last-child td{border-bottom:none}
+.p-name{font-weight:600;color:#e2e8f0}
+.p-idle{color:#334155}
+.p-run{color:var(--grn)}
+.p-high{color:var(--red)}
+.p-med{color:var(--yel)}
+.p-ram-bar{width:60px;height:4px;background:#1e2030;border-radius:2px;display:inline-block;vertical-align:middle}
+.p-ram-fill{height:100%;border-radius:2px}
+.status-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
+.dot-run{background:var(--grn)}
+.dot-idle{background:#334155}
+.dot-warn{background:var(--org)}
+
+/* HA info box */
+.ha-box{background:#07080d;border:1px solid #1e3a5f;border-radius:8px;padding:14px 16px;margin-bottom:14px}
+.ha-title{font-size:11px;font-weight:700;color:#6b8cff;margin-bottom:10px}
+.ha-code{background:#0d0f17;border:1px solid var(--brd);border-radius:6px;
+         padding:10px 12px;font-family:monospace;font-size:11px;color:#94a3b8;
+         white-space:pre-wrap;line-height:1.7;overflow-x:auto}
+.ha-copy{float:right;margin-top:-2px;padding:2px 8px;border-radius:4px;font-size:10px;
+         border:1px solid #1e3a5f;color:#6b8cff;background:transparent;cursor:pointer}
+.ha-copy:hover{background:#0d1220}
+
+.uptime-badge{background:#0a1220;border:1px solid #1e3a5f;border-radius:20px;
+              padding:3px 10px;font-size:10px;color:#6b8cff}
+.idle-badge{background:#051a0e;border:1px solid var(--grn);border-radius:20px;
+            padding:3px 10px;font-size:10px;color:var(--grn)}
+.busy-badge{background:#1a0a0a;border:1px solid var(--org);border-radius:20px;
+            padding:3px 10px;font-size:10px;color:var(--org)}
+
+.refresh-spin{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:18px;right:18px;background:#1a1a2e;border:1px solid var(--blu);
+       border-radius:8px;padding:8px 14px;font-size:12px;color:var(--blu);display:none;z-index:999}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span style="font-size:18px">🖥️</span>
+  <div>
+    <div class="hdr-title" id="hdr-host">System Monitor</div>
+    <div class="hdr-sub">Live stats · updates every 30s</div>
+  </div>
+  <div id="hdr-idle" style="margin-left:8px"></div>
+  <div id="hdr-uptime" class="uptime-badge" style="margin-left:8px">—</div>
+  <div class="spacer"></div>
+  <span id="refresh-icon" style="font-size:14px;color:#475569;cursor:pointer" onclick="refresh()" title="Refresh now">🔄</span>
+  <span id="next-refresh" style="font-size:10px;color:#334155;margin-left:8px">next: 30s</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" id="tab-overview" onclick="switchTab('overview')">📊 Overview</div>
+  <div class="tab" id="tab-processes" onclick="switchTab('processes')">📋 Task Manager</div>
+  <div class="tab" id="tab-ha" onclick="switchTab('ha')">🏠 Home Assistant</div>
+</div>
+
+<!-- ══ OVERVIEW TAB ══ -->
+<div class="content active" id="content-overview">
+
+  <div class="gauges-row" id="gauges-row">
+    <!-- CPU Gauge -->
+    <div class="gauge-card">
+      <div class="gauge-title">CPU Usage</div>
+      <div class="gauge-ring">
+        <svg viewBox="0 0 110 110">
+          <circle class="gauge-bg" cx="55" cy="55" r="45"/>
+          <circle class="gauge-arc" id="g-cpu" cx="55" cy="55" r="45"
+            stroke="#22c55e" stroke-dasharray="283" stroke-dashoffset="283"/>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-num" id="gv-cpu" style="color:#22c55e">—</div>
+          <div class="gauge-unit">%</div>
+        </div>
+      </div>
+      <div id="gs-cpu" style="font-size:10px;color:#475569">—</div>
+    </div>
+
+    <!-- RAM Gauge -->
+    <div class="gauge-card">
+      <div class="gauge-title">RAM Usage</div>
+      <div class="gauge-ring">
+        <svg viewBox="0 0 110 110">
+          <circle class="gauge-bg" cx="55" cy="55" r="45"/>
+          <circle class="gauge-arc" id="g-ram" cx="55" cy="55" r="45"
+            stroke="#6b8cff" stroke-dasharray="283" stroke-dashoffset="283"/>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-num" id="gv-ram" style="color:#6b8cff">—</div>
+          <div class="gauge-unit">%</div>
+        </div>
+      </div>
+      <div id="gs-ram" style="font-size:10px;color:#475569">—</div>
+    </div>
+
+    <!-- Disk Gauge -->
+    <div class="gauge-card">
+      <div class="gauge-title">Disk Usage</div>
+      <div class="gauge-ring">
+        <svg viewBox="0 0 110 110">
+          <circle class="gauge-bg" cx="55" cy="55" r="45"/>
+          <circle class="gauge-arc" id="g-disk" cx="55" cy="55" r="45"
+            stroke="#f97316" stroke-dasharray="283" stroke-dashoffset="283"/>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-num" id="gv-disk" style="color:#f97316">—</div>
+          <div class="gauge-unit">%</div>
+        </div>
+      </div>
+      <div id="gs-disk" style="font-size:10px;color:#475569">—</div>
+    </div>
+
+    <!-- Temp / Fan -->
+    <div class="gauge-card" id="gauge-temp-card">
+      <div class="gauge-title">CPU Temp</div>
+      <div class="gauge-ring">
+        <svg viewBox="0 0 110 110">
+          <circle class="gauge-bg" cx="55" cy="55" r="45"/>
+          <circle class="gauge-arc" id="g-temp" cx="55" cy="55" r="45"
+            stroke="#06b6d4" stroke-dasharray="283" stroke-dashoffset="283"/>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-num" id="gv-temp" style="color:#06b6d4">—</div>
+          <div class="gauge-unit">°C</div>
+        </div>
+      </div>
+      <div id="gs-temp" style="font-size:10px;color:#475569">Fan: —</div>
+    </div>
+  </div>
+
+  <!-- CPU per-core bars -->
+  <div style="background:#0d0f17;border:1px solid var(--brd);border-radius:10px;padding:14px 16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">CPU Cores</div>
+    <div id="core-bars" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px"></div>
+  </div>
+
+  <!-- Disk breakdown -->
+  <div style="background:#0d0f17;border:1px solid var(--brd);border-radius:10px;padding:14px 16px">
+    <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Storage</div>
+    <div id="disk-breakdown" class="disk-grid" style="margin-bottom:0"></div>
+  </div>
+
+</div>
+
+<!-- ══ TASK MANAGER TAB ══ -->
+<div class="content" id="content-processes">
+  <div class="proc-wrap">
+    <div class="proc-search">
+      <input type="text" id="proc-search-inp" placeholder="Search processes..." oninput="filterProcs()">
+      <div class="proc-filter">
+        <button id="filter-all" class="on" onclick="setFilter('all')">All</button>
+        <button id="filter-run" onclick="setFilter('run')">Running</button>
+        <button id="filter-idle" onclick="setFilter('idle')">Idle</button>
+        <button id="filter-heavy" onclick="setFilter('heavy')">High RAM</button>
+      </div>
+      <div class="spacer"></div>
+      <span id="proc-count" style="font-size:10px;color:#475569">— processes</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="proc-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Status</th>
+            <th>CPU %</th>
+            <th>RAM</th>
+            <th style="min-width:80px"></th>
+            <th>User</th>
+            <th>Command</th>
+          </tr>
+        </thead>
+        <tbody id="proc-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOME ASSISTANT TAB ══ -->
+<div class="content" id="content-ha">
+  <div class="ha-box">
+    <div class="ha-title">🏠 Home Assistant REST Sensor — configuration.yaml</div>
+    <button class="ha-copy" onclick="copyHA()">Copy</button>
+    <div class="ha-code" id="ha-yaml"></div>
+  </div>
+  <div class="ha-box">
+    <div class="ha-title">📡 API Endpoints</div>
+    <div style="font-size:11px;color:#64748b;line-height:1.9">
+      <div><span style="color:#6b8cff">GET</span> <code style="color:#94a3b8">/api/system/stats</code> — CPU, RAM, disk, temp, uptime, idle status</div>
+      <div><span style="color:#6b8cff">GET</span> <code style="color:#94a3b8">/api/system/processes</code> — all running processes, sorted by RAM</div>
+      <div style="margin-top:8px;color:#475569">Poll interval: 30s recommended · returns JSON · no auth required from LAN</div>
+    </div>
+  </div>
+  <div class="ha-box">
+    <div class="ha-title">📊 Live Stats Preview</div>
+    <pre id="ha-preview" style="font-size:11px;color:#64748b;line-height:1.7;overflow:auto;max-height:300px"></pre>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let _stats = null;
+let _procs = [];
+let _procFilter = 'all';
+let _countdown = 30;
+let _timer;
+
+const HOST = location.origin;
+
+function pctColor(p){ return p>=85?'#ef4444':p>=60?'#f5c518':'#22c55e'; }
+function pctColorRam(p){ return p>=85?'#ef4444':p>=60?'#f97316':'#6b8cff'; }
+function pctColorDisk(p){ return p>=90?'#ef4444':p>=70?'#f97316':'#f97316'; }
+
+function setGauge(id, pct, color){
+  const circ = 2 * Math.PI * 45; // 283
+  const el = document.getElementById('g-'+id);
+  if (!el) return;
+  const offset = circ * (1 - pct/100);
+  el.style.strokeDashoffset = offset;
+  el.style.stroke = color;
+  document.getElementById('gv-'+id).style.color = color;
+}
+
+async function fetchStats(){
+  try {
+    const r = await fetch('/api/system/stats');
+    _stats = await r.json();
+    renderOverview();
+    if (document.getElementById('content-ha').classList.contains('active')) renderHA();
+  } catch(e){ console.error('stats fetch failed', e); }
+}
+
+async function fetchProcs(){
+  try {
+    const r = await fetch('/api/system/processes');
+    const d = await r.json();
+    _procs = d.processes || [];
+    renderProcs();
+  } catch(e){ console.error('procs fetch failed', e); }
+}
+
+function renderOverview(){
+  if (!_stats) return;
+  const s = _stats;
+  // Header
+  document.getElementById('hdr-host').textContent = '🖥️ ' + (s.host || 'System Monitor');
+  document.getElementById('hdr-uptime').textContent = '⏱ ' + s.uptime;
+  const idel = document.getElementById('hdr-idle');
+  idel.innerHTML = s.idle
+    ? '<span class="idle-badge">⚡ Idle</span>'
+    : '<span class="busy-badge">🔥 Active</span>';
+
+  // CPU gauge
+  const cc = pctColor(s.cpu.pct);
+  document.getElementById('gv-cpu').textContent = s.cpu.pct.toFixed(0);
+  setGauge('cpu', s.cpu.pct, cc);
+  document.getElementById('gs-cpu').textContent = s.cpu.cores.length + ' cores';
+
+  // RAM gauge
+  const rc = pctColorRam(s.ram.pct);
+  document.getElementById('gv-ram').textContent = s.ram.pct.toFixed(0);
+  setGauge('ram', s.ram.pct, rc);
+  document.getElementById('gs-ram').textContent = s.ram.used_gb + ' / ' + s.ram.total_gb + ' GB';
+
+  // Disk gauge
+  document.getElementById('gv-disk').textContent = s.disk.pct.toFixed(0);
+  setGauge('disk', s.disk.pct, pctColorDisk(s.disk.pct));
+  document.getElementById('gs-disk').textContent = s.disk.used_gb + ' / ' + s.disk.total_gb + ' GB';
+
+  // Temp gauge
+  if (s.cpu.temp_c !== null && s.cpu.temp_c !== undefined) {
+    const tc = s.cpu.temp_c >= 85 ? '#ef4444' : s.cpu.temp_c >= 70 ? '#f5c518' : '#06b6d4';
+    document.getElementById('gv-temp').textContent = s.cpu.temp_c.toFixed(0);
+    setGauge('temp', Math.min(s.cpu.temp_c, 100), tc);
+    document.getElementById('gs-temp').textContent = s.fan_rpm ? 'Fan: ' + s.fan_rpm + ' RPM' : 'Temp sensor active';
+  } else {
+    document.getElementById('gauge-temp-card').style.display = 'none';
+  }
+
+  // CPU cores
+  const cb = document.getElementById('core-bars');
+  cb.innerHTML = s.cpu.cores.map((c,i) => {
+    const col = pctColor(c);
+    return `<div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#475569;margin-bottom:3px">
+        <span>Core ${i}</span><span style="color:${col}">${c.toFixed(0)}%</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${c}%;background:${col}"></div></div>
+    </div>`;
+  }).join('');
+
+  // Disks
+  const db = document.getElementById('disk-breakdown');
+  db.innerHTML = s.disks.map(d => {
+    const col = d.pct>=90?'#ef4444':d.pct>=70?'#f97316':'#22c55e';
+    return `<div class="disk-card">
+      <div class="disk-mount">${d.mount}</div>
+      <div class="disk-info">${d.used_gb} GB used of ${d.total_gb} GB</div>
+      <div class="prog-bar" style="height:8px"><div class="prog-fill" style="width:${d.pct}%;background:${col}"></div></div>
+      <div style="text-align:right;font-size:10px;color:${col};margin-top:3px">${d.pct}%</div>
+    </div>`;
+  }).join('') || '<div style="color:#334155;font-size:11px">No disk info</div>';
+}
+
+function renderProcs(){
+  const q = (document.getElementById('proc-search-inp').value||'').toLowerCase();
+  let procs = _procs;
+  if (q) procs = procs.filter(p => p.name.toLowerCase().includes(q) || p.cmd.toLowerCase().includes(q));
+  if (_procFilter === 'run')   procs = procs.filter(p => !p.idle);
+  if (_procFilter === 'idle')  procs = procs.filter(p => p.idle);
+  if (_procFilter === 'heavy') procs = procs.filter(p => p.ram_mb > 100);
+
+  const maxRam = Math.max(...procs.map(p=>p.ram_mb), 1);
+  document.getElementById('proc-count').textContent = procs.length + ' processes';
+
+  document.getElementById('proc-tbody').innerHTML = procs.map(p => {
+    const dotCls = p.idle ? 'dot-idle' : p.cpu > 20 ? 'dot-warn' : 'dot-run';
+    const statusCol = p.idle ? '#334155' : p.cpu > 50 ? '#ef4444' : '#22c55e';
+    const ramPct = Math.min((p.ram_mb / maxRam)*100, 100);
+    const ramCol = p.ram_mb > 1000 ? '#ef4444' : p.ram_mb > 400 ? '#f97316' : '#6b8cff';
+    const cpuCol = p.cpu > 50 ? '#ef4444' : p.cpu > 15 ? '#f5c518' : '#475569';
+    return `<tr>
+      <td class="p-name">${escH(p.name)}</td>
+      <td><span class="status-dot ${dotCls}"></span><span style="color:${statusCol}">${p.idle?'idle':'running'}</span></td>
+      <td style="color:${cpuCol}">${p.cpu > 0 ? p.cpu.toFixed(1)+'%' : '—'}</td>
+      <td style="color:${ramCol}">${p.ram_mb >= 1000 ? (p.ram_mb/1024).toFixed(1)+' GB' : p.ram_mb+' MB'}</td>
+      <td><div class="p-ram-bar"><div class="p-ram-fill" style="width:${ramPct}%;background:${ramCol}"></div></div></td>
+      <td style="color:#334155;font-size:10px">${escH(p.user.split('\\').pop())}</td>
+      <td style="color:#475569;font-size:10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escH(p.cmd)}">${escH(p.cmd)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:#334155;padding:20px">No processes found</td></tr>';
+}
+
+function renderHA(){
+  if (!_stats) return;
+  const s = _stats;
+  const yaml = `# Add to configuration.yaml → restart HA
+# Then use in dashboard as sensor.jarvis_cpu etc.
+
+rest:
+  - resource: http://${location.hostname}:8080/api/system/stats
+    scan_interval: 30
+    sensor:
+      - name: "Jarvis CPU"
+        value_template: "{{ value_json.cpu.pct }}"
+        unit_of_measurement: "%"
+        device_class: power_factor
+      - name: "Jarvis RAM"
+        value_template: "{{ value_json.ram.pct }}"
+        unit_of_measurement: "%"
+      - name: "Jarvis RAM Used"
+        value_template: "{{ value_json.ram.used_gb }}"
+        unit_of_measurement: "GB"
+      - name: "Jarvis Disk"
+        value_template: "{{ value_json.disk.pct }}"
+        unit_of_measurement: "%"
+      - name: "Jarvis Disk Free"
+        value_template: "{{ value_json.disk.free_gb }}"
+        unit_of_measurement: "GB"
+      - name: "Jarvis Idle"
+        value_template: "{{ value_json.idle }}"
+      - name: "Jarvis Uptime"
+        value_template: "{{ value_json.uptime }}"
+      - name: "Jarvis CPU Temp"
+        value_template: "{{ value_json.cpu.temp_c }}"
+        unit_of_measurement: "°C"
+        device_class: temperature`;
+  document.getElementById('ha-yaml').textContent = yaml;
+  document.getElementById('ha-preview').textContent = JSON.stringify(s, null, 2);
+}
+
+function copyHA(){
+  const txt = document.getElementById('ha-yaml').textContent;
+  navigator.clipboard.writeText(txt).then(()=>toast('Copied to clipboard!'));
+}
+
+function setFilter(f){
+  _procFilter = f;
+  ['all','run','idle','heavy'].forEach(x => document.getElementById('filter-'+x).classList.toggle('on', x===f));
+  renderProcs();
+}
+
+function filterProcs(){ renderProcs(); }
+function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function switchTab(t){
+  ['overview','processes','ha'].forEach(x => {
+    document.getElementById('tab-'+x).classList.toggle('active', x===t);
+    document.getElementById('content-'+x).classList.toggle('active', x===t);
+  });
+  if (t === 'processes') fetchProcs();
+  if (t === 'ha') renderHA();
+}
+
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.display='block';
+  setTimeout(()=>el.style.display='none',2000);
+}
+
+async function refresh(){
+  document.getElementById('refresh-icon').innerHTML = '<span class="refresh-spin">🔄</span>';
+  await fetchStats();
+  if (document.getElementById('content-processes').classList.contains('active')) await fetchProcs();
+  document.getElementById('refresh-icon').innerHTML = '🔄';
+  _countdown = 30;
+}
+
+function startCountdown(){
+  clearInterval(_timer);
+  _timer = setInterval(async ()=>{
+    _countdown--;
+    document.getElementById('next-refresh').textContent = 'next: '+_countdown+'s';
+    if (_countdown <= 0){
+      _countdown = 30;
+      await refresh();
+    }
+  }, 1000);
+}
+
+// Init
+fetchStats();
+startCountdown();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

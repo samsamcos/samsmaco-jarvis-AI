@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS System Manual</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0f;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5}
+a{color:#60a5fa;text-decoration:none}
+a:hover{color:#93c5fd;text-decoration:underline}
+
+.nav{background:#111827;border-bottom:1px solid #1f2937;padding:10px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:sticky;top:0;z-index:100}
+.nav-brand{color:#3b82f6;font-weight:700;font-size:16px;letter-spacing:1px;margin-right:8px}
+.nav a{color:#9ca3af;font-size:13px;padding:4px 10px;border-radius:6px;transition:all .2s}
+.nav a:hover,.nav a.active{background:#1f2937;color:#e2e8f0;text-decoration:none}
+
+.container{max-width:1200px;margin:0 auto;padding:24px 20px}
+h1{font-size:22px;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+.subtitle{color:#64748b;font-size:13px;margin-bottom:28px}
+
+.section{margin-bottom:36px}
+.section-title{font-size:16px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #1f2937;padding-bottom:8px;margin-bottom:16px}
+
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.quick-card{background:#111827;border:1px solid #1f2937;border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .2s;text-decoration:none;display:block}
+.quick-card:hover{background:#1f2937;border-color:#3b82f6;transform:translateY(-1px);text-decoration:none}
+.quick-card .qc-icon{font-size:22px;margin-bottom:6px}
+.quick-card .qc-title{font-size:13px;font-weight:600;color:#e2e8f0}
+.quick-card .qc-sub{font-size:11px;color:#64748b;margin-top:2px}
+
+.status-panel{background:#111827;border:1px solid #1f2937;border-radius:10px;padding:16px}
+.status-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.status-title{font-size:13px;font-weight:600;color:#94a3b8}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.status-room{background:#0a0a0f;border:1px solid #1f2937;border-radius:8px;padding:10px 12px}
+.status-room .room-label{font-size:11px;color:#64748b;font-weight:600}
+.status-room .room-tab{font-size:13px;font-weight:600;color:#e2e8f0;margin-top:2px}
+.status-room .room-ip{font-size:10px;color:#475569;margin-top:1px}
+
+.badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;text-transform:uppercase;margin-left:4px}
+.badge-jarvis{background:#1d4ed8;color:#bfdbfe}
+.badge-single{background:#7c3aed;color:#ddd6fe}
+.badge-guest{background:#064e3b;color:#6ee7b7}
+.badge-default{background:#1f2937;color:#94a3b8}
+.badge-new{background:#7c2d12;color:#fed7aa}
+.badge-tool{background:#0f2744;color:#7dd3fc}
+
+.api-table{width:100%;border-collapse:collapse;font-size:13px}
+.api-table th{background:#111827;color:#64748b;font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.5px;padding:8px 12px;text-align:left;border-bottom:1px solid #1f2937}
+.api-table td{padding:10px 12px;border-bottom:1px solid #111827;vertical-align:top}
+.api-table tr:hover td{background:#0d1117}
+.method{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;min-width:38px;text-align:center}
+.method-get{background:#064e3b;color:#6ee7b7}
+.method-post{background:#1e3a5f;color:#93c5fd}
+.code{font-family:'Fira Code','Courier New',monospace;background:#111827;border:1px solid #1f2937;border-radius:4px;padding:1px 6px;font-size:11px;color:#a5f3fc}
+.desc{color:#94a3b8}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.btn-test,.btn-copy{font-size:10px;padding:3px 8px;border-radius:4px;border:none;cursor:pointer;font-weight:600;transition:all .2s}
+.btn-test{background:#1e3a5f;color:#93c5fd}
+.btn-test:hover{background:#1d4ed8;color:#fff}
+.btn-copy{background:#1f2937;color:#94a3b8}
+.btn-copy:hover{background:#374151;color:#e2e8f0}
+.btn-copy.copied{background:#064e3b;color:#6ee7b7}
+
+.tab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.tab-card{background:#111827;border:1px solid #1f2937;border-radius:8px;padding:12px 14px}
+.tab-num{font-size:20px;font-weight:700;color:#3b82f6}
+.tab-name{font-size:14px;font-weight:600;color:#e2e8f0}
+.tab-desc{font-size:11px;color:#64748b;margin-top:4px}
+.tab-badges{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+
+.room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.room-card{background:#111827;border:1px solid #1f2937;border-radius:8px;padding:12px 14px}
+.room-num{font-size:20px;font-weight:700;color:#8b5cf6}
+.room-port{font-size:11px;color:#64748b}
+.room-vb{font-size:11px;color:#64748b;margin-top:4px}
+
+.rule-card{background:#111827;border:1px solid #1f2937;border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.rule-title{font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:6px}
+.rule-body{font-size:12px;color:#94a3b8;line-height:1.6}
+.rule-body code{color:#a5f3fc;background:#0a0a0f;padding:1px 5px;border-radius:3px}
+
+.console-wrap{background:#0a0a0f;border:1px solid #1f2937;border-radius:10px;overflow:hidden}
+.console-bar{background:#111827;padding:8px 14px;display:flex;gap:8px;align-items:center}
+.console-input{flex:1;background:#0a0a0f;border:1px solid #1f2937;border-radius:6px;padding:6px 10px;color:#e2e8f0;font-family:'Fira Code','Courier New',monospace;font-size:12px;outline:none}
+.console-input:focus{border-color:#3b82f6}
+.btn-run{background:#1d4ed8;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-run:hover{background:#2563eb}
+.console-out{height:220px;overflow-y:auto;padding:12px 14px;font-family:'Fira Code','Courier New',monospace;font-size:12px}
+.log-line{padding:2px 0;border-bottom:1px solid #111827}
+.log-line .log-time{color:#475569;font-size:10px;margin-right:8px}
+.log-line .log-ok{color:#22c55e}
+.log-line .log-err{color:#ef4444}
+.log-line .log-info{color:#64748b}
+
+/* Tool table */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.tool-card{background:#111827;border:1px solid #1f2937;border-radius:8px;padding:12px 14px}
+.tool-name{font-size:13px;font-weight:700;color:#a5f3fc;font-family:'Fira Code','Courier New',monospace}
+.tool-desc{font-size:11px;color:#94a3b8;margin-top:4px}
+.tool-params{font-size:10px;color:#475569;margin-top:5px;font-family:'Fira Code','Courier New',monospace}
+
+/* CLI */
+.cli-block{background:#0a0a0f;border:1px solid #1f2937;border-radius:8px;padding:14px 16px;margin-bottom:10px;font-family:'Fira Code','Courier New',monospace;font-size:12px}
+.cli-cmd{color:#a5f3fc}
+.cli-comment{color:#475569}
+.cli-result{color:#94a3b8;margin-top:4px}
+
+/* Info boxes */
+.info-box{background:#0f2744;border:1px solid #1e3a5f;border-radius:8px;padding:12px 16px;margin-bottom:10px}
+.info-box-title{font-size:12px;font-weight:700;color:#7dd3fc;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.info-box-body{font-size:12px;color:#94a3b8;line-height:1.6}
+.info-box-body code{color:#a5f3fc;background:#0a0a0f;padding:1px 5px;border-radius:3px}
+
+.warn-box{background:#1c1007;border:1px solid #78350f;border-radius:8px;padding:12px 16px;margin-bottom:10px}
+.warn-box-title{font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:6px}
+.warn-box-body{font-size:12px;color:#94a3b8;line-height:1.6}
+.warn-box-body code{color:#fde68a;background:#0a0a0f;padding:1px 5px;border-radius:3px}
+
+/* 2-col layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+
+/* tier boxes */
+.tier-row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.tier-box{flex:1;min-width:160px;background:#111827;border:1px solid #1f2937;border-radius:8px;padding:12px;text-align:center}
+.tier-label{font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.tier-speed{font-size:22px;font-weight:700;color:#3b82f6;margin:4px 0}
+.tier-desc{font-size:11px;color:#94a3b8}
+
+/* update flow */
+.flow-row{display:flex;gap:0;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.flow-step{background:#111827;border:1px solid #1f2937;border-radius:8px;padding:8px 14px;font-size:12px;color:#e2e8f0;font-weight:600;text-align:center}
+.flow-arrow{color:#3b82f6;font-size:18px;padding:0 6px;font-weight:700}
+
+/* importance bar */
+.imp-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.imp-label{font-size:11px;color:#64748b;width:120px;flex-shrink:0}
+.imp-bar-wrap{flex:1;background:#1f2937;border-radius:4px;height:8px}
+.imp-bar{height:8px;border-radius:4px;background:#3b82f6}
+.imp-value{font-size:11px;color:#94a3b8;width:40px;text-align:right;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <span class="nav-brand">&#9889; JARVIS</span>
+  <a href="http://192.168.0.3:8080/">HUB HOME</a>
+  <a href="http://192.168.0.3:8080/jarvis-chat">JARVIS CHAT</a>
+  <a href="http://192.168.0.3:8080/update">UPDATES</a>
+  <a href="http://192.168.0.3:8080/jarvis/setup">SETUP GUIDE</a>
+  <a href="http://192.168.0.3:5011/webhook/status/room">NEXUS STATUS</a>
+  <a href="http://192.168.0.3:8080/manual" class="active">MANUAL</a>
+</div>
+
+<div class="container">
+  <h1>System Manual</h1>
+  <div class="subtitle">JARVIS Hub &middot; Agent Tools &middot; Job Registry &middot; CLI &middot; Memory &middot; Nexus &middot; Voice Box &mdash; Full Reference Guide</div>
+
+  <!-- QUICK LINKS -->
+  <div class="section">
+    <div class="section-title">Quick Links</div>
+    <div class="quick-grid">
+      <a class="quick-card" href="http://192.168.0.3:8080/">
+        <div class="qc-icon">&#127968;</div>
+        <div class="qc-title">Hub Home</div>
+        <div class="qc-sub">192.168.0.3:8080</div>
+      </a>
+      <a class="quick-card" href="http://192.168.0.3:8080/jarvis-chat">
+        <div class="qc-icon">&#129302;</div>
+        <div class="qc-title">JARVIS Chat</div>
+        <div class="qc-sub">Iron Man HUD — talk to AI</div>
+      </a>
+      <a class="quick-card" href="http://192.168.0.3:8080/update">
+        <div class="qc-icon">&#128295;</div>
+        <div class="qc-title">Updates Panel</div>
+        <div class="qc-sub">Tools, CLI, GitHub scan, roadmap</div>
+      </a>
+      <a class="quick-card" href="http://192.168.0.3:8080/jarvis/setup">
+        <div class="qc-icon">&#9881;</div>
+        <div class="qc-title">Setup Guide</div>
+        <div class="qc-sub">API keys, config checker</div>
+      </a>
+      <a class="quick-card" href="http://192.168.0.3:8080/jarvis">
+        <div class="qc-icon">&#128100;</div>
+        <div class="qc-title">Jarvis Screen</div>
+        <div class="qc-sub">Staff management UI</div>
+      </a>
+      <a class="quick-card" href="http://192.168.0.3:5011/webhook/status/room">
+        <div class="qc-icon">&#128225;</div>
+        <div class="qc-title">Nexus Status</div>
+        <div class="qc-sub">Live room status JSON</div>
+      </a>
+      <a class="quick-card" href="http://192.168.0.3:8080/api/active-staff">
+        <div class="qc-icon">&#128101;</div>
+        <div class="qc-title">Active Staff</div>
+        <div class="qc-sub">Current staff JSON</div>
+      </a>
+      <a class="quick-card" href="http://192.168.0.38/simple">
+        <div class="qc-icon">&#128266;</div>
+        <div class="qc-title">Voice Box .38</div>
+        <div class="qc-sub">Primary TTS device</div>
+      </a>
+      <a class="quick-card" href="http://192.168.0.3:5001">
+        <div class="qc-icon">&#128187;</div>
+        <div class="qc-title">Room Screens</div>
+        <div class="qc-sub">:5001 &ndash; :5009</div>
+      </a>
+      <a class="quick-card" href="http://192.168.0.3:5011/webhook/status">
+        <div class="qc-icon">&#128279;</div>
+        <div class="qc-title">Nexus Full Status</div>
+        <div class="qc-sub">All rooms + tabs</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- LIVE ROOM STATUS -->
+  <div class="section">
+    <div class="section-title">Live Room Status</div>
+    <div class="status-panel">
+      <div class="status-header">
+        <span class="status-title"><span class="status-dot"></span>Auto-refreshing every 15s</span>
+        <button class="btn-test" onclick="loadRoomStatus()" style="font-size:11px;padding:4px 10px">Refresh Now</button>
+      </div>
+      <div id="room-status-grid" class="status-grid">
+        <div style="color:#475569;font-size:12px;grid-column:1/-1">Loading&hellip;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ NEW SECTIONS ══════════════════════ -->
+
+  <!-- JARVIS AGENT — 21 TOOLS -->
+  <div class="section">
+    <div class="section-title">JARVIS Agent &mdash; 21 Tools <span class="badge badge-new">NEW</span></div>
+    <div class="info-box" style="margin-bottom:14px">
+      <div class="info-box-title">How It Works</div>
+      <div class="info-box-body">
+        Chat at <code>/jarvis-chat</code> or call <code>POST /api/jarvis</code>. JARVIS reads your message,
+        picks 1-3 tools from the list below, executes them in sequence, and streams a final reply.
+        Uses Groq (fast) → Gemini (fallback) → Pollinations (always free) for AI inference.
+        Provider scores are tracked automatically; best-scoring provider is favoured next time.
+      </div>
+    </div>
+    <div class="tool-grid">
+      <div class="tool-card">
+        <div class="tool-name">send_message</div>
+        <div class="tool-desc">Send a TTS message to a voice box in any room</div>
+        <div class="tool-params">room, message, voice?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">control_light</div>
+        <div class="tool-desc">Turn lights on/off or set brightness via Home Assistant</div>
+        <div class="tool-params">entity_id, action, brightness?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">control_device</div>
+        <div class="tool-desc">Control any HA switch, media player, or script</div>
+        <div class="tool-params">entity_id, action, value?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">get_ha_state</div>
+        <div class="tool-desc">Get the current state of any Home Assistant entity</div>
+        <div class="tool-params">entity_id</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">search_staff</div>
+        <div class="tool-desc">Search 601 staff members in NocoDB by name or skill</div>
+        <div class="tool-params">query, group?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">search_jobs</div>
+        <div class="tool-desc">Search 6,751 jobs by title, group, or keyword</div>
+        <div class="tool-params">query, group?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">find_job</div>
+        <div class="tool-desc">3-tier semantic job search: alias cache → group → full scan</div>
+        <div class="tool-params">query, group?, user?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">execute_job</div>
+        <div class="tool-desc">Execute a job by ID via webhook, SSH, or n8n</div>
+        <div class="tool-params">job_id, params?, user_id?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">mem_store</div>
+        <div class="tool-desc">Save information to MemPalace with importance score 1-10</div>
+        <div class="tool-params">content, wing?, room?, importance?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">mem_recall</div>
+        <div class="tool-desc">Search MemPalace memory by semantic query</div>
+        <div class="tool-params">query, wing?, limit?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">web_search</div>
+        <div class="tool-desc">Live web search via DuckDuckGo or SerpAPI</div>
+        <div class="tool-params">query, num_results?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">get_weather</div>
+        <div class="tool-desc">Weather forecast for any city</div>
+        <div class="tool-params">location, days?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">send_telegram</div>
+        <div class="tool-desc">Send a Telegram message to the house channel</div>
+        <div class="tool-params">message, chat_id?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">set_reminder</div>
+        <div class="tool-desc">Set a timed reminder via n8n or cron</div>
+        <div class="tool-params">message, delay_minutes</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">read_file</div>
+        <div class="tool-desc">Read a file from the master PC filesystem</div>
+        <div class="tool-params">path, lines?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">write_file</div>
+        <div class="tool-desc">Write or append content to a file on master PC</div>
+        <div class="tool-params">path, content, mode?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">run_script</div>
+        <div class="tool-desc">Execute a Python script or n8n workflow</div>
+        <div class="tool-params">script_name, args?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">get_calendar</div>
+        <div class="tool-desc">Read upcoming calendar events</div>
+        <div class="tool-params">days?, calendar?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">github_scan</div>
+        <div class="tool-desc">Search GitHub or read a specific repo + README</div>
+        <div class="tool-params">query, action: search|read_repo|trending</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">cli_exec</div>
+        <div class="tool-desc">Execute a shell command on the master PC</div>
+        <div class="tool-params">command, timeout?</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">ask_user</div>
+        <div class="tool-desc">Ask the user a clarifying question mid-task</div>
+        <div class="tool-params">question</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOB REGISTRY -->
+  <div class="section">
+    <div class="section-title">Job Registry <span class="badge badge-new">NEW</span></div>
+
+    <div class="info-box" style="margin-bottom:14px">
+      <div class="info-box-title">Hierarchy</div>
+      <div class="info-box-body">
+        <strong style="color:#e2e8f0">CEO</strong> (1) &rarr;
+        <strong style="color:#e2e8f0">Manager</strong> (15 groups) &rarr;
+        <strong style="color:#e2e8f0">Staff</strong> (601 members, ~40/group) &rarr;
+        <strong style="color:#e2e8f0">Jobs</strong> (6,751 jobs, ~11/staff).
+        Every job has a unique <code>job_id</code>, group tag, webhook URL or SSH command, and semantic description stored in ChromaDB.
+      </div>
+    </div>
+
+    <div class="section-title" style="font-size:13px;border:none;padding-bottom:0;margin-bottom:10px">3-Tier Search Speed</div>
+    <div class="tier-row">
+      <div class="tier-box">
+        <div class="tier-label">Tier 1 — Alias Cache</div>
+        <div class="tier-speed">&lt;5ms</div>
+        <div class="tier-desc">Exact keyword → pre-saved job_id mapping. Zero AI inference.</div>
+      </div>
+      <div class="tier-box">
+        <div class="tier-label">Tier 2 — Group Semantic</div>
+        <div class="tier-speed">~100ms</div>
+        <div class="tier-desc">Vector search inside one group. Fast when group is known.</div>
+      </div>
+      <div class="tier-box">
+        <div class="tier-label">Tier 3 — Full Semantic</div>
+        <div class="tier-speed">~600ms</div>
+        <div class="tier-desc">Searches all 6,751 jobs with cosine similarity. Always finds a match.</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="rule-card">
+        <div class="rule-title">find_job Example</div>
+        <div class="rule-body">
+          <code>POST /api/jarvis</code><br>
+          <code>{"message": "find me a job for turning on kitchen lights", "wing": "house"}</code><br><br>
+          JARVIS calls <code>find_job(query="kitchen lights", group="House")</code> → returns job card with name, job_id, manager, score, tier, and ms elapsed.
+        </div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-title">execute_job Example</div>
+        <div class="rule-body">
+          <code>POST /api/jarvis</code><br>
+          <code>{"message": "run job kitchen_lights_on"}</code><br><br>
+          JARVIS calls <code>execute_job(job_id="kitchen_lights_on")</code> → fires webhook/SSH/n8n, returns result with method and ms elapsed.
+        </div>
+      </div>
+    </div>
+
+    <div class="warn-box">
+      <div class="warn-box-title">&#9888; Current Registry Size</div>
+      <div class="warn-box-body">
+        Registry holds <strong>6,751 jobs</strong> and <strong>601 staff</strong>. Target is 42,000 jobs (15 groups &times; 30 staff &times; 90 jobs each). Check live count at
+        <code>/api/jarvis/config-check</code> &rarr; <code>registry.jobs</code>.
+      </div>
+    </div>
+  </div>
+
+  <!-- CLI REFERENCE -->
+  <div class="section">
+    <div class="section-title">CLI Reference &mdash; jarvis-cli.py <span class="badge badge-new">NEW</span></div>
+
+    <div class="info-box" style="margin-bottom:14px">
+      <div class="info-box-title">Install Alias</div>
+      <div class="info-box-body">
+        Add to <code>~/.bashrc</code>:<br>
+        <code>alias jarvis='python3 /root/ai-browser/jarvis-cli.py'</code><br>
+        Then reload: <code>source ~/.bashrc</code>. Now type <code>jarvis "your question"</code> from anywhere.
+      </div>
+    </div>
+
+    <div class="cli-block">
+      <div class="cli-comment"># Ask JARVIS anything</div>
+      <div class="cli-cmd">jarvis "turn the kitchen lights on"</div>
+      <div class="cli-result">[gemini-1.5-flash] 1240ms  tools: control_light</div>
+      <div class="cli-result">Done! Kitchen lights are now on. ★★★★★</div>
+    </div>
+
+    <div class="cli-block">
+      <div class="cli-comment"># Show system stats (keys, registry, provider scores)</div>
+      <div class="cli-cmd">jarvis --stats</div>
+    </div>
+
+    <div class="cli-block">
+      <div class="cli-comment"># Show provider score leaderboard</div>
+      <div class="cli-cmd">jarvis --scores</div>
+    </div>
+
+    <div class="cli-block">
+      <div class="cli-comment"># Run a shell command via JARVIS (logs, parses output)</div>
+      <div class="cli-cmd">jarvis --shell "df -h"</div>
+    </div>
+
+    <div class="cli-block">
+      <div class="cli-comment"># Find a job from the 6,751 registry</div>
+      <div class="cli-cmd">jarvis --job "train departure info"</div>
+    </div>
+
+    <div class="cli-block">
+      <div class="cli-comment"># Scan a GitHub repo or search GitHub</div>
+      <div class="cli-cmd">jarvis --github "local voice assistant"</div>
+      <div class="cli-cmd">jarvis --github "https://github.com/openai/whisper"</div>
+    </div>
+
+    <div class="cli-block">
+      <div class="cli-comment"># Specify a different hub or wing</div>
+      <div class="cli-cmd">jarvis --hub http://192.168.0.40:8080 --wing house "what lights are on?"</div>
+    </div>
+
+    <div class="cli-block">
+      <div class="cli-comment"># Interactive mode (no args)</div>
+      <div class="cli-cmd">jarvis</div>
+      <div class="cli-result">JARVIS CLI v2.0 — type 'quit' to exit, '--stats' for system stats</div>
+      <div class="cli-result">JARVIS > _</div>
+    </div>
+
+    <div style="margin-top:12px">
+      <div class="section-title" style="font-size:13px;border:none;padding-bottom:0;margin-bottom:8px">Quick Shortcuts (type these as the message)</div>
+      <table class="api-table" style="border:1px solid #1f2937;border-radius:8px;overflow:hidden">
+        <thead><tr><th>Shortcut</th><th>Expands To</th></tr></thead>
+        <tbody>
+          <tr><td><span class="code">stats</span></td><td class="desc">Show registry stats: jobs, staff, tools</td></tr>
+          <tr><td><span class="code">tools</span></td><td class="desc">List all 21 tools with one-line descriptions</td></tr>
+          <tr><td><span class="code">status</span></td><td class="desc">Current system status — disk, memory, CPU</td></tr>
+          <tr><td><span class="code">memory</span></td><td class="desc">Search MemPalace for recent decisions</td></tr>
+          <tr><td><span class="code">weather</span></td><td class="desc">Weather for London</td></tr>
+          <tr><td><span class="code">health</span></td><td class="desc">Full health check: tools, memory, registry, providers</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- UPDATE SYSTEM -->
+  <div class="section">
+    <div class="section-title">Update System &mdash; /update <span class="badge badge-new">NEW</span></div>
+
+    <div class="info-box" style="margin-bottom:14px">
+      <div class="info-box-title">Weekly Auto-Scan</div>
+      <div class="info-box-body">
+        Every Tuesday at 11:30 AM, a cron job scans GitHub for trending AI/automation repos,
+        checks for missing API keys, and identifies missing packages (whisper, piper-tts, etc.).
+        Results appear in the <strong>UPDATES</strong> tab at <code>/update</code> with improvement % estimates.
+        Cron: <code>30 11 * * 2 curl -s -X POST http://192.168.0.3:8080/api/jarvis/update-scan</code>
+      </div>
+    </div>
+
+    <div class="section-title" style="font-size:13px;border:none;padding-bottom:0;margin-bottom:10px">Approve &rarr; Deploy Flow</div>
+    <div class="flow-row">
+      <div class="flow-step">Scan runs<br><small style="color:#64748b">auto Tuesday</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Items appear<br><small style="color:#64748b">pending queue</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Browse at /update<br><small style="color:#64748b">read description</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Approve item<br><small style="color:#64748b">click Approve</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Select PCs<br><small style="color:#64748b">master/MITOS/clones</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">Deploy<br><small style="color:#64748b">runs install_cmd</small></div>
+    </div>
+
+    <div class="two-col">
+      <div class="rule-card">
+        <div class="rule-title">PC Targets</div>
+        <div class="rule-body">
+          <code>master</code> — 192.168.0.3 (this PC)<br>
+          <code>MITOS</code> — 192.168.0.38 tablet<br>
+          <code>clone-4</code> — 192.168.0.4<br>
+          <code>clone-5</code> — 192.168.0.5<br>
+          <code>ALL</code> — deploy to every PC simultaneously
+        </div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-title">Item Statuses</div>
+        <div class="rule-body">
+          <code>pending</code> — waiting for review<br>
+          <code>approved</code> — approved, ready to deploy<br>
+          <code>deployed</code> — successfully installed<br>
+          <code>deploy_failed</code> — install_cmd returned error<br>
+          <code>rejected</code> — dismissed
+        </div>
+      </div>
+    </div>
+
+    <div class="warn-box">
+      <div class="warn-box-title">&#8987; Manual Scan</div>
+      <div class="warn-box-body">
+        Don't wait for Tuesday — trigger a scan now: go to <code>/update</code> &rarr; UPDATES tab &rarr;
+        click <strong>SCAN NOW</strong>. Or call <code>POST /api/jarvis/update-scan</code> directly.
+        Duplicate items (same title) are skipped automatically.
+      </div>
+    </div>
+  </div>
+
+  <!-- MEMORY SYSTEM -->
+  <div class="section">
+    <div class="section-title">Memory System &mdash; MemPalace <span class="badge badge-new">NEW</span></div>
+
+    <div class="info-box" style="margin-bottom:14px">
+      <div class="info-box-title">What Is MemPalace?</div>
+      <div class="info-box-body">
+        Every conversation, decision, and tool result can be stored in <strong>ChromaDB</strong> — a local vector database.
+        Memories are recalled semantically, so "what did I say about the kitchen lights last week?" finds the right entry even without exact keywords.
+        Data persists across server restarts. No cloud dependency.
+      </div>
+    </div>
+
+    <div class="section-title" style="font-size:13px;border:none;padding-bottom:0;margin-bottom:10px">Wings (Memory Namespaces)</div>
+    <div class="two-col" style="margin-bottom:14px">
+      <div class="rule-card">
+        <div class="rule-title">Wing: <code>sam</code></div>
+        <div class="rule-body">Sam's personal memories — preferences, decisions, reminders. Only recalled when <code>wing=sam</code>.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-title">Wing: <code>gf</code></div>
+        <div class="rule-body">Partner memories — her preferences, shared decisions, household notes.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-title">Wing: <code>house</code></div>
+        <div class="rule-body">House state — which lights were last on, who was home, device history.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-title">Wing: <code>jarvis</code></div>
+        <div class="rule-body">JARVIS own notes — tool decisions, provider scores, job pipeline state.</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="font-size:13px;border:none;padding-bottom:0;margin-bottom:10px">Importance Scoring (1 &ndash; 10)</div>
+    <div style="background:#111827;border:1px solid #1f2937;border-radius:8px;padding:14px;margin-bottom:14px">
+      <div class="imp-row"><div class="imp-label">Critical (9-10)</div><div class="imp-bar-wrap"><div class="imp-bar" style="width:100%;background:#ef4444"></div></div><div class="imp-value">Keep forever</div></div>
+      <div class="imp-row"><div class="imp-label">Important (7-8)</div><div class="imp-bar-wrap"><div class="imp-bar" style="width:80%;background:#f97316"></div></div><div class="imp-value">Keep 90d</div></div>
+      <div class="imp-row"><div class="imp-label">Normal (5-6)</div><div class="imp-bar-wrap"><div class="imp-bar" style="width:60%;background:#3b82f6"></div></div><div class="imp-value">Keep 30d</div></div>
+      <div class="imp-row"><div class="imp-label">Low (3-4)</div><div class="imp-bar-wrap"><div class="imp-bar" style="width:40%;background:#1f2937"></div></div><div class="imp-value">Auto-purge</div></div>
+      <div class="imp-row"><div class="imp-label">Junk (1-2)</div><div class="imp-bar-wrap"><div class="imp-bar" style="width:20%;background:#1f2937"></div></div><div class="imp-value">Purge daily</div></div>
+    </div>
+
+    <div class="rule-card">
+      <div class="rule-title">mem_cleanup</div>
+      <div class="rule-body">
+        Runs automatically to free disk space. Deletes entries where <code>importance &lt; 3.0</code> AND older than <code>30 days</code>.
+        NocoDB-synced entries (source starts with <code>noco</code>) are always preserved regardless of importance.
+        Call manually: <code>POST /api/jarvis</code> → <code>"run mem_cleanup"</code>.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ EXISTING SECTIONS (updated) ══════════════════════ -->
+
+  <!-- TAB REFERENCE -->
+  <div class="section">
+    <div class="section-title">Tab Reference (1 &ndash; 11 Nexus / 1 &ndash; 15 Jarvis Hub)</div>
+    <div class="tab-grid">
+      <div class="tab-card">
+        <div class="tab-num">1</div>
+        <div class="tab-name">JARVIS</div>
+        <div class="tab-desc">Primary AI assistant / Sam persona</div>
+        <div class="tab-badges">
+          <span class="badge badge-single">Single Room</span>
+          <span class="badge badge-jarvis">Hub Jarvis</span>
+        </div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">2</div>
+        <div class="tab-name">SAM</div>
+        <div class="tab-desc">Partner persona</div>
+        <div class="tab-badges"><span class="badge badge-single">Single Room</span></div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">3</div>
+        <div class="tab-name">PTNR</div>
+        <div class="tab-desc">Partner / secondary view</div>
+        <div class="tab-badges"></div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">4</div>
+        <div class="tab-name">HOUSE</div>
+        <div class="tab-desc">House default tab</div>
+        <div class="tab-badges"><span class="badge badge-default">Default</span></div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">5</div>
+        <div class="tab-name">GUEST</div>
+        <div class="tab-desc">Guest mode tab</div>
+        <div class="tab-badges"><span class="badge badge-guest">Guest Mode</span></div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">6</div>
+        <div class="tab-name">AI</div>
+        <div class="tab-desc">AI persona screen</div>
+        <div class="tab-badges"><span class="badge badge-single">Single Room</span></div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">7</div>
+        <div class="tab-name">CCTV</div>
+        <div class="tab-desc">CCTV camera viewer</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">8</div>
+        <div class="tab-name">SECURITY</div>
+        <div class="tab-desc">Security dashboard</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">9</div>
+        <div class="tab-name">DOORBELL</div>
+        <div class="tab-desc">Doorbell / intercom</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">10</div>
+        <div class="tab-name">SPARE 3</div>
+        <div class="tab-desc">Spare slot</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">11</div>
+        <div class="tab-name">SPARE 4</div>
+        <div class="tab-desc">Spare slot</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">12</div>
+        <div class="tab-name">MASTER</div>
+        <div class="tab-desc">Master group (Jarvis hub only)</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">13</div>
+        <div class="tab-name">SPARE-A</div>
+        <div class="tab-desc">Spare group A (Jarvis hub only)</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">14</div>
+        <div class="tab-name">SPARE-B</div>
+        <div class="tab-desc">Spare group B (Jarvis hub only)</div>
+      </div>
+      <div class="tab-card">
+        <div class="tab-num">15</div>
+        <div class="tab-name">SPARE-C</div>
+        <div class="tab-desc">Spare group C (Jarvis hub only)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROOM REFERENCE -->
+  <div class="section">
+    <div class="section-title">Room Reference (1 &ndash; 9)</div>
+    <div class="room-grid">
+      <div class="room-card">
+        <div class="room-num">1</div>
+        <div class="room-port">Screen :5001 &nbsp;&middot;&nbsp; Nexus 5001</div>
+        <div class="room-vb">Voice box: 192.168.0.38</div>
+      </div>
+      <div class="room-card">
+        <div class="room-num">2</div>
+        <div class="room-port">Screen :5002 &nbsp;&middot;&nbsp; Nexus 5002</div>
+        <div class="room-vb">Voice box: 192.168.0.39</div>
+      </div>
+      <div class="room-card">
+        <div class="room-num">3</div>
+        <div class="room-port">Screen :5003 &nbsp;&middot;&nbsp; Nexus 5003</div>
+        <div class="room-vb">Voice box: 192.168.0.40</div>
+      </div>
+      <div class="room-card">
+        <div class="room-num">4</div>
+        <div class="room-port">Screen :5004 &nbsp;&middot;&nbsp; Nexus 5004</div>
+        <div class="room-vb">Voice box: 192.168.0.41</div>
+      </div>
+      <div class="room-card">
+        <div class="room-num">5</div>
+        <div class="room-port">Screen :5005 &nbsp;&middot;&nbsp; Nexus 5005</div>
+        <div class="room-vb">Voice box: 192.168.0.42</div>
+      </div>
+      <div class="room-card">
+        <div class="room-num">6</div>
+        <div class="room-port">Screen :5006 &nbsp;&middot;&nbsp; Nexus 5006</div>
+        <div class="room-vb">Voice box: 192.168.0.43</div>
+      </div>
+      <div class="room-card">
+        <div class="room-num">7</div>
+        <div class="room-port">Screen :5007 &nbsp;&middot;&nbsp; Nexus 5007</div>
+        <div class="room-vb">Voice box: 192.168.0.44</div>
+      </div>
+      <div class="room-card">
+        <div class="room-num">8</div>
+        <div class="room-port">Screen :5008 &nbsp;&middot;&nbsp; Nexus 5008</div>
+        <div class="room-vb">Voice box: 192.168.0.45</div>
+      </div>
+      <div class="room-card">
+        <div class="room-num">9</div>
+        <div class="room-port">Screen :5009 &nbsp;&middot;&nbsp; Nexus 5009</div>
+        <div class="room-vb">Voice box: 192.168.0.46</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JARVIS AGENT API (new endpoints) -->
+  <div class="section">
+    <div class="section-title">JARVIS Agent API &mdash; 192.168.0.3:8080 <span class="badge badge-new">NEW</span></div>
+    <div class="status-panel" style="padding:0;overflow:hidden">
+    <table class="api-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/api/jarvis</span></td>
+          <td class="desc">Main agent endpoint. Body: <span class="code">{"message":"…","wing":"auto","user":"sam"}</span>. Returns reply, tools_used, provider, elapsed_ms, score.</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testJarvis()">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/api/jarvis/config-check</span></td>
+          <td class="desc">Full system health: Groq keys, Gemini keys, HA token, NocoDB, Telegram, registry stats, provider scores. Returns <span class="code">overall: ok|partial|critical</span>.</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:8080/api/jarvis/config-check')">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis/config-check',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/api/jarvis/scores</span></td>
+          <td class="desc">Provider score leaderboard: avg, n per provider (groq, gemini-flash, pollinations, etc.)</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:8080/api/jarvis/scores')">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis/scores',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/api/jarvis/update-scan</span></td>
+          <td class="desc">Trigger an update scan now. Searches GitHub trending, checks missing keys, suggests packages. Adds results to update queue.</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testPost('http://192.168.0.3:8080/api/jarvis/update-scan')">SCAN NOW</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis/update-scan',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/api/jarvis/update-queue</span></td>
+          <td class="desc">Get update queue. Optional <span class="code">?status=pending|approved|deployed|rejected</span> filter.</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:8080/api/jarvis/update-queue')">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis/update-queue',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/api/jarvis/update-approve</span></td>
+          <td class="desc">Manage a queue item. Body: <span class="code">{"id":"…","action":"approve|reject|deploy|reset","deploy_pcs":["master"]}</span></td>
+          <td><div class="btn-row">
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis/update-approve',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/api/jarvis/update-clear</span></td>
+          <td class="desc">Clear old items. Body: <span class="code">{"keep":["pending","approved"]}</span>. Removes deployed/rejected by default.</td>
+          <td><div class="btn-row">
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis/update-clear',this)">COPY</button>
+          </div></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- NEXUS 5011 API -->
+  <div class="section">
+    <div class="section-title">Nexus Webhook API &mdash; 192.168.0.3:5011</div>
+    <div class="status-panel" style="padding:0;overflow:hidden">
+    <table class="api-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/webhook/status</span></td>
+          <td class="desc">All rooms &mdash; current tab, voice box IP, persona label</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:5011/webhook/status')">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:5011/webhook/status',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/webhook/status/room</span></td>
+          <td class="desc">Alias for /webhook/status (n8n/HA friendly)</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:5011/webhook/status/room')">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:5011/webhook/status/room',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/webhook/status/{label}</span></td>
+          <td class="desc">Which rooms have this persona active. Labels: JARVIS, SAM, PTNR, HOUSE, GUEST, AI, CCTV, SECURITY</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:5011/webhook/status/jarvis')">JARVIS</button>
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:5011/webhook/status/house')">HOUSE</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:5011/webhook/status/{label}',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/webhook/room/{room}/tab/{tab}</span></td>
+          <td class="desc">Switch one room to a tab. Room: 1-9 or 5001-5009. Tab: 1-11. Also updates Jarvis hub voice box if tab=1.</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testPost('http://192.168.0.3:5011/webhook/room/1/tab/4')">TEST r1 HOUSE</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:5011/webhook/room/{room}/tab/{tab}',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/webhook/tab/{tab}</span></td>
+          <td class="desc">Switch ALL rooms to a tab simultaneously. Tab: 1-11.</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testPost('http://192.168.0.3:5011/webhook/tab/4')">ALL HOUSE</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:5011/webhook/tab/{tab}',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/guest-mode/on<br>/guest-mode/off</span></td>
+          <td class="desc">Enable/disable guest mode. ON = rooms default to GUEST tab instead of HOUSE when persona leaves.</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testPost('http://192.168.0.3:5011/guest-mode/on')">ON</button>
+            <button class="btn-test" onclick="testPost('http://192.168.0.3:5011/guest-mode/off')">OFF</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/webhook/manual</span></td>
+          <td class="desc">This manual page (served from nexus port 5011)</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="window.open('http://192.168.0.3:5011/webhook/manual')">OPEN</button>
+          </div></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- JARVIS HUB 8080 API (staff/room management) -->
+  <div class="section">
+    <div class="section-title">Jarvis Hub API &mdash; Staff &amp; Room Management</div>
+    <div class="status-panel" style="padding:0;overflow:hidden">
+    <table class="api-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/jarvis/webhook/{group}/{staff}</span></td>
+          <td class="desc">Switch staff. Group: NocoDB group number (10,20,30&hellip;). Staff: slot 1-10. Updates voice box TTS + wake word. Jarvis screen auto-updates within 3s.</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testPost('http://192.168.0.3:8080/jarvis/webhook/10/1')">TEST g10 s1</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/jarvis/webhook/{group}/{staff}',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/jarvis/webhook/room/{index}</span></td>
+          <td class="desc">Set active voice box room by index. 1=.38, 2=.39, &hellip; 11=.48</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testPost('http://192.168.0.3:8080/jarvis/webhook/room/1')">TEST room 1</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/jarvis/webhook/room/{index}',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/api/active-staff</span></td>
+          <td class="desc">Current active staff &mdash; person, slot_id, group_num, staff_num, TTS, wake word model, room</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:8080/api/active-staff')">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/active-staff',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/api/active-room</span></td>
+          <td class="desc">Current active voice box room number and IP</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:8080/api/active-room')">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/active-room',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/api/jarvis-new-task</span></td>
+          <td class="desc">NEW TASK &mdash; resets session, pings voice box, sends READY FOR COMMAND to Mitos HUD</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testPost('http://192.168.0.3:8080/api/jarvis-new-task')">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis-new-task',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/api/jarvis-recall/{group}</span></td>
+          <td class="desc">Get remembered staff for a group tab (1-15). Returns staff_num, person, source (memory/default)</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:8080/api/jarvis-recall/1')">TEST tab 1</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis-recall/{group}',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/api/jarvis-group-state</span></td>
+          <td class="desc">All group memory &mdash; last staff per group with timestamps</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:8080/api/jarvis-group-state')">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis-group-state',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td><span class="code">/api/jarvis-settings</span></td>
+          <td class="desc">Get revert timeout minutes and per-group default slots</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testUrl('http://192.168.0.3:8080/api/jarvis-settings')">TEST</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis-settings',this)">COPY</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/api/jarvis-settings</span></td>
+          <td class="desc">Update settings. JSON body: <span class="code">{"revert_minutes":30,"group_defaults":{"1":1}}</span></td>
+          <td><div class="btn-row">
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/api/jarvis-settings',this)">COPY URL</button>
+          </div></td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td><span class="code">/webhook/{room_num}</span></td>
+          <td class="desc">Set active voice box by IP suffix (38&ndash;48)</td>
+          <td><div class="btn-row">
+            <button class="btn-test" onclick="testPost('http://192.168.0.3:8080/webhook/38')">TEST .38</button>
+            <button class="btn-copy" onclick="copyText('http://192.168.0.3:8080/webhook/38',this)">COPY</button>
+          </div></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- MODE RULES -->
+  <div class="section">
+    <div class="section-title">Mode Rules</div>
+    <div class="rule-card">
+      <div class="rule-title">Single-Room Personas</div>
+      <div class="rule-body">
+        Personas <code>JARVIS (sam)</code>, <code>SAM (partner)</code>, and <code>AI</code> can only be active in one room at a time.
+        The Nexus monitor thread automatically moves the previous room back to <code>HOUSE</code> (or <code>GUEST</code> if guest mode is on) when another room claims the same persona.
+      </div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-title">Guest Mode</div>
+      <div class="rule-body">
+        Toggle via <code>POST /guest-mode/on</code> or <code>POST /guest-mode/off</code> on port 5011.<br>
+        <strong>OFF (default):</strong> Rooms revert to <code>HOUSE</code> tab (4) when a single-room persona leaves.<br>
+        <strong>ON:</strong> Rooms revert to <code>GUEST</code> tab (5) instead.
+      </div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-title">Group Memory &amp; Revert Timeout</div>
+      <div class="rule-body">
+        The Jarvis screen remembers the last staff slot used per group. Returning within the revert timeout (default <code>30 min</code>) auto-restores that slot.
+        After the timeout, the group reverts to its configured default (usually slot 1).
+        Configure at <a href="http://192.168.0.3:8080/jarvis/setup">Jarvis Setup &rarr; MEMORY tab</a>.
+      </div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-title">Webhook Staff Switch Flow</div>
+      <div class="rule-body">
+        <code>POST /jarvis/webhook/{group}/{staff}</code> &rarr;
+        Looks up name from NocoDB (60s cache) &rarr;
+        Saves authoritative state with timestamp &rarr;
+        Pushes TTS + wake word to active voice box &rarr;
+        Jarvis screen polls <code>/api/active-staff</code> every 3s and auto-switches group + highlights slot.
+      </div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-title">Provider Score Feedback Loop</div>
+      <div class="rule-body">
+        After every JARVIS reply, the caller can send a score (1&ndash;5 stars) via the reply payload.
+        Scores are averaged in <code>data/provider_scores.json</code>.
+        Next request automatically routes to the highest-scoring available provider.
+        View scores at <code>GET /api/jarvis/scores</code> or run <code>jarvis --scores</code>.
+      </div>
+    </div>
+  </div>
+
+  <!-- TEST CONSOLE -->
+  <div class="section">
+    <div class="section-title">Test Console</div>
+    <div class="console-wrap">
+      <div class="console-bar">
+        <input class="console-input" id="con-url" placeholder="Enter URL to test" type="text" value="http://192.168.0.3:8080/api/jarvis/config-check">
+        <select id="con-method" style="background:#0a0a0f;border:1px solid #1f2937;border-radius:6px;padding:6px 8px;color:#e2e8f0;font-size:12px;outline:none">
+          <option value="GET">GET</option>
+          <option value="POST">POST</option>
+        </select>
+        <button class="btn-run" onclick="runConsole()">RUN</button>
+      </div>
+      <div class="console-out" id="con-out">
+        <div class="log-line"><span class="log-info">Ready. Enter a URL and press RUN, or click a TEST button above.</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var NEXUS = 'http://192.168.0.3:5011';
+var HUB   = 'http://192.168.0.3:8080';
+
+function loadRoomStatus() {
+  var grid = document.getElementById('room-status-grid');
+  fetch(NEXUS + '/webhook/status/room')
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      var rooms = Array.isArray(d) ? d : (d.rooms || []);
+      if (!rooms.length) {
+        grid.innerHTML = '<div style="color:#64748b;font-size:12px">No rooms reported</div>';
+        return;
+      }
+      var html = '';
+      rooms.forEach(function(r) {
+        var label = r.tab_label || r.persona || r.tab || '?';
+        var vb = r.voicebox_ip || r.voice_box_ip || '';
+        var rnum = r.room || r.room_num || r.room_number || '?';
+        html += '<div class="status-room">'
+          + '<div class="room-label">ROOM ' + rnum + '</div>'
+          + '<div class="room-tab">' + label + '</div>'
+          + (vb ? '<div class="room-ip">' + vb + '</div>' : '')
+          + '</div>';
+      });
+      grid.innerHTML = html;
+    })
+    .catch(function(e) {
+      grid.innerHTML = '<div style="color:#ef4444;font-size:12px">Error: ' + e.message + '</div>';
+    });
+}
+loadRoomStatus();
+setInterval(loadRoomStatus, 15000);
+
+function testJarvis() {
+  document.getElementById('con-url').value = HUB + '/api/jarvis';
+  document.getElementById('con-method').value = 'POST';
+  // Run with a test body
+  var out = document.getElementById('con-out');
+  var t = new Date().toLocaleTimeString();
+  addLog(out, t, 'info', 'POST ' + HUB + '/api/jarvis ...');
+  fetch(HUB + '/api/jarvis', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({message: 'what tools do you have?', wing: 'auto', user: 'sam'})
+  })
+    .then(function(r) {
+      var status = r.status;
+      return r.text().then(function(txt) {
+        try { txt = JSON.stringify(JSON.parse(txt), null, 2); } catch(e) {}
+        addLog(out, t, status < 300 ? 'ok' : 'err', 'HTTP ' + status + '\n' + txt.slice(0, 2000));
+      });
+    })
+    .catch(function(e) { addLog(out, t, 'err', 'Fetch error: ' + e.message); });
+}
+
+function copyText(text, btn) {
+  var done = function() {
+    btn.textContent = 'COPIED!';
+    btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 1500);
+  };
+  try {
+    navigator.clipboard.writeText(text).then(done).catch(fallback);
+  } catch(e) { fallback(); }
+  function fallback() {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); } catch(e2) {}
+    document.body.removeChild(ta);
+    done();
+  }
+}
+
+function testUrl(url) {
+  document.getElementById('con-url').value = url;
+  document.getElementById('con-method').value = 'GET';
+  runConsole();
+}
+function testPost(url) {
+  document.getElementById('con-url').value = url;
+  document.getElementById('con-method').value = 'POST';
+  runConsole();
+}
+
+function runConsole() {
+  var url = document.getElementById('con-url').value.trim();
+  var method = document.getElementById('con-method').value;
+  var out = document.getElementById('con-out');
+  var t = new Date().toLocaleTimeString();
+  addLog(out, t, 'info', method + ' ' + url + ' ...');
+  fetch(url, {method: method, headers: {'Content-Type': 'application/json'}})
+    .then(function(r) {
+      var status = r.status;
+      return r.text().then(function(txt) {
+        try { txt = JSON.stringify(JSON.parse(txt), null, 2); } catch(e) {}
+        addLog(out, t, status < 300 ? 'ok' : 'err', 'HTTP ' + status + '\n' + txt.slice(0, 2000));
+      });
+    })
+    .catch(function(e) { addLog(out, t, 'err', 'Fetch error: ' + e.message); });
+}
+
+function addLog(out, t, type, msg) {
+  var line = document.createElement('div');
+  line.className = 'log-line';
+  var cls = type === 'ok' ? 'log-ok' : type === 'err' ? 'log-err' : 'log-info';
+  line.innerHTML = '<span class="log-time">' + t + '</span><span class="' + cls + '">' + esc(msg) + '</span>';
+  out.insertBefore(line, out.firstChild);
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

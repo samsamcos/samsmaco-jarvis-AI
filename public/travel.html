@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travel Agent — Parallel Browser</title>
+<style>
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --border: #334155;
+    --text: #f1f5f9; --muted: #94a3b8; --accent: #6366f1;
+    --green: #34d399; --red: #f87171; --amber: #fbbf24; --blue: #60a5fa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  /* Nav */
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border);
+         padding: 0 20px; display: flex; align-items: center; gap: 16px; height: 52px; }
+  .nav h1 { font-size: 17px; font-weight: 700; }
+  .nav-links { display: flex; gap: 8px; margin-left: auto; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 13px; padding: 4px 10px;
+                 border-radius: 6px; border: 1px solid var(--border); }
+  .nav-links a:hover { color: var(--text); border-color: var(--accent); }
+
+  /* Layout */
+  .layout { display: grid; grid-template-columns: 300px 1fr; height: calc(100vh - 52px); }
+  .sidebar { border-right: 1px solid var(--border); overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .main { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px; }
+
+  /* Profile cards */
+  .profile-card { border-radius: 8px; border: 2px solid transparent; padding: 12px; cursor: pointer; transition: all 0.15s; position: relative; background: rgba(255,255,255,0.03); }
+  .profile-card:hover { background: rgba(255,255,255,0.06); }
+  .profile-card.selected { border-color: var(--accent); }
+  .profile-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .profile-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .profile-name { font-weight: 600; font-size: 14px; }
+  .profile-badge { font-size: 10px; padding: 2px 6px; border-radius: 99px; margin-left: auto; font-weight: 600; }
+  .badge-search  { background: #1d4ed820; color: #60a5fa; border: 1px solid #1d4ed8; }
+  .badge-booking { background: #7f1d1d20; color: #f87171; border: 1px solid #7f1d1d; }
+  .profile-notes { font-size: 12px; color: var(--muted); }
+  .vpn-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; }
+  .vpn-label { flex: 1; color: var(--muted); }
+  .toggle { position: relative; display: inline-block; width: 36px; height: 20px; cursor: pointer; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #334155; border-radius: 99px; transition: 0.2s; }
+  .toggle-slider:before { content: ""; position: absolute; height: 14px; width: 14px; left: 3px; top: 3px;
+                           background: white; border-radius: 50%; transition: 0.2s; }
+  input:checked + .toggle-slider { background: var(--green); }
+  input:checked + .toggle-slider:before { transform: translateX(16px); }
+  .proxy-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+                 color: var(--text); padding: 4px 8px; font-size: 11px; margin-top: 6px; font-family: monospace; }
+  .proxy-input:focus { outline: none; border-color: var(--accent); }
+
+  /* Parallel search form */
+  .url-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .url-profile-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .url-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+               color: var(--text); padding: 8px 10px; font-size: 13px; }
+  .url-input:focus { outline: none; border-color: var(--accent); }
+  .url-label { font-size: 11px; color: var(--muted); width: 64px; flex-shrink: 0; }
+
+  /* Buttons */
+  .btn { padding: 8px 16px; border-radius: 7px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #4f46e5; }
+  .btn-primary:disabled { background: #334155; color: var(--muted); cursor: not-allowed; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b; }
+  .btn-danger:hover { background: #991b1b; }
+
+  /* Results */
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .result-panel { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .result-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 12px; font-weight: 700; }
+  .result-url { font-size: 11px; color: var(--muted); margin-bottom: 6px; word-break: break-all; }
+  .result-text { font-size: 12px; color: var(--text); white-space: pre-wrap; max-height: 300px; overflow-y: auto;
+                 background: #0f172a; border-radius: 6px; padding: 8px; line-height: 1.5; }
+  .result-text.error { color: var(--red); }
+
+  /* Status indicators */
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .status-online { background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .status-offline { background: var(--red); }
+  .status-loading { background: var(--amber); animation: pulse 1s infinite; }
+
+  /* Log */
+  .log-area { font-family: monospace; font-size: 12px; background: var(--bg); border: 1px solid var(--border);
+              border-radius: 6px; padding: 10px; max-height: 200px; overflow-y: auto; white-space: pre-wrap;
+              color: var(--muted); line-height: 1.5; }
+  .log-area .ok { color: var(--green); }
+  .log-area .err { color: var(--red); }
+  .log-area .info { color: var(--blue); }
+
+  /* Booking queue */
+  .booking-item { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px;
+                  margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .booking-item .booking-url { flex: 1; font-size: 12px; color: var(--text); word-break: break-all; }
+  .booking-status { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+  .booking-pending  { background: #78350f30; color: var(--amber); border: 1px solid #78350f; }
+  .booking-approved { background: #14532d20; color: var(--green); border: 1px solid #14532d; }
+  .booking-done     { background: #1e3a5f20; color: var(--blue); border: 1px solid #1e3a5f; }
+
+  /* Quick presets */
+  .preset-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .preset-chip { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 99px;
+                 padding: 4px 10px; font-size: 11px; cursor: pointer; color: var(--muted); transition: all 0.15s; }
+  .preset-chip:hover { border-color: var(--accent); color: var(--text); }
+
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  .spin { animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  /* Merge summary */
+  .merge-box { background: #1e3a5f20; border: 1px solid #1e3a5f; border-radius: 8px; padding: 12px; white-space: pre-wrap; font-size: 13px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span style="font-size:20px">✈️</span>
+  <h1>Travel Agent — Parallel Browser</h1>
+  <div class="nav-links">
+    <a href="/">Agent</a>
+    <a href="/staff-temp">Staff Temp</a>
+    <a href="/masterclass">Masterclass</a>
+    <a href="http://192.168.0.3:8050" target="_blank">Node Manager</a>
+  </div>
+</nav>
+
+<div class="layout">
+  <!-- Sidebar: Browser Profiles -->
+  <aside class="sidebar">
+    <div class="card">
+      <div class="card-title">Browser Profiles</div>
+      <div id="profilesList"></div>
+      <button class="btn btn-outline btn-sm" style="width:100%;margin-top:10px" onclick="saveProfiles()">💾 Save All Profiles</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Quick Presets</div>
+      <div class="preset-chips">
+        <div class="preset-chip" onclick="setPreset('flights')">✈️ Flights</div>
+        <div class="preset-chip" onclick="setPreset('hotels')">🏨 Hotels</div>
+        <div class="preset-chip" onclick="setPreset('prices')">💰 Prices</div>
+        <div class="preset-chip" onclick="setPreset('news')">📰 News</div>
+        <div class="preset-chip" onclick="setPreset('stocks')">📈 Stocks</div>
+        <div class="preset-chip" onclick="setPreset('crypto')">₿ Crypto</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Booking VM (Worker-2)</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Profile 2 — dedicated purchase/confirm VM. Always requires Telegram approval.</div>
+      <div id="bookingVmStatus" style="font-size:12px;margin-bottom:10px">
+        <span class="status-dot status-loading"></span> Checking…
+      </div>
+      <textarea id="bookingAction" placeholder="URL|||css-selector|||click&#10;e.g. https://example.com/cart|||#confirm-btn|||click"
+        style="width:100%;height:80px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px;font-size:12px;font-family:monospace;resize:vertical"></textarea>
+      <button class="btn btn-danger btn-sm" style="width:100%;margin-top:8px" onclick="runBooking()">🛒 Run Booking Action</button>
+      <div id="bookingLog" class="log-area" style="margin-top:8px;display:none"></div>
+    </div>
+  </aside>
+
+  <!-- Main: Parallel Search -->
+  <main class="main">
+    <div class="card">
+      <div class="card-title">Parallel Browse — Check 3 Sites at Once</div>
+      <div id="urlRows">
+        <div class="url-row">
+          <div class="url-label">Profile 0</div>
+          <div class="url-profile-dot" id="dot0" style="background:#60a5fa"></div>
+          <input class="url-input" id="url0" type="url" placeholder="https://…" />
+        </div>
+        <div class="url-row">
+          <div class="url-label">Profile 1</div>
+          <div class="url-profile-dot" id="dot1" style="background:#34d399"></div>
+          <input class="url-input" id="url1" type="url" placeholder="https://…" />
+        </div>
+        <div class="url-row">
+          <div class="url-label">Profile 2</div>
+          <div class="url-profile-dot" id="dot2" style="background:#f87171"></div>
+          <input class="url-input" id="url2" type="url" placeholder="https://… (optional)" />
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+        <button class="btn btn-primary" id="runBtn" onclick="runParallel()">🗂 Browse in Parallel</button>
+        <button class="btn btn-outline btn-sm" onclick="clearResults()">Clear</button>
+        <span id="runStatus" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsSection" style="display:none">
+      <div class="card">
+        <div class="card-title">Results</div>
+        <div class="results-grid" id="resultsGrid"></div>
+      </div>
+
+      <div class="card" id="mergeCard" style="display:none">
+        <div class="card-title">AI Merge Summary</div>
+        <div id="mergeSummary" class="merge-box"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-outline btn-sm" onclick="mergeSummary()">🤖 Summarise with AI</button>
+        <button class="btn btn-outline btn-sm" onclick="sendToAgent()">→ Send to Agent</button>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="card">
+      <div class="card-title">Activity Log</div>
+      <div class="log-area" id="actLog">Ready. Enter URLs above and click Browse in Parallel.\n</div>
+    </div>
+  </main>
+</div>
+
+<script>
+let profiles = [];
+let lastRawResults = "";
+
+// ── Load profiles ──────────────────────────────────────────────────────────
+async function loadProfiles() {
+  try {
+    const r = await fetch('/api/browser-profiles');
+    profiles = await r.json();
+    renderProfiles();
+    updateDots();
+  } catch(e) { log('err', 'Failed to load profiles: ' + e); }
+}
+
+function renderProfiles() {
+  const el = document.getElementById('profilesList');
+  el.innerHTML = profiles.map((p, i) => `
+    <div class="profile-card" style="margin-bottom:10px">
+      <div class="profile-header">
+        <div class="profile-dot" style="background:${p.color}"></div>
+        <input style="background:transparent;border:none;color:var(--text);font-weight:600;font-size:14px;width:120px"
+               value="${escHtml(p.name)}" onchange="profiles[${i}].name=this.value;updateDots()">
+        <span class="profile-badge badge-${p.purpose}">${p.purpose}</span>
+      </div>
+      <div class="profile-notes" style="margin-bottom:6px">${escHtml(p.notes||'')}</div>
+      <div class="vpn-row">
+        <span class="vpn-label">${p.vpn ? '🔒 VPN ON' : '🌐 VPN OFF'}</span>
+        <label class="toggle">
+          <input type="checkbox" ${p.vpn ? 'checked' : ''} onchange="profiles[${i}].vpn=this.checked;renderProfiles();updateDots()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      ${p.vpn ? `<input class="proxy-input" value="${escHtml(p.proxy||'')}" placeholder="socks5://127.0.0.1:1080"
+                        onchange="profiles[${i}].proxy=this.value">` : ''}
+    </div>
+  `).join('');
+}
+
+function updateDots() {
+  profiles.forEach((p, i) => {
+    const dot = document.getElementById('dot' + i);
+    if (dot) dot.style.background = p.color;
+    const lbl = document.querySelector('.url-row:nth-child(' + (i+1) + ') .url-label');
+    if (lbl) lbl.textContent = p.name || 'Profile ' + i;
+  });
+}
+
+async function saveProfiles() {
+  for (const p of profiles) {
+    await fetch('/api/browser-profiles/' + p.id, {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(p)
+    });
+  }
+  log('ok', 'Profiles saved ✓');
+}
+
+// ── Parallel browse ────────────────────────────────────────────────────────
+async function runParallel() {
+  const urls = [
+    document.getElementById('url0').value.trim(),
+    document.getElementById('url1').value.trim(),
+    document.getElementById('url2').value.trim(),
+  ].filter(Boolean);
+
+  if (urls.length === 0) { log('err', 'Enter at least 1 URL'); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Browsing…';
+  document.getElementById('runStatus').textContent = `Checking ${urls.length} site(s) in parallel…`;
+  document.getElementById('resultsSection').style.display = 'none';
+  log('info', `Starting parallel browse → ${urls.join(', ')}`);
+
+  try {
+    const r = await fetch('/api/browser-profiles/parallel-test', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ urls })
+    });
+    const data = await r.json();
+    lastRawResults = data.parallel_results || data.result || '';
+    renderResults(data.result || '');
+    log('ok', 'Parallel browse complete ✓');
+    document.getElementById('runStatus').textContent = `Done — ${urls.length} sites checked`;
+  } catch(e) {
+    log('err', 'Error: ' + e);
+    document.getElementById('runStatus').textContent = 'Error — see log';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🗂 Browse in Parallel';
+  }
+}
+
+function renderResults(raw) {
+  const section = document.getElementById('resultsSection');
+  const grid = document.getElementById('resultsGrid');
+  section.style.display = 'block';
+  document.getElementById('mergeCard').style.display = 'none';
+
+  const panels = raw.split('---').map(s => s.trim()).filter(Boolean);
+  grid.innerHTML = panels.map(panel => {
+    const lines = panel.split('\n');
+    const header = lines[0] || '';
+    const vpnTag = header.includes('🔒VPN') ? '🔒' : '🌐';
+    const rest = lines.slice(1).join('\n');
+    const isErr = header.toLowerCase().includes('error');
+    return `
+      <div class="result-panel">
+        <div class="result-header">
+          <span>${vpnTag}</span>
+          <span>${escHtml(header.replace(/\[|\]/g,''))}</span>
+        </div>
+        <div class="result-text ${isErr ? 'error' : ''}">${escHtml(rest.trim().substring(0,1000))}</div>
+      </div>`;
+  }).join('');
+}
+
+async function mergeSummary() {
+  if (!lastRawResults) { log('err', 'Run parallel browse first'); return; }
+  log('info', 'Asking AI to summarise results…');
+  const r = await fetch('/api/intake', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ task: 'Summarise and compare: ' + lastRawResults.substring(0, 800) })
+  });
+  // Just show raw results for now
+  document.getElementById('mergeCard').style.display = 'block';
+  document.getElementById('mergeSummary').textContent = lastRawResults.substring(0, 1200);
+  log('ok', 'Summary shown ✓');
+}
+
+function sendToAgent() {
+  if (!lastRawResults) { log('err', 'No results yet'); return; }
+  sessionStorage.setItem('agentTask', 'Analyse these parallel browse results:\n' + lastRawResults);
+  window.location.href = '/';
+}
+
+function clearResults() {
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('actLog').textContent = 'Cleared.\n';
+  lastRawResults = '';
+}
+
+// ── Booking VM ─────────────────────────────────────────────────────────────
+async function checkBookingVm() {
+  // Profile 2 is the booking VM
+  const el = document.getElementById('bookingVmStatus');
+  try {
+    const r = await fetch('/api/browser-profiles');
+    const ps = await r.json();
+    const bk = ps.find(p => p.purpose === 'booking') || ps[2] || {};
+    el.innerHTML = `<span class="status-dot status-online"></span> ${bk.name} — ${bk.vpn ? '🔒 VPN' : '🌐 Open'} — ${bk.notes || ''}`;
+  } catch(e) {
+    el.innerHTML = `<span class="status-dot status-offline"></span> Profile load failed`;
+  }
+}
+
+async function runBooking() {
+  const action = document.getElementById('bookingAction').value.trim();
+  if (!action) { log('err', 'Enter booking action first'); return; }
+
+  const logEl = document.getElementById('bookingLog');
+  logEl.style.display = 'block';
+  logEl.innerHTML = '<span class="info">⏳ Sending booking action — Telegram approval will be requested…</span>';
+
+  try {
+    const r = await fetch('/api/staff-temp', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name: 'Booking Action',
+        description: 'Travel agent booking confirm',
+        workflow: {
+          name: 'Booking',
+          steps: [
+            { type: 'booking_action', label: 'Execute Booking', action: action }
+          ]
+        }
+      })
+    });
+    const data = await r.json();
+    if (data.id) {
+      logEl.innerHTML += `\n<span class="ok">✓ Created workflow ${data.id} — check Telegram for approval</span>`;
+      log('ok', 'Booking workflow created: ' + data.id);
+    }
+  } catch(e) {
+    logEl.innerHTML += `\n<span class="err">Error: ${e}</span>`;
+  }
+}
+
+// ── Presets ────────────────────────────────────────────────────────────────
+const PRESETS = {
+  flights: ['https://www.google.com/flights','https://www.skyscanner.net','https://www.kayak.co.uk/flights'],
+  hotels:  ['https://www.booking.com','https://www.hotels.com','https://www.airbnb.co.uk'],
+  prices:  ['https://www.amazon.co.uk','https://www.google.com/shopping','https://www.pricespy.co.uk'],
+  news:    ['https://www.bbc.co.uk/news','https://news.sky.com','https://www.theguardian.com'],
+  stocks:  ['https://finance.yahoo.com','https://www.cnbc.com/markets','https://www.marketwatch.com'],
+  crypto:  ['https://coinmarketcap.com','https://www.coingecko.com','https://cryptonews.com'],
+};
+
+function setPreset(key) {
+  const urls = PRESETS[key] || [];
+  ['url0','url1','url2'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) el.value = urls[i] || '';
+  });
+  log('info', `Preset "${key}" loaded`);
+}
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+function log(type, msg) {
+  const el = document.getElementById('actLog');
+  const classes = { ok:'ok', err:'err', info:'info' };
+  const now = new Date().toLocaleTimeString();
+  el.innerHTML += `\n<span class="${classes[type]||''}">[${now}] ${escHtml(msg)}</span>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+loadProfiles();
+checkBookingVm();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

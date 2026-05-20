@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS Sites & Profiles</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080d;--s1:#0d0f17;--s2:#13151f;--s3:#1a1c28;
+  --b1:#1e2030;--b2:#2a2d42;
+  --tx:#dde1f5;--tm:#7880a0;--tf:#3a3e55;
+  --blue:#6b8cff;--grn:#3fdc8a;--pur:#b57aff;--org:#ff9a4a;--red:#ff5f6d;--cyan:#3fd4dc;
+  --fm:'JetBrains Mono',monospace;
+}
+body{font-family:'General Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:13px;}
+button{cursor:pointer;font:inherit;}
+input,select,textarea{font:inherit;}
+
+/* NAV */
+nav{background:var(--s1);border-bottom:1px solid var(--b1);padding:0 16px;display:flex;align-items:center;gap:10px;height:46px;position:sticky;top:0;z-index:100;}
+.nav-logo{font-weight:800;font-size:14px;color:var(--tx);text-decoration:none;display:flex;align-items:center;gap:7px;}
+.nav-ic{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--blue),var(--pur));display:flex;align-items:center;justify-content:center;font-size:.8rem;}
+nav a{font-size:11.5px;color:var(--tm);text-decoration:none;padding:4px 10px;border-radius:5px;transition:color .15s,background .15s;}
+nav a:hover{color:var(--tx);background:var(--s2);}
+nav a.on{color:var(--blue);}
+
+/* LAYOUT */
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px;}
+
+/* SECTION TITLE */
+.sh{font-family:var(--fm);font-size:9.5px;color:var(--tf);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
+
+/* ── PROFILE GRID ── */
+.profile-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px;}
+@media(max-width:1000px){.profile-grid{grid-template-columns:repeat(3,1fr);}}
+.profile-card{background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:14px;position:relative;transition:border-color .2s;}
+.profile-card.has-sites{border-color:var(--b2);}
+.profile-card.active-profile{border-color:var(--blue);background:rgba(107,140,255,.06);}
+.pc-num{font-family:var(--fm);font-size:9px;font-weight:700;color:var(--tf);background:var(--s3);border-radius:4px;padding:2px 7px;display:inline-block;margin-bottom:8px;}
+.pc-name{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:3px;}
+.pc-dir{font-family:var(--fm);font-size:9px;color:var(--tf);margin-bottom:10px;}
+.pc-sites{display:flex;flex-direction:column;gap:4px;min-height:20px;margin-bottom:10px;}
+.pc-site-tag{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--tm);}
+.pc-site-dot{width:5px;height:5px;border-radius:50%;background:var(--grn);flex-shrink:0;}
+.pc-site-dot.empty{background:var(--tf);}
+.pc-empty{font-size:10px;color:var(--tf);}
+.pc-btns{display:flex;flex-direction:column;gap:5px;}
+.pc-btn{font-size:10px;font-weight:700;padding:6px 10px;border-radius:7px;border:none;transition:opacity .15s;}
+.pc-btn:hover{opacity:.8;}
+.pc-open{background:var(--blue);color:#fff;}
+.pc-login{background:var(--grn-d,rgba(63,220,138,.1));color:var(--grn);border:1px solid rgba(63,220,138,.25);}
+.profile-default-badge{position:absolute;top:10px;right:10px;font-size:8px;font-weight:700;background:rgba(107,140,255,.15);color:var(--blue);border:1px solid rgba(107,140,255,.25);border-radius:4px;padding:1px 6px;}
+
+/* PROFILE SITES SELECT */
+.ps-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+
+/* MAIN TWO-COL LAYOUT */
+.cols{display:grid;grid-template-columns:300px 1fr;gap:16px;}
+.col-left{display:flex;flex-direction:column;gap:12px;}
+
+/* SITE LIST */
+.site-list{display:flex;flex-direction:column;gap:6px;}
+.site-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:11px 13px;cursor:pointer;transition:border-color .2s,background .2s;}
+.site-card:hover{border-color:var(--b2);background:var(--s2);}
+.site-card.on{border-color:var(--blue);background:rgba(107,140,255,.07);}
+.sc-row{display:flex;align-items:center;gap:8px;}
+.sc-ico{font-size:18px;width:26px;text-align:center;flex-shrink:0;}
+.sc-info{flex:1;min-width:0;}
+.sc-name{font-size:12.5px;font-weight:700;margin-bottom:1px;}
+.sc-url{font-size:10px;color:var(--tm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--fm);}
+.sc-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+.badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;}
+.badge-p{background:rgba(107,140,255,.15);color:var(--blue);}
+.badge-ok{background:rgba(63,220,138,.1);color:var(--grn);}
+.badge-warn{background:rgba(250,204,21,.1);color:#facc15;}
+
+/* ADD SITE FORM */
+.add-form{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:14px;}
+.fi{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:7px;padding:7px 10px;color:var(--tx);outline:none;font-size:12px;transition:border-color .15s;}
+.fi:focus{border-color:var(--blue);}
+.fi::placeholder{color:var(--tf);}
+.lbl{font-size:10px;font-weight:700;color:var(--tf);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px;display:block;}
+.fg{margin-bottom:10px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.add-btn{width:100%;background:var(--grn);color:#0a1a10;border:none;border-radius:7px;padding:9px;font-weight:700;font-size:12px;margin-top:4px;}
+.add-btn:hover{opacity:.85;}
+
+/* RIGHT: DETAIL + VNC */
+.detail-wrap{display:flex;flex-direction:column;gap:12px;}
+.dcard{background:var(--s1);border:1px solid var(--b1);border-radius:10px;overflow:hidden;}
+.dcard-hd{display:flex;align-items:center;padding:11px 13px;border-bottom:1px solid var(--b1);background:var(--s2);}
+.dcard-title{font-size:11px;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;flex:1;}
+.dcard-body{padding:13px;}
+
+/* VNC IFRAME */
+.vnc-frame{width:100%;height:360px;border:none;border-radius:6px;background:#000;display:block;}
+
+/* INFO TABLE */
+.info-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:11.5px;}
+.info-row:last-child{border-bottom:none;}
+.ik{color:var(--tm);}
+.iv{color:var(--tx);font-weight:600;text-align:right;max-width:60%;word-break:break-all;}
+
+/* ACTION BUTTONS */
+.act-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;}
+.abtn{font-size:11px;font-weight:700;padding:7px 14px;border-radius:7px;border:none;transition:opacity .15s;}
+.abtn:hover{opacity:.8;}
+.abtn-blue{background:rgba(107,140,255,.15);color:var(--blue);border:1px solid rgba(107,140,255,.3);}
+.abtn-grn{background:var(--grn);color:#0a1a10;}
+.abtn-red{background:rgba(255,95,109,.1);color:var(--red);border:1px solid rgba(255,95,109,.2);}
+.abtn-dim{background:var(--s2);color:var(--tm);border:1px solid var(--b1);}
+
+/* SELECT box */
+.sel-profile{background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:5px 9px;color:var(--tx);font-size:11.5px;outline:none;}
+.sel-profile:focus{border-color:var(--blue);}
+
+/* Webhook box */
+.wh-box{background:var(--bg);border:1px solid rgba(107,140,255,.2);border-radius:7px;padding:8px 10px;margin-top:8px;}
+.wh-label{font-size:9px;font-weight:700;color:var(--blue);letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px;}
+.wh-url{font-family:var(--fm);font-size:11px;color:var(--grn);word-break:break-all;}
+.copy-btn{font-size:9.5px;padding:3px 9px;background:rgba(107,140,255,.12);border:1px solid rgba(107,140,255,.2);color:var(--blue);border-radius:4px;cursor:pointer;margin-top:5px;transition:opacity .15s;}
+.copy-btn:hover{opacity:.8;}
+
+/* No site selected */
+.no-sel{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:10px;color:var(--tf);}
+.no-sel .ico{font-size:40px;opacity:.3;}
+
+/* Toast */
+.toast{position:fixed;bottom:18px;right:18px;background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:9px 15px;font-size:12px;color:var(--tx);z-index:9999;opacity:0;transform:translateY(5px);transition:all .2s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo"><div class="nav-ic">🧠</div>JARVIS</a>
+  <a href="/">Agent</a>
+  <a href="/browser">Browser</a>
+  <a href="/sites" class="on">Sites</a>
+  <a href="/webhooks">Webhooks</a>
+  <a href="/worker">Worker</a>
+  <a href="/flights">Flights</a>
+  <a href="/about">About</a>
+</nav>
+
+<div class="wrap">
+
+  <!-- ── PROFILE GRID ── -->
+  <div class="sh">Chrome Profiles — click Open to launch in VNC</div>
+  <div class="profile-grid" id="profile-grid">
+    <!-- rendered by JS -->
+  </div>
+
+  <!-- ── TWO-COL ── -->
+  <div class="cols">
+
+    <!-- LEFT: site list + add form -->
+    <div class="col-left">
+
+      <div>
+        <div class="sh">Your Sites</div>
+        <div class="site-list" id="site-list">
+          <div style="color:var(--tf);font-size:11px">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Add Site Form -->
+      <div class="add-form">
+        <div class="sh" style="margin-bottom:10px">Add New Site</div>
+
+        <div class="fg"><label class="lbl">Site Name</label>
+          <input class="fi" id="s-name" placeholder="e.g. Gemini, Gmail, Amazon"/></div>
+
+        <div class="fg"><label class="lbl">Site URL</label>
+          <input class="fi" id="s-url" placeholder="https://gemini.google.com/app"/></div>
+
+        <div class="fg"><label class="lbl">Login URL (optional)</label>
+          <input class="fi" id="s-login-url" placeholder="Leave blank to use Site URL"/></div>
+
+        <div class="fg"><label class="lbl">Chrome Profile Slot</label>
+          <select class="fi sel-profile" id="s-profile-num">
+            <option value="0">Profile 0 — Default (main)</option>
+            <option value="1">Profile 1</option>
+            <option value="2">Profile 2</option>
+            <option value="3">Profile 3</option>
+            <option value="4">Profile 4</option>
+            <option value="all">⭐ ALL Profiles (adds to each)</option>
+          </select>
+        </div>
+
+        <div class="g2">
+          <div class="fg"><label class="lbl">Username / Email</label>
+            <input class="fi" id="s-user" placeholder="you@gmail.com"/></div>
+          <div class="fg"><label class="lbl">Password (stored locally)</label>
+            <input class="fi" id="s-pass" type="password" placeholder="••••••••"/></div>
+        </div>
+
+        <div class="fg"><label class="lbl">Icon</label>
+          <input class="fi" id="s-icon" placeholder="🌐" style="max-width:70px"/></div>
+
+        <button class="add-btn" onclick="addSite()">+ Add Site</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: detail -->
+    <div id="right-col">
+      <div class="no-sel" id="no-sel">
+        <div class="ico">🌐</div>
+        <div style="font-weight:700;">Select a site to manage</div>
+        <div style="font-size:11px">Click any site on the left</div>
+      </div>
+      <div class="detail-wrap" id="detail-wrap" style="display:none;">
+
+        <!-- VNC Live -->
+        <div class="dcard">
+          <div class="dcard-hd">
+            <div class="dcard-title">🖥 Live VNC — browser window</div>
+            <a href="http://192.168.0.8:6082/vnc.html?autoconnect=1&resize=scale" target="_blank" style="font-size:10px;color:var(--blue);text-decoration:none;border:1px solid rgba(107,140,255,.25);padding:3px 9px;border-radius:4px;">↗ Full Screen</a>
+          </div>
+          <div style="padding:10px;">
+            <iframe id="vnc-iframe" class="vnc-frame" src="about:blank"></iframe>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <button class="abtn abtn-grn" id="login-btn" onclick="openLogin()">🔐 Open Login in VNC</button>
+              <button class="abtn abtn-blue" onclick="openURL()">🌐 Open Site</button>
+              <button class="abtn abtn-dim" onclick="reconnectVNC()">↺ Reconnect</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Site Info -->
+        <div class="dcard">
+          <div class="dcard-hd">
+            <div class="dcard-title">📋 Site Info</div>
+            <button class="abtn abtn-red" style="font-size:10px;padding:4px 10px;" onclick="deleteSite()">Delete</button>
+          </div>
+          <div class="dcard-body">
+            <div id="info-rows"></div>
+
+            <!-- Webhook URL for this site -->
+            <div class="wh-box" id="wh-box">
+              <div class="wh-label">Webhook URL</div>
+              <div class="wh-url" id="wh-url-text">—</div>
+              <button class="copy-btn" onclick="cpWh()">📋 Copy URL</button>
+              <div style="font-size:10px;color:var(--tf);margin-top:6px;">POST body: <code style="color:var(--grn);">{"message":"your question"}</code></div>
+            </div>
+
+            <!-- Profile reassign -->
+            <div style="margin-top:12px;display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--tm);">Move to profile:</span>
+              <select class="sel-profile" id="reassign-profile">
+                <option value="0">Profile 0 (default)</option>
+                <option value="1">Profile 1</option>
+                <option value="2">Profile 2</option>
+                <option value="3">Profile 3</option>
+                <option value="4">Profile 4</option>
+              </select>
+              <button class="abtn abtn-dim" style="font-size:10px;padding:5px 10px;" onclick="reassignProfile()">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Credentials -->
+        <div class="dcard">
+          <div class="dcard-hd"><div class="dcard-title">🔑 Stored Credentials</div></div>
+          <div class="dcard-body" id="cred-rows"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PROFILES = [
+  {num:0, name:'Default',   dir:'default',    color:'#6b8cff'},
+  {num:1, name:'Profile 1', dir:'profile-1',  color:'#3fdc8a'},
+  {num:2, name:'Profile 2', dir:'profile-2',  color:'#ff9a4a'},
+  {num:3, name:'Profile 3', dir:'profile-3',  color:'#b57aff'},
+  {num:4, name:'Profile 4', dir:'profile-4',  color:'#f87171'},
+];
+const VNC_URL = 'http://192.168.0.8:6082/vnc.html?autoconnect=1&resize=scale';
+const HOST = 'http://192.168.0.8:8080';
+
+let _sites = [];
+let _sel = null;   // selected site object
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toast(msg, dur=3200){
+  const el=document.getElementById('toast'); el.textContent=msg;
+  el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),dur);
+}
+function cp(t){ navigator.clipboard.writeText(t).then(()=>toast('Copied!')); }
+function cpWh(){ cp(document.getElementById('wh-url-text').textContent); }
+
+// ── Profile mapping ──
+function profileDir(num){ return num===0?'default':'profile-'+num; }
+function profileLabel(num){ return num===0?'Profile 0 (default)':'Profile '+num; }
+
+// ── Render profile grid ──
+function renderProfiles(){
+  const bySite = {};
+  PROFILES.forEach(p=>{ bySite[p.num]=_sites.filter(s=>parseInt(s.profile_num||0)===p.num); });
+  const el = document.getElementById('profile-grid');
+  el.innerHTML = PROFILES.map(p=>{
+    const sites = bySite[p.num]||[];
+    const siteHtml = sites.length
+      ? sites.map(s=>`<div class="pc-site-tag"><div class="pc-site-dot"></div>${esc(s.name)}</div>`).join('')
+      : '<div class="pc-empty">No sites yet</div>';
+    return `<div class="profile-card ${sites.length?'has-sites':''}">
+      ${p.num===0?'<div class="profile-default-badge">DEFAULT</div>':''}
+      <div class="pc-num">PROFILE ${p.num}</div>
+      <div class="pc-name" style="color:${p.color}">${p.name}</div>
+      <div class="pc-dir">${p.dir}/</div>
+      <div class="pc-sites">${siteHtml}</div>
+      <div class="pc-btns">
+        <button class="pc-btn pc-open" style="background:${p.color}" onclick="openProfile(${p.num})">▶ Open Chrome</button>
+        ${sites.length?`<select id="quick-site-${p.num}" style="font-size:10px;padding:4px 6px;border-radius:5px;background:#13151f;border:1px solid #1e2030;color:#dde1f5;width:100%;">
+          ${sites.map((s,i)=>`<option value="${i}">${esc(s.name)}</option>`).join('')}
+        </select>
+        <button class="pc-btn pc-login" onclick="openSiteInProfile(${p.num})">🔐 Login to site</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openProfile(num){
+  toast(`Opening Chrome Profile ${num} in VNC…`);
+  await fetch('/vnc/open',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({url:'about:blank',profile:profileDir(num)})});
+  loadVNC();
+  setTimeout(()=>toast('Chrome opened — check VNC view'),1500);
+}
+
+async function openSiteInProfile(num){
+  const sel = document.getElementById('quick-site-'+num);
+  const sites = _sites.filter(s=>parseInt(s.profile_num||0)===num);
+  const site = sites[sel?.value||0];
+  if(!site) return;
+  toast(`Opening ${site.name} in Profile ${num}…`);
+  await fetch('/vnc/open',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({url:site.login_url||site.url,profile:profileDir(num)})});
+  loadVNC();
+}
+
+// ── Load & render sites ──
+async function loadSites(){
+  try{
+    const d=await fetch('/api/sites').then(r=>r.json());
+    _sites=d.sites||[];
+    renderSiteList();
+    renderProfiles();
+  }catch{}
+}
+
+function renderSiteList(){
+  const el=document.getElementById('site-list');
+  if(!_sites.length){ el.innerHTML='<div style="color:var(--tf);font-size:11px">No sites yet — add one below</div>'; return; }
+  const profMap={'default':0,'profile-1':1,'profile-2':2,'profile-3':3,'profile-4':4};
+  el.innerHTML=_sites.map(s=>{
+    const pNum=(s.profile_num!=null&&s.profile_num!=='all')?parseInt(s.profile_num):( profMap[s.profile]??0);
+    const pColor=PROFILES[pNum]?.color||'#6b8cff';
+    return `<div class="site-card ${_sel&&_sel.id===s.id?'on':''}" onclick="selectSite('${s.id}')">
+      <div class="sc-row">
+        <div class="sc-ico">${s.icon||'🌐'}</div>
+        <div class="sc-info">
+          <div class="sc-name">${esc(s.name)}</div>
+          <div class="sc-url">${esc((s.url||'').replace('https://',''))}</div>
+          <div class="sc-badges">
+            <span class="badge badge-p" style="background:${pColor}22;color:${pColor}">Profile ${pNum}</span>
+            ${s.credentials?.username?'<span class="badge badge-ok">AUTH</span>':''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectSite(id){
+  _sel=_sites.find(s=>s.id===id); if(!_sel) return;
+  renderSiteList();
+  document.getElementById('no-sel').style.display='none';
+  document.getElementById('detail-wrap').style.display='flex';
+  renderDetail();
+  loadVNC();
+  document.getElementById('reassign-profile').value=String(_sel.profile_num||0);
+}
+
+function renderDetail(){
+  const s=_sel;
+  const pNum=parseInt(s.profile_num||0);
+  const wh=`${HOST}/webhook/${(s.id||s.name.toLowerCase().replace(/\s+/g,'-'))}-search`;
+
+  document.getElementById('info-rows').innerHTML=[
+    ['Name', s.name],['URL', s.url],['Login URL', s.login_url||'(same as URL)'],
+    ['Profile', profileLabel(pNum)],['Profile dir', profileDir(pNum)],
+  ].map(([k,v])=>`<div class="info-row"><span class="ik">${k}</span><span class="iv">${esc(String(v))}</span></div>`).join('');
+
+  document.getElementById('wh-url-text').textContent=wh;
+
+  const creds=s.credentials||{};
+  document.getElementById('cred-rows').innerHTML=[
+    ['Username', creds.username||'(none)'],
+    ['Password', creds.password?'••••••••':'(none)'],
+  ].map(([k,v])=>`<div class="info-row"><span class="ik">${k}</span><span class="iv">${esc(String(v))}</span></div>`).join('');
+}
+
+function loadVNC(){
+  document.getElementById('vnc-iframe').src=VNC_URL+'&t='+Date.now();
+}
+
+function reconnectVNC(){
+  document.getElementById('vnc-iframe').src='about:blank';
+  setTimeout(()=>document.getElementById('vnc-iframe').src=VNC_URL,300);
+}
+
+async function openLogin(){
+  if(!_sel) return;
+  const pNum=parseInt(_sel.profile_num||0);
+  const url=_sel.login_url||_sel.url;
+  toast(`🔐 Opening ${_sel.name} login in Profile ${pNum}…`);
+  document.getElementById('login-btn').textContent='⏳ Opening…';
+  try{
+    await fetch('/vnc/open',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url,profile:profileDir(pNum)})});
+    setTimeout(()=>{ document.getElementById('login-btn').textContent='🔐 Open Login in VNC'; },3000);
+    toast('Chrome opened — log in and the session saves automatically');
+  }catch(e){ toast('Error: '+e.message); document.getElementById('login-btn').textContent='🔐 Open Login in VNC'; }
+}
+
+async function openURL(){
+  if(!_sel) return;
+  await fetch('/vnc/open',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({url:_sel.url,profile:profileDir(parseInt(_sel.profile_num||0))})});
+  toast('Opening '+_sel.name+'…');
+}
+
+async function reassignProfile(){
+  if(!_sel) return;
+  const num=parseInt(document.getElementById('reassign-profile').value);
+  const updated={..._sel, profile_num:num, profile:profileDir(num)};
+  await fetch('/api/sites/'+_sel.id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(updated)});
+  _sel.profile_num=num; _sel.profile=profileDir(num);
+  renderDetail(); renderProfiles(); renderSiteList();
+  toast(`Moved to Profile ${num}`);
+}
+
+async function deleteSite(){
+  if(!_sel||!confirm('Delete '+_sel.name+'?')) return;
+  await fetch('/api/sites/'+_sel.id,{method:'DELETE'});
+  _sel=null;
+  document.getElementById('no-sel').style.display='flex';
+  document.getElementById('detail-wrap').style.display='none';
+  loadSites(); toast('Deleted');
+}
+
+async function addSite(){
+  const name=document.getElementById('s-name').value.trim();
+  const url=document.getElementById('s-url').value.trim();
+  if(!name||!url){ toast('Name and URL required'); return; }
+  const profVal=document.getElementById('s-profile-num').value;
+  const icon=document.getElementById('s-icon').value.trim()||'🌐';
+  const isAll=(profVal==='all');
+  const pNum=isAll?0:parseInt(profVal||'0');
+  const body={
+    name, url, icon,
+    login_url:document.getElementById('s-login-url').value.trim(),
+    profile:isAll?'all':profileDir(pNum),
+    profile_num:isAll?'all':pNum,
+    credentials:{
+      username:document.getElementById('s-user').value.trim(),
+      password:document.getElementById('s-pass').value,
+    },
+  };
+  const r=await fetch('/api/sites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(d.ok){
+    toast(isAll?'✓ '+name+' added to ALL 5 profiles':'✓ '+name+' added to Profile '+pNum);
+    ['s-name','s-url','s-login-url','s-user','s-pass','s-icon'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    loadSites();
+  } else { toast('Error: '+(d.error||'?')); }
+}
+
+loadSites();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

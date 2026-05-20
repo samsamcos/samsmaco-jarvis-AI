@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>JARVIS Popup</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:transparent;
+  overflow:hidden;
+  font-family:'JetBrains Mono',monospace,system-ui;
+  font-size:13px;
+}
+
+/* Stack of toast popups — bottom-right by default */
+#popups{
+  position:fixed;
+  bottom:20px; right:20px;
+  width:min(380px,90vw);
+  display:flex;
+  flex-direction:column-reverse; /* newest at bottom */
+  gap:8px;
+  z-index:999999;
+  pointer-events:none;
+}
+
+.popup{
+  background:rgba(14,16,26,0.96);
+  backdrop-filter:blur(16px) saturate(160%);
+  border-left:3px solid var(--accent,#6b8cff);
+  border-radius:10px;
+  padding:12px 14px;
+  pointer-events:all;
+  animation:popIn .25s cubic-bezier(.34,1.56,.64,1);
+  position:relative;
+  transition:opacity .3s,transform .3s;
+}
+@keyframes popIn{from{opacity:0;transform:translateX(30px) scale(.96)}to{opacity:1;transform:none}}
+
+/* progress bar (auto-dismiss countdown) */
+.popup-bar{
+  position:absolute;
+  bottom:0;left:0;right:0;height:2px;
+  background:var(--accent,#6b8cff);
+  border-radius:0 0 10px 10px;
+  transform-origin:left;
+  animation:shrink var(--dur,12s) linear forwards;
+}
+@keyframes shrink{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+
+.popup-top{
+  display:flex;align-items:center;gap:7px;margin-bottom:5px;
+}
+.popup-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent,#6b8cff);flex-shrink:0;
+}
+.popup-src{
+  font-size:9px;font-weight:800;letter-spacing:1px;
+  color:var(--accent,#6b8cff);text-transform:uppercase;flex:1;
+}
+.popup-close{
+  background:none;border:none;color:rgba(255,255,255,.2);
+  font-size:12px;cursor:pointer;padding:0 2px;
+  transition:color .15s;flex-shrink:0;
+}
+.popup-close:hover{color:rgba(255,255,255,.7);}
+
+.popup-title{
+  font-size:12px;font-weight:700;color:#e8ecf4;
+  line-height:1.3;margin-bottom:3px;
+}
+.popup-msg{
+  font-size:11px;color:rgba(200,210,230,0.6);
+  line-height:1.5;max-height:80px;overflow:hidden;
+}
+.popup-btns{
+  display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;
+}
+.pbtn{
+  font-size:10px;font-weight:700;font-family:inherit;
+  padding:4px 10px;border-radius:6px;cursor:pointer;border:none;
+  transition:opacity .15s;
+}
+.pbtn:hover{opacity:.8;}
+.pbtn-approve{background:#3fdc8a;color:#0a1a10;}
+.pbtn-run{background:#6b8cff;color:#fff;}
+.pbtn-reject{background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3);}
+.pbtn-dismiss{background:rgba(255,255,255,.08);color:rgba(200,210,230,.5);border:1px solid rgba(255,255,255,.06);}
+
+/* accent colours */
+.acc-jarvis {--accent:#6b8cff}
+.acc-n8n    {--accent:#ff9a4a}
+.acc-ok     {--accent:#3fdc8a}
+.acc-warn   {--accent:#facc15}
+.acc-alert  {--accent:#6b8cff}
+.acc-search {--accent:#f87171}
+.acc-guardrail{--accent:#facc15}
+.acc-result {--accent:#3fdc8a}
+</style>
+</head>
+<body>
+<div id="popups"></div>
+
+<script>
+let _sse = null;
+const _seen = new Set();
+const _timers = {};
+
+const CAT_MAP = {
+  n8n:'acc-n8n', jarvis:'acc-jarvis', ok:'acc-ok', warn:'acc-warn',
+  alert:'acc-alert', search:'acc-search', guardrail:'acc-guardrail',
+  result:'acc-result', approval:'acc-guardrail',
+};
+function acc(ev){ return CAT_MAP[(ev.source||ev.type||'').toLowerCase()] || 'acc-jarvis'; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Auto-dismiss duration: approval=never-auto, result=15s, others=12s
+function dur(ev){
+  if(ev.type==='approval') return 60;
+  if(ev.type==='result') return 15;
+  return 12;
+}
+
+function removePopup(id){
+  const el=document.getElementById('pp-'+id);
+  if(!el)return;
+  clearTimeout(_timers[id]);
+  el.style.opacity='0';el.style.transform='translateX(30px)';
+  setTimeout(()=>el.remove(),300);
+}
+
+async function doAction(id, action, replyUrl, approvalId, message){
+  removePopup(id);
+  if(approvalId && (action.includes('Approve')||action.includes('✓'))){
+    try{ await fetch('/approvals/'+approvalId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'approve'})}); }catch{}
+  } else if(approvalId){
+    try{ await fetch('/approvals/'+approvalId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'reject'})}); }catch{}
+  } else {
+    try{ await fetch('/overlay/rc/action',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({job_id:id,action,reply_url:replyUrl,message})}); }catch{}
+  }
+}
+
+function addPopup(ev){
+  if(_seen.has(ev.id)) return;
+  _seen.add(ev.id);
+
+  const id = ev.id;
+  const d = dur(ev);
+  const acl = acc(ev);
+  const src = (ev.source||ev.type||'JARVIS').toUpperCase();
+  const approvalId = ev.approval_id||'';
+
+  const btns = (ev.buttons||['✕ Dismiss']).map(b=>{
+    const bl=b.toLowerCase();
+    let cls='pbtn-dismiss';
+    if(bl.includes('approve')||bl.includes('✓')) cls='pbtn-approve';
+    else if(bl.includes('run')||bl.includes('▶')) cls='pbtn-run';
+    else if(bl.includes('reject')||bl.includes('✕')||bl.includes('no')) cls='pbtn-reject';
+    return `<button class="pbtn ${cls}"
+      onclick="doAction('${id}','${b.replace(/'/g,"\\'")}','${ev.reply_url||''}','${approvalId}','${(ev.message||'').replace(/'/g,"\\'")}')">
+      ${esc(b)}</button>`;
+  }).join('');
+
+  const el=document.createElement('div');
+  el.className=`popup ${acl}`;
+  el.id='pp-'+id;
+  el.style.setProperty('--dur', d+'s');
+  el.innerHTML=`
+    <div class="popup-top">
+      <div class="popup-dot"></div>
+      <div class="popup-src">${esc(src)}</div>
+      <button class="popup-close" onclick="removePopup('${id}')">✕</button>
+    </div>
+    <div class="popup-title">${esc(ev.title||'Notification')}</div>
+    ${ev.message?`<div class="popup-msg">${esc(ev.message)}</div>`:''}
+    ${btns?`<div class="popup-btns">${btns}</div>`:''}
+    <div class="popup-bar"></div>
+  `;
+
+  document.getElementById('popups').prepend(el);
+
+  // Keep max 5 popups visible
+  const all=[...document.querySelectorAll('.popup')];
+  if(all.length>5) removePopup(all[all.length-1].id.replace('pp-',''));
+
+  // Auto-dismiss
+  _timers[id]=setTimeout(()=>removePopup(id), d*1000);
+}
+
+function updateThread(ev){
+  // Show as a new popup with "Update" label
+  const fakeEv={...ev, id:ev.id+'_upd_'+Date.now(), source:'update', title:ev.title||'Update', message:ev.message, buttons:['✕ Dismiss']};
+  addPopup(fakeEv);
+}
+
+function connectSSE(){
+  if(_sse) _sse.close();
+  _sse=new EventSource('/overlay/rc/stream');
+  _sse.onmessage=(e)=>{
+    try{
+      const ev=JSON.parse(e.data);
+      if(ev.type==='ping') return;
+      if(ev.type==='update'){ updateThread(ev); return; }
+      addPopup(ev);
+    }catch{}
+  };
+  _sse.onerror=()=>{ setTimeout(connectSSE,3000); };
+}
+
+connectSSE();
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

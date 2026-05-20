@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SAMSAMCO // J.A.R.V.I.S — AI Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --c:#00d4ff;--c2:#22d87a;--c3:#f59e0b;--c4:#a855f7;
+  --bg:#060b10;--bg2:rgba(0,8,18,.95);--bg3:rgba(0,212,255,.04);
+  --border:rgba(0,212,255,.15);--text:rgba(0,212,255,.85);--dim:rgba(0,212,255,.4);
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;overflow-x:hidden}
+
+/* grid bg */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);
+  background-size:40px 40px;}
+
+/* scanline */
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(transparent 50%,rgba(0,0,0,.03) 50%);
+  background-size:100% 4px;animation:scan 8s linear infinite;}
+@keyframes scan{0%{background-position:0 0}100%{background-position:0 100%}}
+
+.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 20px 60px}
+
+/* ── HEADER ── */
+header{padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.hd-logo{display:flex;flex-direction:column;gap:4px}
+.hd-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(24px,4vw,42px);letter-spacing:6px;color:#fff;text-shadow:0 0 24px rgba(0,212,255,.6)}
+.hd-sub{font-size:10px;letter-spacing:3px;color:var(--dim)}
+.hd-live{display:flex;gap:10px;flex-wrap:wrap}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:2px;padding:6px 14px;border:1px solid var(--border);border-radius:4px;background:var(--bg3);color:var(--dim);text-decoration:none;transition:.15s;white-space:nowrap}
+.live-badge:hover{border-color:var(--c);color:var(--c);background:rgba(0,212,255,.08)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--c2);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.live-badge.vb .live-dot{background:var(--c)}
+.live-badge.vm .live-dot{background:var(--c3)}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:40px 0 48px;border-bottom:1px solid var(--border);margin-bottom:48px}
+.hero-tag{font-size:9px;letter-spacing:4px;color:var(--dim);margin-bottom:16px}
+.hero-head{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:clamp(28px,5vw,56px);letter-spacing:4px;color:#fff;line-height:1.1;margin-bottom:16px;text-shadow:0 0 40px rgba(0,212,255,.4)}
+.hero-head span{color:var(--c)}
+.hero-desc{max-width:680px;margin:0 auto 28px;font-size:13px;line-height:1.9;color:rgba(0,212,255,.6);letter-spacing:.5px}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;padding:10px 22px;border-radius:5px;text-decoration:none;cursor:pointer;transition:.15s;border:1px solid}
+.btn-primary{background:rgba(0,212,255,.12);border-color:rgba(0,212,255,.5);color:var(--c)}
+.btn-primary:hover{background:rgba(0,212,255,.22);border-color:var(--c)}
+.btn-ghost{background:none;border-color:var(--border);color:var(--dim)}
+.btn-ghost:hover{border-color:var(--dim);color:var(--text)}
+.btn-green{background:rgba(34,216,122,.1);border-color:rgba(34,216,122,.4);color:var(--c2)}
+.btn-green:hover{background:rgba(34,216,122,.2)}
+.btn-amber{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4);color:var(--c3)}
+.btn-amber:hover{background:rgba(245,158,11,.2)}
+
+/* ── STAT ROW ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:48px}
+.stat{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center}
+.stat-num{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:28px;color:#fff;letter-spacing:2px}
+.stat-lbl{font-size:8px;letter-spacing:2px;color:var(--dim);margin-top:4px}
+
+/* ── SECTION TITLE ── */
+.sec-title{font-size:9px;letter-spacing:4px;color:var(--dim);margin-bottom:20px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+/* ── FEATURE GRID ── */
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:48px}
+.feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:20px;position:relative;overflow:hidden;transition:.15s}
+.feature-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fc,var(--c));border-radius:3px 0 0 3px}
+.feature-card:hover{border-color:var(--fc,var(--c));background:rgba(0,8,18,.99)}
+.fc-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.fc-icon{width:28px;height:28px;border-radius:6px;background:rgba(0,212,255,.1);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.fc-name{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:14px;letter-spacing:2px;color:#fff}
+.fc-desc{font-size:11px;line-height:1.7;color:var(--dim)}
+.fc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.fc-tag{font-size:8px;letter-spacing:1px;padding:2px 7px;border-radius:3px;border:1px solid var(--border);color:var(--dim)}
+
+/* ── LINKS TABLE ── */
+.links-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:48px}
+.link-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;text-decoration:none;color:var(--dim);font-size:10px;letter-spacing:1px;transition:.12s}
+.link-item:hover{border-color:var(--c);color:var(--text);background:rgba(0,212,255,.06)}
+.link-dot{width:5px;height:5px;border-radius:50%;background:var(--ld,var(--c));flex-shrink:0}
+
+/* ── STAFF GROUPS ── */
+.groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:48px}
+.group-chip{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;font-size:9px;letter-spacing:1px;color:var(--dim)}
+.group-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.group-name{color:rgba(0,212,255,.75);font-size:10px}
+.group-role{font-size:8px;color:var(--dim)}
+
+/* ── INTEGRATIONS ── */
+.int-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:48px}
+.int-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:14px;display:flex;align-items:flex-start;gap:12px}
+.int-icon{font-size:20px;flex-shrink:0;width:32px;text-align:center}
+.int-body{}
+.int-name{font-size:11px;letter-spacing:1px;color:rgba(0,212,255,.9);margin-bottom:3px}
+.int-desc{font-size:9px;line-height:1.6;color:var(--dim)}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--border);padding:24px 0;text-align:center;font-size:9px;letter-spacing:2px;color:var(--dim)}
+footer a{color:var(--dim);text-decoration:none}
+footer a:hover{color:var(--c)}
+
+/* ── LIVE STATUS BAR ── */
+#status-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;height:36px;background:rgba(0,4,12,.95);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:20px;font-size:9px;letter-spacing:1px;color:var(--dim)}
+.sb-item{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.sb-dot{width:5px;height:5px;border-radius:50%;background:var(--c2)}
+.sb-dot.off{background:rgba(255,60,60,.7)}
+#sb-staff{margin-left:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<header>
+  <div class="hd-logo">
+    <div class="hd-title">SAMSAMCO // J.A.R.V.I.S</div>
+    <div class="hd-sub">AI PLATFORM · NODE 2 · 192.168.0.3:8080</div>
+  </div>
+  <div class="hd-live">
+    <a href="/jarvis" class="live-badge"><span class="live-dot"></span>JARVIS HUD</a>
+    <a href="http://192.168.0.38/jarvis" target="_blank" class="live-badge vb"><span class="live-dot"></span>VOICE BOX · 0.38</a>
+    <a href="http://192.168.0.8" target="_blank" class="live-badge vm"><span class="live-dot" style="background:var(--c3)"></span>VM NODE · 0.8</a>
+    <a href="/jarvis/setup" class="live-badge"><span class="live-dot" style="background:var(--c4)"></span>SETUP</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">PRIVATE AI PLATFORM — BUILT FOR DAILY OPERATIONS</div>
+  <h1 class="hero-head">Your Personal <span>AI Staff</span><br>Running 24/7</h1>
+  <p class="hero-desc">
+    A full-stack AI orchestration platform running locally on your home network.
+    20 staff groups, 600 personas, voice control, browser automation, smart home integration,
+    job management, and a real-time holographic HUD — all from one server.
+  </p>
+  <div class="hero-btns">
+    <a href="/jarvis" class="btn btn-primary">⬡ OPEN JARVIS HUD</a>
+    <a href="/jobs" class="btn btn-ghost">📋 VIEW JOBS</a>
+    <a href="http://192.168.0.38/jarvis" target="_blank" class="btn btn-green">🔊 VOICE BOX 0.38</a>
+    <a href="http://192.168.0.8" target="_blank" class="btn btn-amber">🖥 VM NODE 0.8</a>
+    <a href="/home-doc" class="btn btn-ghost">📄 DOWNLOAD DOC</a>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="sec-title">PLATFORM STATS</div>
+<div class="stats">
+  <div class="stat"><div class="stat-num">20</div><div class="stat-lbl">STAFF GROUPS</div></div>
+  <div class="stat"><div class="stat-num">600</div><div class="stat-lbl">STAFF SLOTS</div></div>
+  <div class="stat"><div class="stat-num">461</div><div class="stat-lbl">API ROUTES</div></div>
+  <div class="stat"><div class="stat-num">12</div><div class="stat-lbl">INTEGRATIONS</div></div>
+  <div class="stat"><div class="stat-num" id="stat-jobs">—</div><div class="stat-lbl">ACTIVE JOBS</div></div>
+  <div class="stat"><div class="stat-num" id="stat-keys">—</div><div class="stat-lbl">GEMINI KEYS</div></div>
+  <div class="stat"><div class="stat-num" id="stat-staff">—</div><div class="stat-lbl">ACTIVE STAFF</div></div>
+  <div class="stat"><div class="stat-num">24/7</div><div class="stat-lbl">UPTIME</div></div>
+</div>
+
+<!-- FEATURES -->
+<div class="sec-title">CORE FEATURES</div>
+<div class="feature-grid">
+
+  <div class="feature-card" style="--fc:#00d4ff">
+    <div class="fc-head"><div class="fc-icon">⬡</div><div class="fc-name">JARVIS HUD</div></div>
+    <div class="fc-desc">Real-time holographic heads-up display with animated arc reactor, staff persona switching, voice box room assignment, and live conversation log. Runs on any browser on the network.</div>
+    <div class="fc-tags"><span class="fc-tag">REAL-TIME</span><span class="fc-tag">20 GROUPS</span><span class="fc-tag">VOICE BOX</span><span class="fc-tag">HUD</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#22d87a">
+    <div class="fc-head"><div class="fc-icon">🗣</div><div class="fc-name">VOICE CONTROL</div></div>
+    <div class="fc-desc">Wake-word detection (Wyoming OpenWakeWord) with custom .tflite models per persona. Say the wake word, speak your task — the right AI staff member responds via edge TTS with the correct voice.</div>
+    <div class="fc-tags"><span class="fc-tag">WAKE WORD</span><span class="fc-tag">EDGE TTS</span><span class="fc-tag">PER-PERSONA</span><span class="fc-tag">0.38</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#a855f7">
+    <div class="fc-head"><div class="fc-icon">👤</div><div class="fc-name">20 STAFF GROUPS</div></div>
+    <div class="fc-desc">600 staff slots across 20 groups — Jarvis, SAM, Partner, House, Personal, Sole-Trader, LTD, PIA, Orders, and spares. Each slot has its own name, TTS voice, wake word, and job history. Group memory auto-recalls last active staff.</div>
+    <div class="fc-tags"><span class="fc-tag">600 SLOTS</span><span class="fc-tag">NOCODB</span><span class="fc-tag">AUTO-RECALL</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#f59e0b">
+    <div class="fc-head"><div class="fc-icon">🤖</div><div class="fc-name">BROWSER AI</div></div>
+    <div class="fc-desc">Playwright-powered browser automation with persistent login profiles. Each staff group has its own browser profile — Gemini Vision reads the screen to understand pages, fill forms, and complete real tasks on the web.</div>
+    <div class="fc-tags"><span class="fc-tag">PLAYWRIGHT</span><span class="fc-tag">GEMINI VISION</span><span class="fc-tag">PROFILES</span><span class="fc-tag">VNC</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#06b6d4">
+    <div class="fc-head"><div class="fc-icon">✈</div><div class="fc-name">TELEGRAM BOTS</div></div>
+    <div class="fc-desc">Four Telegram bots with smart routing — personal, partner, work. Send a message from any chat and the right staff member picks it up, runs the task, and replies. Supports commands, feedback, approvals, and task creation.</div>
+    <div class="fc-tags"><span class="fc-tag">4 BOTS</span><span class="fc-tag">SMART ROUTING</span><span class="fc-tag">COMMANDS</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#84cc16">
+    <div class="fc-head"><div class="fc-icon">🏠</div><div class="fc-name">SMART HOME (HA)</div></div>
+    <div class="fc-desc">Deep Home Assistant integration — control lights, plugs, sensors, climate, and automations by talking or texting. The AI resolves natural language ("turn off the living room") to the correct HA entity and service call.</div>
+    <div class="fc-tags"><span class="fc-tag">HOME ASSISTANT</span><span class="fc-tag">ENTITY SCAN</span><span class="fc-tag">VOICE</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#d946ef">
+    <div class="fc-head"><div class="fc-icon">⚡</div><div class="fc-name">n8n WORKFLOWS</div></div>
+    <div class="fc-desc">n8n sends tasks to this server and receives structured blueprints back. Multi-path routing: keyword match → HA entity → known job → NocoDB search → AI-generated plan. Callbacks confirm execution.</div>
+    <div class="fc-tags"><span class="fc-tag">n8n</span><span class="fc-tag">BLUEPRINTS</span><span class="fc-tag">MULTI-PATH</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#fb923c">
+    <div class="fc-head"><div class="fc-icon">🔑</div><div class="fc-name">GEMINI KEY FLEET</div></div>
+    <div class="fc-desc">Pool of Gemini API keys with exclusive leasing — one task per key, round-robin rotation, automatic 429 cooldown, and per-key stats. Distributed across a LiteLLM fleet of remote nodes for near-unlimited throughput.</div>
+    <div class="fc-tags"><span class="fc-tag">KEY POOL</span><span class="fc-tag">LITELLM</span><span class="fc-tag">FLEET</span><span class="fc-tag">GEMINI 2.5</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#f43f5e">
+    <div class="fc-head"><div class="fc-icon">📋</div><div class="fc-name">JOB MANAGEMENT</div></div>
+    <div class="fc-desc">Full job lifecycle — create from natural language, route to the right worker, track progress via SSE streaming, verify results, run regressions. Jobs backed by NocoDB with local JSON fallback.</div>
+    <div class="fc-tags"><span class="fc-tag">NOCODB</span><span class="fc-tag">SSE STREAM</span><span class="fc-tag">REGRESSION</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#e879f9">
+    <div class="fc-head"><div class="fc-icon">🖥</div><div class="fc-name">VM / PROXMOX</div></div>
+    <div class="fc-desc">Manage Proxmox VMs and LXCs directly — start, stop, reset, monitor status. Browser VM slots assigned per staff group with auto-wake-on-LAN and idle auto-shutdown. VM node at 192.168.0.8 is the primary AI worker.</div>
+    <div class="fc-tags"><span class="fc-tag">PROXMOX</span><span class="fc-tag">VM 0.8</span><span class="fc-tag">WOL</span><span class="fc-tag">IDLE</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#8b5cf6">
+    <div class="fc-head"><div class="fc-icon">🛡</div><div class="fc-name">GUARDRAILS</div></div>
+    <div class="fc-desc">Safety layer that pauses before money, purchases, sends, or date-sensitive actions. Approval pushed to RC overlay + Telegram. Under £5 auto-approves. AI-assisted guardrail fixes via Telegram feedback loop.</div>
+    <div class="fc-tags"><span class="fc-tag">APPROVALS</span><span class="fc-tag">MONEY GATE</span><span class="fc-tag">MITOS2</span></div>
+  </div>
+
+  <div class="feature-card" style="--fc:#fdba74">
+    <div class="fc-head"><div class="fc-icon">📡</div><div class="fc-name">WEBHOOK MESH</div></div>
+    <div class="fc-desc">360 unique webhooks (20 groups × up to 30 personas each), plus named webhooks, room webhooks, and a full generic receive/send system. Any external tool can trigger any staff action via a single POST.</div>
+    <div class="fc-tags"><span class="fc-tag">360 WEBHOOKS</span><span class="fc-tag">ROOM ASSIGN</span><span class="fc-tag">NAMED</span></div>
+  </div>
+
+</div>
+
+<!-- STAFF GROUPS -->
+<div class="sec-title">STAFF GROUPS (20 × 30 SLOTS)</div>
+<div class="groups-grid">
+  <div class="group-chip"><div class="group-dot" style="background:#00d4ff"></div><div><div class="group-name">JARVIS</div><div class="group-role">CEO — all main tasks &amp; research</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#22d87a"></div><div><div class="group-name">SAM (YOU)</div><div class="group-role">Personal AI — your daily work</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#f59e0b"></div><div><div class="group-name">PARTNER</div><div class="group-role">Partner's tasks &amp; assistance</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#a855f7"></div><div><div class="group-name">HOUSE</div><div class="group-role">Home automation &amp; household</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#06b6d4"></div><div><div class="group-name">PERSONAL</div><div class="group-role">Personal life &amp; lifestyle jobs</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#84cc16"></div><div><div class="group-name">PERSONAL-2</div><div class="group-role">Spare personal group</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#a3e635"></div><div><div class="group-name">SOLE-TRADER</div><div class="group-role">Sole-trader company work</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#fb923c"></div><div><div class="group-name">SOLE-TRADER-2</div><div class="group-role">Sole-trader company work</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#fdba74"></div><div><div class="group-name">LTD</div><div class="group-role">LTD company operations</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#e879f9"></div><div><div class="group-name">LTD-2</div><div class="group-role">LTD company operations</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#d946ef"></div><div><div class="group-name">PIA</div><div class="group-role">SAM automation jobs</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#f43f5e"></div><div><div class="group-name">PIA-GF</div><div class="group-role">Partner automation jobs</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#8b5cf6"></div><div><div class="group-name">ORDERS</div><div class="group-role">Order &amp; purchase jobs</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#06b6d4"></div><div><div class="group-name">SPARE-A</div><div class="group-role">Spare group</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#10b981"></div><div><div class="group-name">SPARE-B</div><div class="group-role">Spare group</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#64748b"></div><div><div class="group-name">SPARE-C</div><div class="group-role">Spare group</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#6b7280"></div><div><div class="group-name">SPARE-D</div><div class="group-role">Spare group</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#71717a"></div><div><div class="group-name">SPARE-E</div><div class="group-role">Spare group</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#78716c"></div><div><div class="group-name">SPARE-F</div><div class="group-role">Spare group</div></div></div>
+  <div class="group-chip"><div class="group-dot" style="background:#737373"></div><div><div class="group-name">SPARE-G</div><div class="group-role">Spare group</div></div></div>
+</div>
+
+<!-- INTEGRATIONS -->
+<div class="sec-title">INTEGRATIONS</div>
+<div class="int-grid">
+  <div class="int-item"><div class="int-icon">✈</div><div class="int-body"><div class="int-name">TELEGRAM</div><div class="int-desc">4 bots with smart person/group routing. Send tasks, get replies. Commands: /status /ask /newtask /feedback</div></div></div>
+  <div class="int-item"><div class="int-icon">🌐</div><div class="int-body"><div class="int-name">PLAYWRIGHT BROWSER</div><div class="int-desc">Persistent login profiles, Chromium/Firefox, Gemini Vision page analysis, VNC live view</div></div></div>
+  <div class="int-item"><div class="int-icon">💎</div><div class="int-body"><div class="int-name">GEMINI AI</div><div class="int-desc">Key pool with exclusive leasing, 429 auto-cooldown, Gemini 2.0 Flash + 2.5 Pro, fleet-distributed</div></div></div>
+  <div class="int-item"><div class="int-icon">🏠</div><div class="int-body"><div class="int-name">HOME ASSISTANT</div><div class="int-desc">Entity discovery, service calls, multi-instance support, voice-to-HA automation</div></div></div>
+  <div class="int-item"><div class="int-icon">⚡</div><div class="int-body"><div class="int-name">n8n WORKFLOWS</div><div class="int-desc">5-path blueprint routing, execution callbacks, pipeline phases, session tracking</div></div></div>
+  <div class="int-item"><div class="int-icon">🗄</div><div class="int-body"><div class="int-name">NOCODB</div><div class="int-desc">ALL STAFF table (600 rows), job templates, dynamic staff lookup, 5-min cache</div></div></div>
+  <div class="int-item"><div class="int-icon">🖥</div><div class="int-body"><div class="int-name">PROXMOX</div><div class="int-desc">VM start/stop/reset, 8 browser slots, Wake-on-LAN, idle auto-shutdown</div></div></div>
+  <div class="int-item"><div class="int-icon">🔊</div><div class="int-body"><div class="int-name">WYOMING / TTS</div><div class="int-desc">OpenWakeWord wake detection, Edge TTS per persona, custom .tflite models, voice box 0.38-0.48</div></div></div>
+  <div class="int-item"><div class="int-icon">🤖</div><div class="int-body"><div class="int-name">LITELLM FLEET</div><div class="int-desc">Distributed GPU/CPU nodes, multi-model routing, master-key system, config distribution</div></div></div>
+  <div class="int-item"><div class="int-icon">🧠</div><div class="int-body"><div class="int-name">OLLAMA (LOCAL)</div><div class="int-desc">Gemma 3:12b local fallback — unlimited requests, no API quota, LiteLLM compatible</div></div></div>
+  <div class="int-item"><div class="int-icon">📱</div><div class="int-body"><div class="int-name">MITOS2 OVERLAY</div><div class="int-desc">Interactive buttons and approvals pushed to tablet display, action handling, event history</div></div></div>
+  <div class="int-item"><div class="int-icon">📡</div><div class="int-body"><div class="int-name">WEBHOOK SYSTEM</div><div class="int-desc">360 unique webhooks, named webhooks, room assignment (38-48), receive/send/history</div></div></div>
+</div>
+
+<!-- ALL PAGES / LINKS -->
+<div class="sec-title">ALL PAGES &amp; TOOLS</div>
+<div class="links-grid">
+  <a href="/jarvis" class="link-item"><span class="link-dot" style="--ld:#00d4ff"></span>JARVIS HUD</a>
+  <a href="/jarvis/setup" class="link-item"><span class="link-dot" style="--ld:#00d4ff"></span>JARVIS SETUP</a>
+  <a href="/jobs" class="link-item"><span class="link-dot" style="--ld:#22d87a"></span>JOBS</a>
+  <a href="/staff" class="link-item"><span class="link-dot" style="--ld:#a855f7"></span>STAFF</a>
+  <a href="/pipeline" class="link-item"><span class="link-dot" style="--ld:#f59e0b"></span>PIPELINE / n8n</a>
+  <a href="/browser" class="link-item"><span class="link-dot" style="--ld:#06b6d4"></span>BROWSER VM</a>
+  <a href="/vm" class="link-item"><span class="link-dot" style="--ld:#fb923c"></span>PROXMOX VMs</a>
+  <a href="/gemini-keys" class="link-item"><span class="link-dot" style="--ld:#d946ef"></span>GEMINI KEYS</a>
+  <a href="/gemini-fleet" class="link-item"><span class="link-dot" style="--ld:#d946ef"></span>GEMINI FLEET</a>
+  <a href="/rules" class="link-item"><span class="link-dot" style="--ld:#f43f5e"></span>RULES &amp; GUARDRAILS</a>
+  <a href="/tools-page" class="link-item"><span class="link-dot" style="--ld:#8b5cf6"></span>TOOLS</a>
+  <a href="/webhooks" class="link-item"><span class="link-dot" style="--ld:#84cc16"></span>WEBHOOKS</a>
+  <a href="/ha-setup" class="link-item"><span class="link-dot" style="--ld:#22d87a"></span>HOME ASSISTANT</a>
+  <a href="/search" class="link-item"><span class="link-dot" style="--ld:#06b6d4"></span>WEB SEARCH</a>
+  <a href="/flights" class="link-item"><span class="link-dot" style="--ld:#f59e0b"></span>FLIGHT BOOKING</a>
+  <a href="/mitos2" class="link-item"><span class="link-dot" style="--ld:#fdba74"></span>MITOS2 OVERLAY</a>
+  <a href="/overlay" class="link-item"><span class="link-dot" style="--ld:#fdba74"></span>OVERLAY</a>
+  <a href="/mobile" class="link-item"><span class="link-dot" style="--ld:#10b981"></span>MOBILE VIEW</a>
+  <a href="/browser-jobs" class="link-item"><span class="link-dot" style="--ld:#06b6d4"></span>BROWSER JOBS</a>
+  <a href="/system" class="link-item"><span class="link-dot" style="--ld:#e879f9"></span>SYSTEM MONITOR</a>
+  <a href="/network" class="link-item"><span class="link-dot" style="--ld:#a3e635"></span>NETWORK MAP</a>
+  <a href="/slaves" class="link-item"><span class="link-dot" style="--ld:#fb923c"></span>SLAVE NODES</a>
+  <a href="/links" class="link-item"><span class="link-dot" style="--ld:#64748b"></span>ALL LINKS</a>
+  <a href="/demo" class="link-item"><span class="link-dot" style="--ld:#22d87a"></span>DEMO MODE</a>
+  <a href="/stats" class="link-item"><span class="link-dot" style="--ld:#00d4ff"></span>STATISTICS</a>
+  <a href="/status" class="link-item"><span class="link-dot" style="--ld:#00d4ff"></span>STATUS</a>
+  <a href="/api/nocodb/health" class="link-item"><span class="link-dot" style="--ld:#22d87a"></span>NOCODB HEALTH</a>
+  <a href="/masterclass" class="link-item"><span class="link-dot" style="--ld:#8b5cf6"></span>MASTERCLASS</a>
+  <a href="http://192.168.0.38/jarvis" target="_blank" class="link-item"><span class="link-dot" style="--ld:#22d87a"></span>VOICE BOX · 0.38 ↗</a>
+  <a href="http://192.168.0.8" target="_blank" class="link-item"><span class="link-dot" style="--ld:#f59e0b"></span>VM NODE · 0.8 ↗</a>
+  <a href="http://192.168.0.107:8080" target="_blank" class="link-item"><span class="link-dot" style="--ld:#d946ef"></span>NOCODB UI ↗</a>
+  <a href="/home-doc" class="link-item"><span class="link-dot" style="--ld:#64748b"></span>📄 DOWNLOAD DOC</a>
+</div>
+
+<footer>
+  <p>SAMSAMCO // J.A.R.V.I.S &nbsp;·&nbsp; NODE 2 — SAM MAIN &nbsp;·&nbsp; 192.168.0.3:8080 &nbsp;·&nbsp;
+  <a href="http://192.168.0.38/jarvis" target="_blank">VOICE BOX 0.38</a> &nbsp;·&nbsp;
+  <a href="http://192.168.0.8" target="_blank">VM 0.8</a>
+  </p>
+</footer>
+
+</div>
+
+<!-- LIVE STATUS BAR -->
+<div id="status-bar">
+  <div class="sb-item"><div class="sb-dot" id="sb-api-dot"></div><span>API</span></div>
+  <div class="sb-item"><div class="sb-dot" id="sb-noco-dot" style="background:var(--dim)"></div><span>NOCODB</span></div>
+  <div class="sb-item"><div class="sb-dot" style="background:var(--c3)"></div><span>VM 0.8</span></div>
+  <div class="sb-item"><div class="sb-dot" style="background:var(--c)"></div><span>VOICE 0.38</span></div>
+  <div class="sb-item" id="sb-staff">● <span id="sb-staff-name">—</span></div>
+</div>
+
+<script>
+// Live stats
+function loadStats() {
+  fetch('/api/active-staff').then(function(r){return r.json();}).then(function(d){
+    var n = d.person || '—';
+    document.getElementById('sb-staff-name').textContent = n;
+    document.getElementById('stat-staff').textContent = n.length > 12 ? n.slice(0,12)+'…' : n;
+    document.getElementById('sb-api-dot').style.background = '#22d87a';
+  }).catch(function(){ document.getElementById('sb-api-dot').style.background = 'rgba(255,60,60,.7)'; });
+
+  fetch('/api/jobs').then(function(r){return r.json();}).then(function(d){
+    var cnt = Array.isArray(d) ? d.length : (d.count || d.total || '—');
+    document.getElementById('stat-jobs').textContent = cnt;
+  }).catch(function(){});
+
+  fetch('/api/gemini-key/status').then(function(r){return r.json();}).then(function(d){
+    var cnt = d.total_keys || d.keys || d.count || '—';
+    document.getElementById('stat-keys').textContent = cnt;
+  }).catch(function(){});
+
+  fetch('/api/nocodb/health').then(function(r){
+    document.getElementById('sb-noco-dot').style.background = r.ok ? '#22d87a' : 'rgba(255,60,60,.7)';
+  }).catch(function(){ document.getElementById('sb-noco-dot').style.background = 'rgba(255,60,60,.7)'; });
+}
+loadStats();
+setInterval(loadStats, 5000);
+</script>
+<script src="/fix-widget.js"></script>
+</body>
+</html>

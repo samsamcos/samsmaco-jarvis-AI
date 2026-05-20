@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JARVIS n8n Flow</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07080d;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100dvh}
+
+#hdr{background:#0a0c14;border-bottom:1px solid #1e2030;padding:11px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#hdr h1{font-size:15px;font-weight:700;color:#f5c518}
+#hdr .sub{font-size:11px;color:#475569}
+#hdr .links{margin-left:auto;display:flex;gap:8px}
+#hdr a{font-size:11px;color:#475569;text-decoration:none;padding:4px 12px;border:1px solid #1e2030;border-radius:6px}
+#hdr a:hover{color:#e2e8f0;border-color:#2d3a52}
+
+/* tab bar */
+#tabs{background:#0a0c14;border-bottom:1px solid #1e2030;padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap}
+
+/* content */
+#content{max-width:960px;margin:0 auto;padding:20px 16px}
+
+/* btn styles */
+.btn{border:1px solid #2d3a52;background:transparent;color:#94a3b8;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer}
+.btn:hover{border-color:#6b8cff;color:#e2e8f0}
+.btn-grn{background:#16532d;border-color:#166534;color:#4ade80}
+.btn-grn:hover{background:#14532d}
+.btn-ghost{background:transparent;border-color:#1e2030;color:#64748b}
+
+/* webhook cards */
+.wh-card{background:#07080d;border:1px solid #1e2030;border-radius:8px;padding:14px;margin-bottom:10px}
+.wh-title{font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:8px}
+.wh-url{font-family:monospace;font-size:11px;color:#6b8cff;margin-bottom:8px;word-break:break-all}
+.code-block{background:#020305;border:1px solid #1e2030;border-radius:6px;padding:10px;font-family:monospace;font-size:11px;color:#94a3b8;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:6px}
+.wh-note{font-size:10px;color:#475569;line-height:1.6;margin-top:6px;padding:8px;background:#020305;border-radius:4px}
+
+/* dispatch cards */
+.dp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.dp-card{background:#07080d;border:1px solid #1e2030;border-radius:8px;padding:11px 13px}
+.dp-label{font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.dp-url-text{font-size:9px;color:#475569;font-family:monospace;word-break:break-all;margin-bottom:8px}
+.dp-actions{display:flex;gap:5px}
+.dp-st{font-size:10px;margin-top:5px;min-height:12px;color:#475569}
+
+/* bot cards */
+.bot-card{background:#07080d;border-radius:10px;padding:14px;margin-bottom:12px}
+input.fe,textarea.fe{width:100%;background:#020305;border:1px solid #1e2030;color:#e2e8f0;border-radius:6px;padding:7px 10px;font-size:11px;font-family:monospace;outline:none}
+input.fe:focus,textarea.fe:focus{border-color:#6b8cff}
+
+/* chat */
+.chat-box{background:#020305;border:1px solid #1e2030;border-radius:8px;padding:10px;min-height:160px;max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;margin-bottom:8px;scroll-behavior:smooth}
+.c-me{display:flex;justify-content:flex-end}
+.c-me div{background:#1e3a5f;color:#e2e8f0;padding:6px 11px;border-radius:13px 13px 3px 13px;font-size:12px;max-width:78%;word-break:break-word}
+.c-ai{display:flex;justify-content:flex-start}
+.c-ai div{background:#1a1f2e;color:#c4b5fd;border:1px solid #2d2060;padding:6px 11px;border-radius:13px 13px 13px 3px;font-size:12px;max-width:78%;word-break:break-word}
+.c-think div{background:#0d1117;color:#475569;padding:5px 11px;border-radius:13px;font-size:11px;border:1px dashed #1e2030}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <h1>🔌 n8n Flow</h1>
+  <div class="sub">Entry · Routing · Dispatch · Bots</div>
+  <div class="links">
+    <a href="/Pipeline">💬 Pipeline</a>
+    <a href="/Jobs">⚙️ Jobs</a>
+    <a href="/masterclass">📖 Masterclass</a>
+  </div>
+</div>
+
+<div id="tabs">
+  <button class="btn btn-grn" id="tab-entry"  onclick="switchTab('entry')">🔌 n8n Entry Flow</button>
+  <button class="btn btn-ghost" id="tab-a0"   onclick="switchTab('a0')">A0 Router</button>
+  <button class="btn btn-ghost" id="tab-a"    onclick="switchTab('a')">A Intake Loop</button>
+  <button class="btn btn-ghost" id="tab-b"    onclick="switchTab('b')">B Factory</button>
+  <button class="btn btn-ghost" id="tab-cd"   onclick="switchTab('cd')">C/D Confirm+Execute</button>
+  <button class="btn btn-ghost" id="tab-e"    onclick="switchTab('e')">E Megaphone</button>
+  <button class="btn btn-ghost" id="tab-ctx"  onclick="switchTab('ctx')">Context endpoints</button>
+  <button class="btn btn-ghost" id="tab-dp"   onclick="switchTab('dp')">📡 Dispatch</button>
+  <button class="btn btn-ghost" id="tab-jobs" onclick="switchTab('jobs')">🧩 Jobs</button>
+</div>
+
+<div id="content"></div>
+
+<script>
+const BASE = location.origin;
+const FP_URL = BASE + '/webhook/FullPipeline';
+const SID = '"SESSION_ID_FROM_A0_1"';
+
+// ── Snip toggle ──────────────────────────────────────────────────────────────
+function snip(id, tab) {
+  ['body','n8n','resp','curl'].forEach(t => {
+    const e = document.getElementById(id+'-'+t);
+    const b = document.getElementById(id+'-tb-'+t);
+    if (e) e.style.display = t===tab ? '' : 'none';
+    if (b) b.className = t===tab ? 'btn btn-grn' : 'btn btn-ghost';
+    if (b) b.style.fontSize='10px';
+  });
+}
+function copy(id) {
+  const vis = ['body','n8n','resp','curl'].map(t=>document.getElementById(id+'-'+t)).find(e=>e&&e.style.display!=='none');
+  if (!vis) return;
+  navigator.clipboard?.writeText(vis.textContent).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=vis.textContent;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+  });
+  vis.style.outline='2px solid #4ade80';setTimeout(()=>vis.style.outline='',700);
+}
+
+// ── Block builder ────────────────────────────────────────────────────────────
+function block(title, color, items) {
+  return `<div style="border:2px solid ${color};border-radius:10px;padding:16px;margin-bottom:16px">
+    <div style="font-size:13px;font-weight:700;color:${color};margin-bottom:14px">${title}</div>
+    ${items.map((item, i) => {
+      const id = 'wh'+Math.random().toString(36).slice(2,8);
+      const method = item.method||'POST';
+      const curl = `curl -X ${method} ${BASE}${item.url} \\\n  -H 'Content-Type: application/json' \\\n  -d '${JSON.stringify(item.body,null,2)}'`;
+      const n8nNode = `{\n  "method": "${method}",\n  "url": "${BASE}${item.url}",\n  "sendBody": true,\n  "specifyBody": "json",\n  "jsonBody": ${JSON.stringify(JSON.stringify(item.body,null,2))}\n}`;
+      return `<div class="wh-card">
+        <div class="wh-title">${item.title}</div>
+        <div class="wh-url">${method} ${BASE}${item.url}</div>
+        <div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap">
+          <button id="${id}-tb-body" class="btn btn-grn" style="font-size:10px" onclick="snip('${id}','body')">Body</button>
+          <button id="${id}-tb-n8n"  class="btn btn-ghost" style="font-size:10px" onclick="snip('${id}','n8n')">n8n JSON</button>
+          <button id="${id}-tb-resp" class="btn btn-ghost" style="font-size:10px" onclick="snip('${id}','resp')">Response</button>
+          <button id="${id}-tb-curl" class="btn btn-ghost" style="font-size:10px" onclick="snip('${id}','curl')">cURL</button>
+          <button class="btn" style="font-size:10px;margin-left:auto" onclick="copy('${id}')">Copy</button>
+        </div>
+        <div id="${id}-body" class="code-block">${JSON.stringify(item.body,null,2)}</div>
+        <div id="${id}-n8n"  class="code-block" style="display:none">${n8nNode}</div>
+        <div id="${id}-resp" class="code-block" style="display:none">${JSON.stringify(item.resp,null,2)}</div>
+        <div id="${id}-curl" class="code-block" style="display:none">${curl}</div>
+        ${item.note ? `<div class="wh-note">${item.note}</div>` : ''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ── Tabs content ─────────────────────────────────────────────────────────────
+const TABS = {
+  entry: buildEntry,
+  a0:  () => block('A0 — Router (every message starts here)', '#6b8cff', [
+    {url:'/wh/A0/1',title:'1. Receive Input — start new session',body:{message:"Find cheapest flight London to Paris 10 May 2026"},resp:{ok:true,session_id:"abc123",phase:"A0",step:"1",status:"received",reply:"Got it ✓",next_url:BASE+"/wh/A0/2"},note:"Save session_id — pass it to every subsequent step."},
+    {url:'/wh/A0/2',title:'2. Classify — Path 1/2/3',body:{session_id:"SESSION_ID"},resp:{ok:true,phase:"A0",step:"2",status:"classified",type:"browser_task",path:"Path 3 — Browser Task",next_url:BASE+"/wh/A/1"},note:"Switch node on type: knowledge_question → reply & done · smart_home → done · browser_task → A0/3"},
+    {url:'/wh/A0/3',title:'3. Route — execute path decision',body:{session_id:"SESSION_ID"},resp:{ok:true,phase:"A0",step:"3",status:"routed",reply:"Browser task queued.",next_url:BASE+"/wh/A/1"}},
+  ]),
+  a: () => block('A — Intake Loop (clarify until all info collected)', '#818cf8', [
+    {url:'/wh/A/1',title:'1. Store session',body:{session_id:"SESSION_ID"},resp:{ok:true,phase:"A",step:"1",status:"session_ready",next_url:BASE+"/wh/A/2"}},
+    {url:'/wh/A/2',title:'2. Clarify Check — reads NocoDB memory',body:{session_id:"SESSION_ID"},resp:{ok:true,phase:"A",step:"2",status:"need_info",reply:"What date?",extra:{type:"info"},next_url:BASE+"/wh/A/3"},note:'Gemini → {"type":"info","message":"question"} or {"type":"next","message":"summary"}. info → ask user → A/3. next → A/4.'},
+    {url:'/wh/A/3',title:'3. Receive answer',body:{session_id:"SESSION_ID",message:"10 May 2026"},resp:{ok:true,phase:"A",step:"3",status:"answered",reply:"Got it ✓",next_url:BASE+"/wh/A/4"}},
+    {url:'/wh/A/4',title:'4. Confirm — "Ready to proceed?"',body:{session_id:"SESSION_ID"},resp:{ok:true,phase:"A",step:"4",status:"confirm_requested",reply:"Ready to proceed?\nSend action=yes to start",next_url:BASE+"/wh/A/4",extra:{confirm_body:{session_id:"SESSION_ID",action:"yes"}}}},
+    {url:'/wh/A/4',title:'4b. Confirm — send yes',body:{session_id:"SESSION_ID",action:"yes"},resp:{ok:true,phase:"A",step:"4",status:"confirmed",next_url:BASE+"/wh/B/1"}},
+  ]),
+  b: () => block('B — Factory (research, context, blueprint)', '#f5c518', [
+    {url:'/wh/B/1',title:'1. NocoDB Lookup — cached template?',body:{session_id:"SESSION_ID"},resp:{ok:true,phase:"B",step:"1",status:"no_cache",next_url:BASE+"/wh/B/2"},note:"Cache hit → B/4. Miss → B/2."},
+    {url:'/wh/B/2',title:'2. History Check',body:{session_id:"SESSION_ID"},resp:{ok:true,history_count:2,next_url:BASE+"/wh/B/3"}},
+    {url:'/wh/B/3',title:'3. Web Search — DuckDuckGo top 5',body:{session_id:"SESSION_ID"},resp:{ok:true,status:"searched",results:[{title:"...",snippet:"..."}],next_url:BASE+"/wh/B/4"}},
+    {url:'/wh/B/4',title:'4. Build Blueprint — Gemini Playwright plan',body:{session_id:"SESSION_ID"},resp:{ok:true,status:"blueprint_ready",next_url:BASE+"/wh/B/5"},note:"Also call /webook/context here to build bundle_context for 0.8."},
+    {url:'/wh/B/5',title:'5. Validate steps',body:{session_id:"SESSION_ID"},resp:{ok:true,step_count:7,issues:[],next_url:BASE+"/wh/B/6"}},
+    {url:'/wh/B/6',title:'6. Risk Assessment',body:{session_id:"SESSION_ID"},resp:{ok:true,overall_risk:"medium",next_url:BASE+"/wh/B/7"}},
+    {url:'/wh/B/7',title:'7. Format — ready for C',body:{session_id:"SESSION_ID"},resp:{ok:true,status:"blueprint_ready",next_url:BASE+"/wh/C/1"}},
+    {url:'/webook/context',title:'★ Full Context Bundle (call alongside B/4)',body:{message:"Find cheapest flight London to Paris",session_id:"SESSION_ID"},resp:{ok:true,bundle_context:"200 words…",summary_100:"100 word summary…",tts_20:"SAM group dispatching worker…",yaml_mitos:"task: …"}},
+  ]),
+  cd: () => block('C/D — Confirm then Execute on 0.8', '#c084fc', [
+    {url:'/wh/C/1',title:'C/1 — Present blueprint',body:{session_id:"SESSION_ID"},resp:{ok:true,status:"awaiting_confirm",next_url:BASE+"/wh/C/2",confirm_body:{session_id:"SESSION_ID",action:"yes"}}},
+    {url:'/wh/C/2',title:'C/2 — Confirm (send yes)',body:{session_id:"SESSION_ID",action:"yes"},resp:{ok:true,status:"confirmed",next_url:BASE+"/wh/D/1"}},
+    {url:'/wh/D/1',title:'D/1 — Check 0.8 is idle',body:{session_id:"SESSION_ID"},resp:{ok:true,worker:{can_accept:true,cpu_pct:12,ram_pct:34},next_url:BASE+"/wh/D/2"},note:"can_accept=false → wait and retry."},
+    {url:'/wh/D/2',title:'D/2 — Dispatch to 192.168.0.8',body:{session_id:"SESSION_ID"},resp:{ok:true,status:"executing",worker_job_id:"job_xyz",next_url:BASE+"/wh/D/3"}},
+    {url:'/wh/D/3',title:'D/3 — Poll every 5s until done',body:{session_id:"SESSION_ID"},resp:{ok:true,status:"executing",next_url:BASE+"/wh/D/3",poll_again_in_seconds:5},note:"Loop every 5s. When status=done → next_url → E/1."},
+  ]),
+  e: () => block('E — Megaphone (result to all channels)', '#22c55e', [
+    {url:'/wh/E/1',title:'E/1 — Return result + fire all delivery channels',body:{session_id:"SESSION_ID"},resp:{ok:true,phase:"E",status:"done",summary:"30-word summary…",tts_20:"20-word spoken line…",result:{text:"...",success:true},deliveries:["telegram","tts_hook","result_hook","screen"]},note:"Fires: ① Telegram ② TTS hook ③ Result hook ④ Screen. n8n can branch to Mitos, VNC, manual override."},
+    {url:'/api/webhook/result-hook',title:'★ Set E1 Result Hook',body:{url:"http://192.168.0.3:5678/webhook/jarvis-result"},resp:{ok:true,message:"Result hook set"},note:"Set once. Every completed job POSTs here."},
+    {url:'/api/webhook/tts-hook',title:'★ Set TTS Hook',body:{url:"http://192.168.0.3:5678/webhook/jarvis-tts"},resp:{ok:true,message:"TTS hook set"}},
+    {url:'/api/webhook/latest-result',method:'GET',title:'★ Screen — poll latest result',body:{},resp:{ok:true,session_id:"...",task:"...",summary:"...",tts_20:"...",completed_at:"2026-04-27T00:00:00"}},
+  ]),
+  ctx: () => block('/webook/ Context endpoints — call alongside B/4', '#f97316', [
+    {url:'/webook/ALL_groups',title:'Find group for this task',body:{message:"Find flight London Paris",session_id:"SESSION_ID"},resp:{ok:true,context:{matched_group:"SAM"}}},
+    {url:'/webook/ALL_STAFF',title:'Find assigned staff',body:{message:"Find flight London Paris",session_id:"SESSION_ID"},resp:{ok:true,context:{matched_staff:{name:"1-Staff",group:"SAM"}}}},
+    {url:'/webook/all_jobs',title:'Find matching job template',body:{message:"book flight",session_id:"SESSION_ID"},resp:{ok:true,context:{matched_job:{name:"book flight"}}}},
+    {url:'/webook/pc-info',title:'Check which PC is free',body:{message:"any task",session_id:"SESSION_ID"},resp:{ok:true,context:{"pc-info":{best_pc:"192.168.0.8",status:{"192.168.0.8":{can_accept:true}}}}}},
+    {url:'/webook/Web-search',title:'Search before building blueprint',body:{message:"cheapest flight London Paris",session_id:"SESSION_ID"},resp:{ok:true,context:{"Web-search":[{title:"Google Flights",snippet:"Compare prices…"}]}}},
+  ]),
+  dp:   buildDispatch,
+  jobs: buildJobs,
+};
+
+function buildEntry() {
+  const B = location.origin;
+  return `
+  <!-- Workflow Diagram -->
+  <div style="background:#07080d;border:1px solid #1e2030;border-radius:10px;padding:14px 16px;margin-bottom:16px;overflow-x:auto">
+    <div style="font-size:12px;color:#f5c518;font-weight:700;margin-bottom:12px">🗺️ WORKFLOW DIAGRAM</div>
+
+    <!-- PATH 1 -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:8px;min-width:640px">
+      <div style="background:#1a2a1a;border:2px solid #4ade80;border-radius:8px;padding:7px 12px;min-width:150px;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:#4ade80">PATH 1 — Question</div>
+        <div style="font-size:9px;color:#64748b;margin-top:2px">A0/3 classifier</div>
+      </div>
+      <div style="color:#475569;font-size:14px;padding:0 6px">→</div>
+      <div style="background:#0d2a0d;border:2px solid #4ade80;border-radius:8px;padding:7px 12px;flex:1">
+        <div style="font-size:10px;color:#4ade80">Used Pollinations API</div>
+        <div style="font-size:9px;color:#475569">smart_dispatch → text.pollinations.ai</div>
+      </div>
+      <div style="color:#475569;font-size:14px;padding:0 6px">→</div>
+      <div style="background:#16532d;border-radius:8px;padding:7px 14px;font-size:11px;color:#4ade80;font-weight:700;flex-shrink:0">Reply</div>
+    </div>
+
+    <!-- PATH 2 -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:8px;min-width:640px">
+      <div style="background:#1a2030;border:2px solid #38bdf8;border-radius:8px;padding:7px 12px;min-width:150px;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:#38bdf8">PATH 2 — Smart Home</div>
+        <div style="font-size:9px;color:#64748b;margin-top:2px">A0/3 classifier</div>
+      </div>
+      <div style="color:#475569;font-size:14px;padding:0 6px">→</div>
+      <div style="background:#0d1f30;border:2px solid #38bdf8;border-radius:8px;padding:7px 12px;flex:1">
+        <div style="font-size:10px;color:#38bdf8">Smart house data + HA API info</div>
+        <div style="font-size:9px;color:#475569">Home Assistant context injected</div>
+      </div>
+      <div style="color:#475569;font-size:14px;padding:0 6px">→</div>
+      <div style="background:#0d1f30;border:2px solid #38bdf8;border-radius:8px;padding:7px 10px;flex-shrink:0">
+        <div style="font-size:9px;color:#38bdf8">Send to HA</div>
+      </div>
+      <div style="color:#475569;font-size:14px;padding:0 6px">→</div>
+      <div style="background:#1a2030;border:2px dashed #38bdf8;border-radius:8px;padding:6px 10px;font-size:9px;color:#64748b;flex-shrink:0">
+        Execute / HA<br><span style="color:#334155">n8n webhook</span>
+      </div>
+    </div>
+
+    <!-- PATH 3 -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:8px;min-width:640px">
+      <div style="background:#2a1a2a;border:2px solid #c084fc;border-radius:8px;padding:7px 12px;min-width:150px;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:#c084fc">PATH 3 — Jobs</div>
+        <div style="font-size:9px;color:#64748b;margin-top:2px">Matched NocoDB blueprint</div>
+      </div>
+      <div style="color:#475569;font-size:14px;padding:0 6px">→</div>
+      <div style="background:#1a0d2a;border:2px solid #c084fc;border-radius:8px;padding:7px 12px;flex:1">
+        <div style="font-size:10px;color:#c084fc">Run job blueprint</div>
+        <div style="font-size:9px;color:#475569">Scripts + prompts from NocoDB</div>
+      </div>
+      <div style="color:#475569;font-size:14px;padding:0 6px">→</div>
+      <div style="background:#2a1a2a;border:2px dashed #c084fc;border-radius:8px;padding:6px 10px;font-size:9px;color:#64748b;flex-shrink:0">
+        Execute / Jobs<br><span style="color:#334155">n8n webhook</span>
+      </div>
+    </div>
+
+    <!-- PATH 4 — more info / search -->
+    <div style="display:flex;align-items:stretch;gap:0;margin-bottom:0;min-width:640px;flex-wrap:wrap">
+      <!-- Left box -->
+      <div style="background:#2a1a0d;border:2px solid #f97316;border-radius:8px;padding:7px 12px;min-width:150px;flex-shrink:0;align-self:flex-start;margin-top:2px">
+        <div style="font-size:11px;font-weight:700;color:#f97316">PATH 4 — More Info</div>
+        <div style="font-size:9px;color:#64748b;margin-top:2px">No blueprint found</div>
+      </div>
+      <div style="color:#475569;font-size:14px;padding:6px 6px 0">→</div>
+      <!-- Search box -->
+      <div style="background:#1a0d00;border:2px solid #f97316;border-radius:8px;padding:7px 12px;flex-shrink:0;align-self:flex-start;margin-top:2px">
+        <div style="font-size:10px;color:#f97316;font-weight:700">🔍 Search for Jobs</div>
+        <div style="font-size:9px;color:#475569">Fuzzy match NocoDB</div>
+      </div>
+      <div style="color:#475569;font-size:14px;padding:6px 6px 0">→</div>
+      <!-- Diamond decision -->
+      <div style="background:#0d0d0d;border:2px solid #f5c518;border-radius:8px;padding:8px 12px;text-align:center;flex-shrink:0;align-self:flex-start;margin-top:2px">
+        <div style="font-size:9px;color:#f5c518;font-weight:700">⬡ DECISION</div>
+        <div style="font-size:8px;color:#64748b;line-height:1.5">Add to "New Jobs" list<br>or Execute Browser Task?</div>
+      </div>
+      <!-- Two branches -->
+      <div style="display:flex;flex-direction:column;gap:6px;margin-left:8px;flex:1;min-width:180px">
+        <!-- ADD branch -->
+        <div style="display:flex;align-items:center;gap:0">
+          <div style="color:#4ade80;font-size:10px;padding:0 6px;font-weight:700">ADD →</div>
+          <div style="background:#0d2a1a;border:2px solid #4ade80;border-radius:8px;padding:6px 10px;flex:1">
+            <div style="font-size:10px;color:#4ade80;font-weight:700">PATH 5 — New Jobs</div>
+            <div style="font-size:8px;color:#475569">AI generates blueprint → NocoDB</div>
+          </div>
+          <div style="color:#475569;font-size:13px;padding:0 5px">→</div>
+          <div style="background:#0a1a0a;border:2px dashed #4ade80;border-radius:8px;padding:5px 9px;font-size:8px;color:#64748b;flex-shrink:0">
+            Execute / New Job<br><span style="color:#334155">n8n webhook</span>
+          </div>
+        </div>
+        <!-- RUN branch -->
+        <div style="display:flex;align-items:center;gap:0">
+          <div style="color:#f97316;font-size:10px;padding:0 6px;font-weight:700">RUN →</div>
+          <div style="background:#1a0d00;border:2px solid #f97316;border-radius:8px;padding:6px 10px;flex:1">
+            <div style="font-size:10px;color:#f97316;font-weight:700">PATH 6 — Browser Task</div>
+            <div style="font-size:8px;color:#475569">One-off Playwright execution</div>
+          </div>
+          <div style="color:#475569;font-size:13px;padding:0 5px">→</div>
+          <div style="background:#1a0800;border:2px dashed #f97316;border-radius:8px;padding:5px 9px;font-size:8px;color:#64748b;flex-shrink:0">
+            Execute / Browser<br><span style="color:#334155">n8n webhook</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PATH 4 interactive tester -->
+  <div style="background:#07080d;border:2px solid #f97316;border-radius:10px;padding:14px;margin-bottom:16px">
+    <div style="font-size:12px;font-weight:700;color:#f97316;margin-bottom:8px">🔍 PATH 4 — Job Search & Decide</div>
+    <div style="font-size:10px;color:#64748b;margin-bottom:10px">Type a task — system searches NocoDB, shows if blueprint exists, then lets you choose ADD or RUN.</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <input id="p4-input" class="fe" type="text" placeholder='e.g. "buy something online"' style="flex:1;min-width:220px;font-size:13px;padding:8px 12px">
+      <button onclick="p4Search()" class="btn" style="background:#2a1a0d;border-color:#f97316;color:#f97316;padding:8px 16px;font-size:12px">Search</button>
+    </div>
+    <div id="p4-result" style="display:none"></div>
+  </div>
+
+  <!-- Bot 3 -->
+  <div class="bot-card" style="border:2px solid #38bdf8">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="color:#38bdf8;font-weight:700;font-size:14px">✈️ Bot 3 — Telegram Chat Bot</div>
+        <div style="color:#64748b;font-size:10px;margin-top:2px">Polling mode · TELEGRAM_BOT_TOKEN_2 · message → answer</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onclick="tgCheck()" class="btn btn-ghost" style="font-size:12px;padding:6px 14px">🔍 Check Status</button>
+        <span id="tg-st" style="font-size:11px;color:#475569"></span>
+      </div>
+    </div>
+    <div style="background:#020305;border:1px solid #0d2a3a;border-radius:8px;padding:12px;margin-bottom:12px">
+      <div style="font-size:10px;color:#38bdf8;font-weight:700;margin-bottom:10px">⚙️ Bot 3 Config</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:2;min-width:200px">
+          <div style="font-size:9px;color:#475569;margin-bottom:3px">BOT TOKEN</div>
+          <input id="b3-token" class="fe" type="text" placeholder="8255455184:AAH…">
+        </div>
+        <div style="flex:1;min-width:130px">
+          <div style="font-size:9px;color:#475569;margin-bottom:3px">CHAT ID</div>
+          <input id="b3-chat" class="fe" type="text" placeholder="7819702619">
+        </div>
+        <button onclick="b3Save()" class="btn btn-grn" style="font-size:11px;padding:7px 14px">💾 Save</button>
+      </div>
+      <div id="b3-st" style="font-size:10px;color:#475569;margin-top:6px;min-height:13px"></div>
+    </div>
+    <div style="font-size:10px;color:#64748b;line-height:1.8;background:#020305;border-radius:6px;padding:10px">
+      1. <code style="color:#e2e8f0">@BotFather</code> → <code style="color:#4ade80">/newbot</code> → copy token<br>
+      2. Paste token + chat ID above → Save<br>
+      3. Message the bot — site polls every second and replies
+    </div>
+  </div>
+
+  <!-- Pushbullet Bot 2 -->
+  <div class="bot-card" style="border:2px solid #a78bfa">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="color:#a78bfa;font-weight:700;font-size:14px">📲 Bot 2 — Pushbullet Chat</div>
+        <div style="color:#64748b;font-size:10px;margin-top:2px">Send a note → get the answer back · polls every 3s</div>
+      </div>
+      <span id="pb2-status" style="font-size:11px;color:#475569"></span>
+    </div>
+    <div style="background:#020305;border:1px solid #1e2030;border-radius:8px;padding:10px;margin-bottom:10px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:1;min-width:220px">
+          <div style="font-size:9px;color:#475569;margin-bottom:3px">PUSHBULLET API KEY</div>
+          <input id="pb2-key" class="fe" type="password" placeholder="o.xxxxxxxx">
+        </div>
+        <button onclick="pb2Save()" class="btn btn-grn" style="font-size:11px;padding:7px 14px">💾 Save</button>
+      </div>
+      <div id="pb2-save-status" style="font-size:10px;color:#475569;margin-top:5px;min-height:12px"></div>
+    </div>
+    <div class="chat-box" id="pb2-chat">
+      <div style="color:#334155;font-size:11px;text-align:center;padding:16px 0">No messages — type below or send a note from your phone</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <input id="pb2-input" class="fe" type="text" placeholder="Type a message…" style="font-size:13px;padding:8px 12px" onkeydown="if(event.key==='Enter')pb2Send()">
+      <button onclick="pb2Send()" class="btn btn-grn" style="padding:8px 18px;font-size:13px">Send</button>
+    </div>
+  </div>`;
+}
+
+function buildDispatch() {
+  return `<div id="dp-grid" class="dp-grid"><div style="color:#475569;font-size:11px">Loading…</div></div>`;
+}
+
+// ── Tab switching ────────────────────────────────────────────────────────────
+let currentTab = '';
+function switchTab(name) {
+  document.querySelectorAll('#tabs button').forEach(b => {
+    b.className = b.id === 'tab-'+name ? 'btn btn-grn' : 'btn btn-ghost';
+  });
+  const fn = TABS[name];
+  document.getElementById('content').innerHTML = typeof fn === 'function' ? fn() : fn;
+  currentTab = name;
+  if (name === 'entry') { setTimeout(b3Load, 50); setTimeout(pb2Load, 80); }
+  if (name === 'dp')    { setTimeout(dpLoad, 50); }
+  if (name === 'jobs')  { setTimeout(jobsLoad, 50); }
+}
+
+// ── Bot 3 ────────────────────────────────────────────────────────────────────
+async function tgCheck() {
+  const st = document.getElementById('tg-st');
+  if (st) { st.textContent='Checking…'; st.style.color='#f5c518'; }
+  try {
+    const r = await fetch('/telegram/register',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d = await r.json();
+    if (st) { st.textContent = d.ok ? '✓ Polling active — '+d.bot : '✗ '+(d.error||'Error'); st.style.color = d.ok ? '#4ade80' : '#f87171'; }
+  } catch(e) { if(st){st.textContent='Error: '+e.message;st.style.color='#f87171';} }
+}
+
+async function b3Load() {
+  try {
+    const d = await (await fetch('/api/bot3/config')).json();
+    const t = document.getElementById('b3-token'), c = document.getElementById('b3-chat');
+    if (t && d.token && d.token !== '(not set)') t.placeholder = d.token;
+    if (c && d.chat_id && d.chat_id !== '(not set)') c.placeholder = d.chat_id;
+  } catch(e) {}
+}
+
+async function b3Save() {
+  const token   = (document.getElementById('b3-token')?.value||'').trim();
+  const chat_id = (document.getElementById('b3-chat')?.value||'').trim();
+  const st = document.getElementById('b3-st');
+  try {
+    const d = await (await fetch('/api/bot3/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,chat_id})})).json();
+    if (st) { st.textContent = d.ok ? '✓ Saved' : '✗ '+(d.error||'Error'); st.style.color = d.ok ? '#4ade80' : '#f87171'; }
+  } catch(e) { if(st){st.textContent='Error: '+e.message;st.style.color='#f87171';} }
+}
+
+// ── Pushbullet ───────────────────────────────────────────────────────────────
+let _pb2Poll = null;
+
+async function pb2Load() {
+  try {
+    const d = await (await fetch('/api/bot2pb/config')).json();
+    const st = document.getElementById('pb2-status');
+    if (st) { st.textContent = d.active ? '🟢 Active' : '⚪ Not configured'; st.style.color = d.active ? '#4ade80' : '#64748b'; }
+    if (d.active) { pb2Poll(); if (_pb2Poll) clearInterval(_pb2Poll); _pb2Poll = setInterval(pb2Poll, 4000); }
+  } catch(e) {}
+}
+
+async function pb2Save() {
+  const key = (document.getElementById('pb2-key')?.value||'').trim();
+  const st = document.getElementById('pb2-save-status');
+  if (!key) { if(st){st.textContent='Enter API key';st.style.color='#f87171';} return; }
+  try {
+    const d = await (await fetch('/api/bot2pb/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key})})).json();
+    if(st){st.textContent=d.ok?'✓ '+d.message:'✗ '+(d.error||'Error');st.style.color=d.ok?'#4ade80':'#f87171';}
+    if(d.ok){document.getElementById('pb2-key').value='';pb2Load();}
+  } catch(e){if(st){st.textContent='Error: '+e.message;st.style.color='#f87171';}}
+}
+
+function pb2Render(msgs) {
+  const box = document.getElementById('pb2-chat');
+  if (!box || !msgs.length) return;
+  box.innerHTML = '';
+  msgs.forEach(m => {
+    const isMe = m.dir==='incoming';
+    const row = document.createElement('div'); row.className = isMe ? 'c-me' : 'c-ai';
+    const bub = document.createElement('div'); bub.textContent = m.text;
+    row.appendChild(bub); box.appendChild(row);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+async function pb2Poll() {
+  try { const d = await (await fetch('/api/bot2pb/messages')).json(); if(d.ok&&d.messages.length) pb2Render(d.messages); } catch(e) {}
+}
+
+async function pb2Send() {
+  const inp = document.getElementById('pb2-input');
+  const text = (inp?.value||'').trim(); if(!text)return;
+  inp.value = '';
+  const box = document.getElementById('pb2-chat');
+  if (box) {
+    const r=document.createElement('div');r.className='c-me';
+    const b=document.createElement('div');b.textContent=text;r.appendChild(b);box.appendChild(r);
+    const t=document.createElement('div');t.className='c-think';t.id='pb2-think';
+    const b2=document.createElement('div');b2.textContent='…';t.appendChild(b2);box.appendChild(t);
+    box.scrollTop=box.scrollHeight;
+  }
+  try {
+    await fetch('/api/bot2pb/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+    setTimeout(pb2Poll,3000); setTimeout(()=>{document.getElementById('pb2-think')?.remove();pb2Poll();},8000);
+  } catch(e){}
+}
+
+// ── Dispatch ─────────────────────────────────────────────────────────────────
+const DP_ICONS={execute:'⚡',telegram:'✈️',tts:'🔊',mitos:'📱',execute_browser:'🌐',execute_jobs:'🧩'};
+const DP_COLORS={execute:'#6b8cff',telegram:'#38bdf8',tts:'#f5c518',mitos:'#fb923c',execute_browser:'#4ade80',execute_jobs:'#c084fc'};
+
+async function dpLoad() {
+  const grid = document.getElementById('dp-grid');
+  if (!grid) return;
+  try {
+    const d = await (await fetch('/api/dispatch/hooks')).json();
+    const hooks = d.hooks||{};
+    grid.innerHTML = Object.entries(hooks).map(([key,url])=>`
+      <div class="dp-card">
+        <div class="dp-label" style="color:${DP_COLORS[key]||'#94a3b8'}">${DP_ICONS[key]||'•'} ${key.replace(/_/g,' ')}</div>
+        <div class="dp-url-text" id="dpu-${key}">${url}</div>
+        <div class="dp-actions">
+          <button class="btn" onclick="dpCopy('${key}')">Copy</button>
+          <button class="btn btn-grn" onclick="dpTest('${key}')">Test</button>
+        </div>
+        <div class="dp-st" id="dpst-${key}"></div>
+      </div>`).join('');
+  } catch(e) { if(grid) grid.innerHTML='<div style="color:#f87171;font-size:11px">'+e.message+'</div>'; }
+}
+
+function dpCopy(key) {
+  const el=document.getElementById('dpu-'+key); if(!el)return;
+  navigator.clipboard?.writeText(el.textContent.trim());
+  const st=document.getElementById('dpst-'+key);
+  if(st){st.textContent='✓ Copied';st.style.color='#4ade80';setTimeout(()=>st.textContent='',2000);}
+}
+
+async function dpTest(key) {
+  const st=document.getElementById('dpst-'+key);
+  const url=(document.getElementById('dpu-'+key)||{}).textContent?.trim();
+  if(!url)return;
+  if(st){st.textContent='Testing…';st.style.color='#f5c518';}
+  try {
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({test:true})});
+    if(st){st.textContent=`✓ ${r.status}`;st.style.color='#4ade80';}
+  } catch(e){if(st){st.textContent='✗ '+e.message;st.style.color='#f87171';}}
+}
+
+// ── PATH 4 search & decide ───────────────────────────────────────────────────
+async function p4Search() {
+  const inp = document.getElementById('p4-input');
+  const res = document.getElementById('p4-result');
+  const msg = (inp?.value||'').trim();
+  if (!msg || !res) return;
+  res.style.display='';
+  res.innerHTML='<div style="color:#f5c518;font-size:11px">Searching…</div>';
+  try {
+    const d = await (await fetch('/api/jobs/decide',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message:msg})
+    })).json();
+    const sims = d.similar_jobs||[];
+    const rec  = d.auto_recommendation||'add_new';
+    const cpx  = d.complexity||'complex';
+    const recColor = rec==='add_new' ? '#4ade80' : '#f97316';
+    const recLabel = rec==='add_new' ? 'PATH 5 — Save as New Blueprint' : 'PATH 6 — Run as Browser Task';
+    const simsHtml = sims.length
+      ? `<div style="font-size:10px;color:#64748b;margin-bottom:5px">Similar blueprints found:</div>`
+        + sims.map(s=>`<div style="background:#0d0f1a;border:1px solid ${s.verified?'#4ade80':'#1e2030'};border-radius:6px;padding:4px 10px;margin-bottom:3px;font-size:10px;color:#94a3b8">
+            ${s.verified?'✓ ':''}${s.job_name} <span style="color:#475569">(score:${s.score}${s.verified?' · verified':''})</span>
+          </div>`).join('')
+      : `<div style="font-size:10px;color:#475569;margin-bottom:5px">No similar blueprints in NocoDB.</div>`;
+    const msgEsc = msg.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    res.innerHTML = `
+      <div style="background:#0d0f1a;border:1px solid #f97316;border-radius:8px;padding:10px;margin-bottom:8px">
+        <div style="font-size:10px;color:#f97316;margin-bottom:6px">${d.reply}</div>
+        ${simsHtml}
+        <div style="margin-top:6px;padding:5px 8px;background:#0a0c14;border-radius:5px;font-size:10px">
+          🧠 AI says this task is <b style="color:${recColor}">${cpx}</b> → recommends
+          <b style="color:${recColor}">${recLabel}</b>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="p4Act('${msgEsc}','auto')" class="btn" style="font-size:11px;padding:7px 16px;background:#1a1a0d;border-color:#f5c518;color:#f5c518">
+          🤖 Auto-Decide (AI picks)
+        </button>
+        <button onclick="p4Act('${msgEsc}','add_new')" class="btn btn-grn" style="font-size:11px;padding:7px 14px">
+          ➕ PATH 5 — Save Blueprint
+        </button>
+        <button onclick="p4Act('${msgEsc}','run_browser')" class="btn" style="font-size:11px;padding:7px 14px;border-color:#f97316;color:#f97316;background:#1a0800">
+          ▶ PATH 6 — Run Browser Now
+        </button>
+      </div>
+      <div id="p4-act-result" style="margin-top:8px;min-height:13px"></div>`;
+  } catch(e) {
+    if(res) res.innerHTML=`<div style="color:#f87171;font-size:11px">Error: ${e.message}</div>`;
+  }
+}
+
+async function p4Act(msg, action) {
+  const res = document.getElementById('p4-act-result');
+  if(res){res.textContent=action==='add_new'?'⏳ AI generating blueprint…':'⏳ Queuing browser task…';res.style.color='#f5c518';}
+  try {
+    const d = await (await fetch('/api/jobs/decide',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message:msg, action})
+    })).json();
+    if(res){
+      res.innerHTML = action==='add_new'
+        ? `<div style="color:#4ade80;font-size:11px">✓ ${d.reply} <span style="color:#475569">id:${d.job_context?.noco_id||'?'}</span></div>`
+        : `<div style="color:#f97316;font-size:11px">✓ ${d.reply} — next: <a href="${d.next_url}" style="color:#f97316">${d.next_url}</a></div>`;
+    }
+    if(action==='add_new') setTimeout(jobsLoad,1000);
+  } catch(e) {
+    if(res){res.textContent='Error: '+e.message;res.style.color='#f87171';}
+  }
+}
+
+// ── Jobs tab ─────────────────────────────────────────────────────────────────
+function buildJobs() {
+  return `
+  <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <div style="font-size:13px;font-weight:700;color:#c084fc">🧩 Job Blueprints</div>
+    <span style="font-size:10px;color:#475569">AI generates step-by-step blueprints and saves to NocoDB automatically</span>
+    <button class="btn btn-grn" onclick="jobsLoad()" style="margin-left:auto;font-size:11px">↺ Refresh</button>
+  </div>
+
+  <!-- Create new job -->
+  <div style="background:#07080d;border:2px solid #c084fc;border-radius:10px;padding:14px;margin-bottom:14px">
+    <div style="font-size:12px;font-weight:700;color:#c084fc;margin-bottom:10px">✨ Create New Job Blueprint</div>
+    <div style="font-size:10px;color:#64748b;margin-bottom:10px">Describe a task in plain English — AI generates scripts, prompts, staff assignment and saves to NocoDB.</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+      <input id="jc-input" class="fe" type="text" placeholder='e.g. "Order Uber Eats pizza to my home address"' style="flex:1;min-width:260px;font-size:13px;padding:9px 12px">
+      <button onclick="jobCreate()" class="btn btn-grn" style="padding:9px 18px;font-size:13px">Generate</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <label style="font-size:10px;color:#64748b;display:flex;align-items:center;gap:4px">
+        <input type="checkbox" id="jc-save" checked> Auto-save to NocoDB
+      </label>
+    </div>
+    <div id="jc-status" style="font-size:11px;color:#475569;min-height:13px"></div>
+    <div id="jc-result" style="display:none;margin-top:10px"></div>
+  </div>
+
+  <!-- Quick presets -->
+  <div style="margin-bottom:14px">
+    <div style="font-size:10px;color:#475569;margin-bottom:6px">Quick presets:</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${["Order Uber Eats pizza","Book a gym session","Search cheapest flight London to Paris","Send weekly report email","Buy item on Amazon","Book Airbnb for weekend","Pay electricity bill online","Order grocery delivery"].map(t=>
+        `<button class="btn" onclick="document.getElementById('jc-input').value='${t}'" style="font-size:10px">${t}</button>`
+      ).join('')}
+    </div>
+  </div>
+
+  <!-- Job library -->
+  <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:8px">📚 Saved Blueprints <span id="jobs-count" style="color:#475569"></span></div>
+  <div id="jobs-list" style="display:flex;flex-direction:column;gap:8px">
+    <div style="color:#475569;font-size:11px">Loading…</div>
+  </div>`;
+}
+
+function jobsLoad() {
+  const list = document.getElementById('jobs-list');
+  const cnt  = document.getElementById('jobs-count');
+  if (!list) return;
+  list.innerHTML = '<div style="color:#475569;font-size:11px">Loading…</div>';
+  fetch('/api/jobs/list')
+    .then(r => r.json())
+    .then(d => {
+      if (cnt) cnt.textContent = `(${d.count || 0})`;
+      if (!d.jobs || !d.jobs.length) {
+        list.innerHTML = '<div style="color:#475569;font-size:11px">No blueprints yet. Create one above.</div>';
+        return;
+      }
+      list.innerHTML = d.jobs.map(j => jobCard(j)).join('');
+    })
+    .catch(e => { if(list) list.innerHTML = `<div style="color:#f87171;font-size:11px">Error: ${e.message}</div>`; });
+}
+
+function jobCard(j) {
+  const id = j.noco_id || '';
+  const scripts = (j.job_scripts||[]).slice(0,4);
+  const recurring = j.recurring ? `<span style="background:#1a3a1a;color:#4ade80;font-size:9px;padding:2px 6px;border-radius:10px">↻ ${j.schedule||'recurring'}</span>` : '';
+  const verified = j.is_verified
+    ? `<span style="background:#16532d;color:#4ade80;font-size:9px;padding:2px 7px;border-radius:10px" title="Verified — goes straight to PATH 3">✓ Verified</span>`
+    : `<button class="btn" onclick="jobVerify(${id},true)" style="font-size:9px;padding:2px 7px;border-color:#22c55e;color:#22c55e" title="Mark as verified — skips PATH 4 in future">✓ Verify</button>`;
+  const borderColor = j.is_verified ? '#22c55e' : '#2d1f52';
+  return `<div style="background:#07080d;border:1px solid ${borderColor};border-radius:8px;padding:12px" id="jcard-${id}">
+    <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:${j.is_verified?'#4ade80':'#c084fc'}">${j.is_verified?'✓ ':''}${j.job_name||'Unnamed'}</div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px">${j.job_description||''}</div>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap">
+        ${recurring}
+        ${verified}
+        <span style="font-size:9px;color:#475569;background:#0d0f1a;padding:2px 6px;border-radius:10px">score:${j.job_score||'?'}</span>
+        <span style="font-size:9px;color:#a78bfa;background:#1a1030;padding:2px 6px;border-radius:10px">${j.job_staff||'AI'}</span>
+        ${id ? `<button class="btn" onclick="jobDelete(${id})" style="font-size:9px;padding:2px 7px;color:#f87171;border-color:#3a1a1a">✕</button>` : ''}
+      </div>
+    </div>
+    ${scripts.length ? `<div style="font-size:10px;color:#475569;line-height:1.7">
+      ${scripts.map((s,i)=>`<span style="color:#6b8cff">${i+1}.</span> ${s}`).join('<br>')}
+      ${j.job_scripts.length>4?`<span style="color:#334155"> +${j.job_scripts.length-4} more</span>`:''}
+    </div>` : ''}
+    ${(j.job_prompts||[]).length ? `<div style="font-size:10px;color:#f5c518;margin-top:6px">❓ ${j.job_prompts.join(' · ')}</div>` : ''}
+    ${id && !j.is_verified ? `<div style="font-size:9px;color:#334155;margin-top:5px">Once you confirm this job works, click ✓ Verify — it will skip PATH 4 and go straight to PATH 3 next time.</div>` : ''}
+  </div>`;
+}
+
+async function jobCreate() {
+  const inp  = document.getElementById('jc-input');
+  const st   = document.getElementById('jc-status');
+  const res  = document.getElementById('jc-result');
+  const save = document.getElementById('jc-save');
+  const msg  = (inp?.value||'').trim();
+  if (!msg) { if(st){st.textContent='Enter a task description';st.style.color='#f87171';} return; }
+
+  if(st){st.textContent='⏳ AI is generating blueprint…';st.style.color='#f5c518';}
+  if(res) res.style.display='none';
+
+  try {
+    const d = await (await fetch('/api/jobs/create',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:msg, auto_save: save?.checked !== false})
+    })).json();
+
+    if (!d.ok) throw new Error(d.error||'Failed');
+
+    const j = d.job_context;
+    const savedTxt = d.saved ? ' · <span style="color:#4ade80">✓ Saved to NocoDB</span>' : '';
+    if(st){st.innerHTML=`✓ Blueprint generated for "<b style="color:#e2e8f0">${j.job_name}</b>"${savedTxt}`;st.style.color='#a78bfa';}
+    if(res){
+      res.style.display='';
+      res.innerHTML=jobCard(j);
+    }
+    if(inp) inp.value='';
+    // Refresh list
+    setTimeout(jobsLoad, 800);
+  } catch(e) {
+    if(st){st.textContent='✗ '+e.message;st.style.color='#f87171';}
+  }
+}
+
+async function jobVerify(id, state) {
+  const card = document.getElementById('jcard-'+id);
+  try {
+    const d = await (await fetch(`/api/jobs/${id}/verify`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({verified: state})
+    })).json();
+    if(d.ok) setTimeout(jobsLoad, 400);
+  } catch(e) {}
+}
+
+async function jobDelete(id) {
+  if(!confirm('Delete this job blueprint?')) return;
+  const card = document.getElementById('jcard-'+id);
+  try {
+    const d = await (await fetch(`/api/jobs/${id}`,{method:'DELETE'})).json();
+    if(d.ok && card) { card.style.opacity='0.3'; card.style.pointerEvents='none'; setTimeout(()=>card.remove(),600); }
+  } catch(e) {}
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+switchTab('entry');
+</script>
+<script src="/fix-widget.js"></script>
+<script src="/solo.js"></script>
+</body>
+</html>
